@@ -36,18 +36,15 @@ class UserService:
 
     @Transactional()
     async def create_user(
-        self, email: str, password1: str, password2: str, nickname: str
+        self, email: str, password: str, first_name: str, last_name: str
     ) -> None:
-        if password1 != password2:
-            raise PasswordDoesNotMatchException
-
-        query = select(User).where(or_(User.email == email, User.nickname == nickname))
+        query = select(User).where(or_(User.email == email))
         result = await session.execute(query)
         is_exist = result.scalars().first()
         if is_exist:
             raise DuplicateEmailOrNicknameException
 
-        user = User(email=email, password=password1, nickname=nickname)
+        user = User(email=email, first_name=first_name, last_name=last_name, password=password)
         session.add(user)
 
     async def is_admin(self, user_id: int) -> bool:

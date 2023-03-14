@@ -12,14 +12,15 @@ class GetUserListResponseSchema(BaseModel):
 
 class CreateUserRequestSchema(BaseModel):
     email: str = Field(..., description="Email")
-    password1: str = Field(..., description="Password1")
-    password2: str = Field(..., description="Password2")
-    nickname: str = Field(..., description="Nickname")
+    first_name: str = Field(..., description="First Name")
+    last_name: str = Field(..., description="Last Name")
+    password: str = Field(..., description="Password")
 
 
 class CreateUserResponseSchema(BaseModel):
     email: str = Field(..., description="Email")
-    nickname: str = Field(..., description="Nickname")
+    first_name: str = Field(..., description="First Name")
+    last_name: str = Field(..., description="Last Name")
 
     class Config:
         orm_mode = True
