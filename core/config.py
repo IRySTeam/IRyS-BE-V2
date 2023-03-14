@@ -1,7 +1,10 @@
 import os
 
 from pydantic import BaseSettings
+from dotenv import load_dotenv
 
+
+load_dotenv()
 
 class Config(BaseSettings):
     ENV: str = "development"
@@ -20,21 +23,21 @@ class Config(BaseSettings):
 
 
 class DevelopmentConfig(Config):
-    WRITER_DB_URL: str = f"mysql+aiomysql://root:fastapi@db:3306/fastapi"
-    READER_DB_URL: str = f"mysql+aiomysql://root:fastapi@db:3306/fastapi"
+    WRITER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('DEV_DB_USER')}:{os.getenv('DEV_DB_PASSWORD')}@{os.getenv('DEV_DB_HOST')}/{os.getenv('DEV_DB_NAME')}"
+    READER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('DEV_DB_USER')}:{os.getenv('DEV_DB_PASSWORD')}@{os.getenv('DEV_DB_HOST')}/{os.getenv('DEV_DB_NAME')}"
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
 
 
 class LocalConfig(Config):
-    WRITER_DB_URL: str = f"mysql+aiomysql://fastapi:fastapi@localhost:3306/fastapi"
-    READER_DB_URL: str = f"mysql+aiomysql://fastapi:fastapi@localhost:3306/fastapi"
+    WRITER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('DEV_DB_USER')}:{os.getenv('DEV_DB_PASSWORD')}@{os.getenv('DEV_DB_HOST')}/{os.getenv('DEV_DB_NAME')}"
+    READER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('DEV_DB_USER')}:{os.getenv('DEV_DB_PASSWORD')}@{os.getenv('DEV_DB_HOST')}/{os.getenv('DEV_DB_NAME')}"
 
 
 class ProductionConfig(Config):
     DEBUG: str = False
-    WRITER_DB_URL: str = f"mysql+aiomysql://fastapi:fastapi@localhost:3306/prod"
-    READER_DB_URL: str = f"mysql+aiomysql://fastapi:fastapi@localhost:3306/prod"
+    WRITER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('PROD_DB_USER')}:{os.getenv('PROD_DB_PASSWORD')}@{os.getenv('PROD_DB_HOST')}/{os.getenv('PROD_DB_NAME')}"
+    READER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('PROD_DB_USER')}:{os.getenv('PROD_DB_PASSWORD')}@{os.getenv('PROD_DB_HOST')}/{os.getenv('PROD_DB_NAME')}"
 
 
 def get_config():
