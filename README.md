@@ -10,8 +10,11 @@
 - Event dispatcher
 - Cache
 
-## Run
-
+## How to Run
+1. Install [Poetry](https://python-poetry.org/docs/)
+2. Run ```poetry shell``` to open Poetry Shell 
+3. Install all dependecies by running ```poetry install```
+4. Lastly, run the app using this command:
 ```python
 python3 main.py --env local|dev|prod --debug
 ```
