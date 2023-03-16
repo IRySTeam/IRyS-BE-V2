@@ -11,6 +11,7 @@ from core.exceptions import (
     UserNotFoundException,
 )
 from core.utils.token_helper import TokenHelper
+from core.utils.password_helper import PasswordHelper
 
 
 class UserService:
@@ -44,7 +45,7 @@ class UserService:
         if is_exist:
             raise DuplicateEmailOrNicknameException
 
-        user = User(email=email, first_name=first_name, last_name=last_name, password=password)
+        user = User(email=email, first_name=first_name, last_name=last_name, password=PasswordHelper.get_hash(password))
         session.add(user)
 
     async def is_admin(self, user_id: int) -> bool:
@@ -66,6 +67,9 @@ class UserService:
         if not user:
             raise UserNotFoundException
 
+        if not PasswordHelper.check_hash(password, user.password):
+            raise PasswordDoesNotMatchException
+        
         response = LoginResponseSchema(
             token=TokenHelper.encode(payload={"user_id": user.id}),
             refresh_token=TokenHelper.encode(payload={"sub": "refresh"}),
