@@ -36,6 +36,12 @@ class UserService:
         query = query.limit(limit)
         result = await session.execute(query)
         return result.scalars().all()
+    
+    async def get_user_by_id(self, id: int) -> User:
+        query = select(User).where(User.id == id)
+
+        result = await session.execute(query)
+        return result.scalars().first()
 
     @Transactional()
     async def create_user(

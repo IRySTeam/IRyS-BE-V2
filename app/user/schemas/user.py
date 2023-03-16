@@ -9,6 +9,15 @@ class GetUserListResponseSchema(BaseModel):
     class Config:
         orm_mode = True
 
+class GetUserByIdResponseSchema(BaseModel):
+    id: int = Field(..., description="ID")
+    email: str = Field(..., description="Email")
+    first_name: str = Field(..., description="First Name")
+    last_name: str = Field(..., description="Last Name")
+
+    class Config:
+        orm_mode = True
+
 
 class RegisterRequestSchema(BaseModel):
     email: str = Field(..., description="Email")

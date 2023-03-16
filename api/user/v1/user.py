@@ -7,6 +7,7 @@ from api.user.v1.response.user import LoginResponse
 from app.user.schemas import (
     ExceptionResponseSchema,
     GetUserListResponseSchema,
+    GetUserByIdResponseSchema,
     RegisterRequestSchema,
     RegisterResponseSchema,
 )
@@ -14,6 +15,7 @@ from app.user.services import UserService
 from core.fastapi.dependencies import (
     PermissionDependency,
     IsAdmin,
+    IsAuthenticated,
 )
 
 user_router = APIRouter()
@@ -31,6 +33,16 @@ async def get_user_list(
     prev: int = Query(None, description="Prev ID"),
 ):
     return await UserService().get_user_list(limit=limit, prev=prev)
+
+
+@user_router.get(
+    "/{id}",
+    response_model=GetUserByIdResponseSchema,
+    responses={"400": {"model": ExceptionResponseSchema}},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated]))],
+)
+async def get_user_by_id(id: int):
+    return await UserService().get_user_by_id(id=id)
 
 
 @user_router.post(
