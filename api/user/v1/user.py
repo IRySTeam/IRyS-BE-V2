@@ -7,8 +7,8 @@ from api.user.v1.response.user import LoginResponse
 from app.user.schemas import (
     ExceptionResponseSchema,
     GetUserListResponseSchema,
-    CreateUserRequestSchema,
-    CreateUserResponseSchema,
+    RegisterRequestSchema,
+    RegisterResponseSchema,
 )
 from app.user.services import UserService
 from core.fastapi.dependencies import (
@@ -34,11 +34,11 @@ async def get_user_list(
 
 
 @user_router.post(
-    "",
-    response_model=CreateUserResponseSchema,
+    "/register",
+    response_model=RegisterResponseSchema,
     responses={"400": {"model": ExceptionResponseSchema}},
 )
-async def create_user(request: CreateUserRequestSchema):
+async def register(request: RegisterRequestSchema):
     await UserService().create_user(**request.dict())
     return {"email": request.email, "first_name": request.first_name, "last_name": request.last_name}
 
