@@ -1,6 +1,6 @@
 import bcrypt
 
-class PasswordHelper:
+class HashHelper:
   @staticmethod
   def get_hash(plain: str) -> str:
     hashed = bcrypt.hashpw(plain.encode('utf-8'), bcrypt.gensalt())
