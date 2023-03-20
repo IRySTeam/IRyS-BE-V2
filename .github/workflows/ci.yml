@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  pull_request:
+    types:
+      - opened
+    branches:
+      - master
+    
+  jobs:
+    build:
+      runs-on: ubuntu-latest
+      strategy:
+        matrix:
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Poetry
+        run: pipx install poetry
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "poetry"
+      - name: Install dependecies
+        run: poetry install
+      - name: Test with Pytest
+        run: poetry run pytest
+      - name: Lint with flake8
+        run: poetry run flake8
