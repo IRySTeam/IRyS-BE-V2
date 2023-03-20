@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "fastapi-boilerplate"
+name = "irys"
 version = "0.1.0"
-description = "FastAPI Boilerplate"
-authors = ["Hide <padocon@naver.com>"]
+description = "Intelligent Repository System"
+authors = ["IRySTeam <padocon@naver.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -23,6 +23,7 @@ redis = "^4.3.4"
 psycopg2 = "^2.9.5"
 asyncpg = "^0.27.0"
 python-dotenv = "^1.0.0"
+bcrypt = "^4.0.1"
 
 [tool.poetry.dev-dependencies]
 behave = "^1.2.6"

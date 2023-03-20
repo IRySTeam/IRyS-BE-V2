@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Unicode, BigInteger, Boolean, DateTime, func
+from sqlalchemy import Column, Unicode, BigInteger, DateTime, func
 
 from core.db import Base
 from core.db.mixins import TimestampMixin
@@ -13,3 +13,5 @@ class User(Base, TimestampMixin):
     email = Column(Unicode(255), nullable=False)
     password = Column(Unicode(255), nullable=False)
     last_login = Column(DateTime, default=func.now(), nullable=False)
+    refresh_token = Column(Unicode(255))
+    refresh_token_valid_until = Column(DateTime)

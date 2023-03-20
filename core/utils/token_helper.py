@@ -16,7 +16,7 @@ class TokenHelper:
             },
             key=config.JWT_SECRET_KEY,
             algorithm=config.JWT_ALGORITHM,
-        ).decode("utf8")
+        )
         return token
 
     @staticmethod
@@ -43,3 +43,7 @@ class TokenHelper:
             )
         except jwt.exceptions.DecodeError:
             raise DecodeTokenException
+    
+    @staticmethod
+    def get_refresh_token_valid_until(expire_period: int) -> datetime:
+        return datetime.utcnow() + timedelta(days=expire_period)
