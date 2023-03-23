@@ -11,4 +11,4 @@ RUN poetry config virtualenvs.create false \
 
 EXPOSE 8000
 
-CMD ["python3", "main.py", "--debug"]
+CMD ["python3", "main.py"]
