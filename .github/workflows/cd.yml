@@ -27,7 +27,7 @@ jobs:
       - name: Build image
         run: docker build -f Dockerfile -t ghcr.io/irysteam/irys-be:latest .
       - name: Push image
-        run: docker push ghcr.io/IRySTeam/IRyS-BE:latest
+        run: docker push ghcr.io/irysteam/irys-be:latest
   
   deploy:
     needs: build
