@@ -25,7 +25,7 @@ jobs:
       - name: Docker login
         run: docker login ghcr.io --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_TOKEN }}
       - name: Build image
-        run: docker build -f Dockerfile -t ghcr.io/IRySTeam/IRyS-BE:latest .
+        run: docker build -f Dockerfile -t ghcr.io/irysteam/irys-be:latest .
       - name: Push image
         run: docker push ghcr.io/IRySTeam/IRyS-BE:latest
   
