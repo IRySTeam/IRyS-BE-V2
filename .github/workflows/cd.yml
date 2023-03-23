@@ -10,9 +10,9 @@ on:
       - '.github/**'
   push:
     
-  jobs:
-    build:
-      runs-on: ubuntu-latest
+jobs:
+  build:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout master
         uses: actions/checkout@v3
@@ -32,22 +32,21 @@ on:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
-      with:
-        ref: master
+      - uses: actions/checkout@v2
+        with:
+          ref: master
 
-    - name: Deploy Using ssh
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.DEV_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.DEV_PRIVATE_KEY }}
-        port: 22
-        script: |
-          cd ~
-          docker login ghcr.io -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
-          docker-compose down
-          docker rmi -f $(docker images -aq)
-          docker-compose up 
+      - name: Deploy Using ssh
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEV_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.DEV_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd ~
+            docker login ghcr.io -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
+            docker-compose down
+            docker rmi -f $(docker images -aq)
+            docker-compose up 
