@@ -49,4 +49,4 @@ jobs:
             docker login ghcr.io -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
             docker-compose down
             docker rmi -f $(docker images -aq)
-            docker-compose up 
+            docker-compose up -d
