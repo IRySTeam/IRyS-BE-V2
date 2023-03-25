@@ -1,9 +1,6 @@
 from api.elastic.v1.request.query import GetAllIndexQueryParams
 from api.elastic.v1.request.path import (
-  GetIndexPathParams, 
-  UpdateIndexPathParams,
-  DeleteIndexPathParams,
-  IndexDocumentPathParams,
+  IndexNamePathParams,
 )
 from api.elastic.v1.request.body import (
   CreateIndexBody,
@@ -12,10 +9,7 @@ from api.elastic.v1.request.body import (
 
 __all__ = [
   "GetAllIndexQueryParams",
-  "GetIndexPathParams",
-  "UpdateIndexPathParams",
-  "DeleteIndexPathParams",
-  "IndexDocumentPathParams",
+  "IndexNamePathParams",
   "CreateIndexBody",
   "UpdateIndexBody",
 ]

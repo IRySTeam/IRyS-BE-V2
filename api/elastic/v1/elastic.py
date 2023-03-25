@@ -12,13 +12,10 @@ from app.elastic.schemas import (
   ElasticDocumentIndexedResponse
 )
 from api.elastic.v1.request import (
-  GetAllIndexQueryParams, 
-  GetIndexPathParams, 
+  IndexNamePathParams,
+  GetAllIndexQueryParams,  
   CreateIndexBody,
-  UpdateIndexPathParams,
   UpdateIndexBody,
-  DeleteIndexPathParams,
-  IndexDocumentPathParams
 )
 from api.elastic.v1.response import (
   ElasticIndexUpdateResponse,
@@ -85,7 +82,7 @@ async def get_elastic_indices(query: GetAllIndexQueryParams = Depends()):
     },
   }
 )
-async def get_elastic_index(path: GetIndexPathParams = Depends()):
+async def get_elastic_index(path: IndexNamePathParams = Depends()):
   try :
     return EsClient.get_index(path.index_name)
   except CustomException as e:
@@ -118,8 +115,8 @@ async def create_elastic_index(body: CreateIndexBody):
       detail=e.message,
     )
 
-@elastic_router.put(
-  "indices/{index_name}",
+@elastic_router.post(
+  "indices/{index_name}/update",
   description="Update an index dynamic settings in Elasticsearch",
   response_model=ElasticIndexUpdateResponse,
   responses = {
@@ -133,7 +130,7 @@ async def create_elastic_index(body: CreateIndexBody):
     },
   }
 )
-async def update_elastic_index(body: UpdateIndexBody, path: UpdateIndexPathParams = Depends()):
+async def update_elastic_index(body: UpdateIndexBody, path: IndexNamePathParams = Depends()):
   try :
     EsClient.update_index(index=path.index_name, settings=body.settings)
     return ElasticIndexUpdateResponse(updated=True)
@@ -143,8 +140,8 @@ async def update_elastic_index(body: UpdateIndexBody, path: UpdateIndexPathParam
       detail=e.message,
     )
 
-@elastic_router.delete(
-  "/indices/{index_name}",
+@elastic_router.post(
+  "/indices/{index_name}/delete",
   description="Delete an index in Elasticsearch",
   response_model=ElasticIndexDeleteResponse,
   responses = {
@@ -158,7 +155,7 @@ async def update_elastic_index(body: UpdateIndexBody, path: UpdateIndexPathParam
     },
   }
 )
-async def delete_elastic_index(path: DeleteIndexPathParams = Depends()):
+async def delete_elastic_index(path: IndexNamePathParams = Depends()):
   try :
     EsClient.delete_index(path.index_name)
     return ElasticIndexDeleteResponse(deleted=True)
@@ -167,7 +164,26 @@ async def delete_elastic_index(path: DeleteIndexPathParams = Depends()):
       status_code= e.error_code,
       detail=e.message,
     )
-  
+
+@elastic_router.get(
+  "indices/{index_name}/documents",
+  description="Get all documents in an index in Elasticsearch",
+  responses = {
+    404: {
+      "model": BaseHttpErrorSchema,
+      "description": "Index with the given name does not exist"
+    }
+  }
+)
+async def get_all_index_documents(path: IndexNamePathParams = Depends()):
+  try :
+    return EsClient.list_index_docs(path.index_name)
+  except CustomException as e:
+    raise HTTPException(
+      status_code= e.error_code,
+      detail=e.message,
+    )
+
 @elastic_router.post(
   "/indices/{index_name}/documents",
   description="Index a document in Elasticsearch",
@@ -185,7 +201,7 @@ async def delete_elastic_index(path: DeleteIndexPathParams = Depends()):
 )
 async def index_document(
   body: Dict[str, Any] = Body(..., description="Document to index"),
-  path: IndexDocumentPathParams = Depends()
+  path: IndexNamePathParams = Depends()
 ):
   try :
     return EsClient.index_doc(index=path.index_name, doc=body)
