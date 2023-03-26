@@ -116,7 +116,7 @@ async def create_elastic_index(body: CreateIndexBody):
     )
 
 @elastic_router.post(
-  "indices/{index_name}/update",
+  "/indices/{index_name}/update",
   description="Update an index dynamic settings in Elasticsearch",
   response_model=ElasticIndexUpdateResponse,
   responses = {
@@ -166,7 +166,7 @@ async def delete_elastic_index(path: IndexNamePathParams = Depends()):
     )
 
 @elastic_router.get(
-  "indices/{index_name}/documents",
+  "/indices/{index_name}/documents",
   description="Get all documents in an index in Elasticsearch",
   responses = {
     404: {
