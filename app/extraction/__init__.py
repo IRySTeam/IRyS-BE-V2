@@ -1,4 +1,4 @@
-from app.extraction.domain import NER, PaperNER, RecruitmentNER
+from app.extraction.entities import NER, PaperNER, RecruitmentNER
 from app.extraction.nerresult import NERResult
 
 NERModel = NER()

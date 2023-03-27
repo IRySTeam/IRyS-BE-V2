@@ -1,5 +1,5 @@
 import nltk
-from app.extraction.domain.base import NER
+from app.extraction.entities.base import NER
 from app.extraction.nerresult import NERResult
 
 class PaperNER(NER):
