@@ -19,6 +19,36 @@
 python3 main.py --env local|dev|prod --debug
 ```
 
+## Environment Variables
+### Development Database
+| Name | Description | Example Value |
+| --- | --- | --- |
+| DEV_DB_HOST | Database host address | localhost |
+| DEV_DB_USER | Database user's username | postgres |
+| DEV_DB_PASSWORD | Database user's password | postgres |
+| DEV_DB_NAME | Database name used for application | IRyS_v1 |
+
+### Production Database
+| Name | Description | Example Value |
+| --- | --- | --- |
+| PROD_DB_HOST | Database host address | localhost |
+| PROD_DB_USER | Database user username | postgres |
+| PROD_DB_PASSWORD | Database user password | postgres |
+| PROD_DB_NAME | Database name used for application | IRyS_v1 |
+
+### Elasticsearch (Cloud and Local)
+| Name | Description | Example Value |
+| --- | --- | --- |
+| ELASTICSEARCH_CLOUD | Whether using Elasticsearch Cloud or not | True |
+| ELASTICSEARCH_CLOUD_ID | Elasticsearch Cloud deployment ID | fcggg111hgg2jjh2:jhhhllk |
+| ELASTICSEARCH_USER | Elasticsearch username (either using Elasticsearch Cloud or not) | elastic |
+| ELASTICSEARCH_PASSWORD | Elasticsearch password (either using Elasticsearch Cloud or not) | password |
+| ELASTICSEARCH_API_KEY | Elasticsearch API key (when using Elasticsearch Cloud) | 1234567890 |
+| ELASTICSEARCH_SCHEME | Elasticsearch scheme (when using local Elasticsearch) | http |
+| ELASTICSEARCH_HOST | Elasticsearch host address (when using local Elasticsearch) | localhost |
+| ELASTICSEARCH_PORT | Elasticsearch port (when using local Elasticsearch) | 9200 |
+
+
 ## SQLAlchemy for asyncio context
 
 ```python
