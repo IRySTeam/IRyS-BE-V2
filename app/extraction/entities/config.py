@@ -6,6 +6,8 @@ TYPE_OPERATORS = {
         "ends_with",
         "equals",
         "regex",
+        "in",
+        "not_in",
     ],
 }
 
