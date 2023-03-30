@@ -6,12 +6,18 @@ from .base import (
     UnprocessableEntity,
     DuplicateValueException,
     UnauthorizedException,
+    EmailAlreadyVerifiedException,
+    EmailNotVerifiedException
 )
 from .token import DecodeTokenException, ExpiredTokenException
 from .user import (
     PasswordDoesNotMatchException,
-    DuplicateEmailOrNicknameException,
+    DuplicateEmailException,
     UserNotFoundException,
+    ExpiredOTPException,
+    WrongOTPException,
+    InvalidEmailException,
+    InvalidPasswordException
 )
 
 
@@ -23,9 +29,15 @@ __all__ = [
     "UnprocessableEntity",
     "DuplicateValueException",
     "UnauthorizedException",
+    "EmailAlreadyVerifiedException",
+    "EmailNotVerifiedException",
     "DecodeTokenException",
     "ExpiredTokenException",
     "PasswordDoesNotMatchException",
-    "DuplicateEmailOrNicknameException",
+    "DuplicateEmailException",
     "UserNotFoundException",
+    "ExpiredOTPException",
+    "WrongOTPException",
+    "InvalidEmailException",
+    "InvalidPasswordException"
 ]
