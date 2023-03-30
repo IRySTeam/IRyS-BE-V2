@@ -27,14 +27,20 @@ class RegisterRequestSchema(BaseModel):
 
 
 class RegisterResponseSchema(BaseModel):
+    token: str = Field(..., description="Token")
+    refresh_token: str = Field(..., description="Refresh Token")
+
+
+class VerifyOTPRequestSchema(BaseModel):
+    otp: str = Field(..., description="OTP")
+
+
+class VerifyOTPResponseSchema(BaseModel):
     email: str = Field(..., description="Email")
     first_name: str = Field(..., description="First Name")
     last_name: str = Field(..., description="Last Name")
 
-    class Config:
-        orm_mode = True
-
 
 class LoginResponseSchema(BaseModel):
     token: str = Field(..., description="Token")
-    refresh_token: str = Field(..., description="Refresh token")
+    refresh_token: str = Field(..., description="Refresh Token")
