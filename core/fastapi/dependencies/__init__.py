@@ -4,6 +4,8 @@ from .permission import (
     IsAuthenticated,
     IsAdmin,
     AllowAll,
+    IsEmailNotVerified,
+    IsEmailVerified
 )
 
 __all__ = [
@@ -12,4 +14,6 @@ __all__ = [
     "IsAuthenticated",
     "IsAdmin",
     "AllowAll",
+    "IsEmailNotVerified",
+    "IsEmailVerified"
 ]
