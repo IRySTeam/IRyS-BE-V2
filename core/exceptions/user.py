@@ -41,3 +41,15 @@ class InvalidPasswordException(CustomException):
     code = 400
     error_code = "USER__INVALID_PASSWORD"
     message = "Password is not valid"
+
+
+class EmailAlreadyVerifiedException(CustomException):
+    code = 403
+    error_code = "USER__EMAIL_ALREADY_VERIFIED"
+    message = "Email is already verified"
+
+
+class EmailNotVerifiedException(CustomException):
+    code = 403
+    error_code = "USER__EMAIL_NOT_VERIFIED"
+    message = "Email is not verified"

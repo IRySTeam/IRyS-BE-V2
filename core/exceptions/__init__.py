@@ -6,8 +6,6 @@ from .base import (
     UnprocessableEntity,
     DuplicateValueException,
     UnauthorizedException,
-    EmailAlreadyVerifiedException,
-    EmailNotVerifiedException
 )
 from .token import DecodeTokenException, ExpiredTokenException
 from .user import (
@@ -17,7 +15,9 @@ from .user import (
     ExpiredOTPException,
     WrongOTPException,
     InvalidEmailException,
-    InvalidPasswordException
+    InvalidPasswordException,
+    EmailAlreadyVerifiedException,
+    EmailNotVerifiedException
 )
 
 

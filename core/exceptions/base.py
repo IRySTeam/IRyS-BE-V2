@@ -47,13 +47,3 @@ class DuplicateValueException(CustomException):
     message = HTTPStatus.UNPROCESSABLE_ENTITY.description
 
 
-class EmailAlreadyVerifiedException(CustomException):
-    code = HTTPStatus.UNAUTHORIZED
-    error_code = "USER__EMAIL_ALREADY_VERIFIED"
-    message = "Email is already verified"
-
-
-class EmailNotVerifiedException(CustomException):
-    code = HTTPStatus.UNAUTHORIZED
-    error_code = "USER__EMAIL_NOT_VERIFIED"
-    message = "Email is not verified"
