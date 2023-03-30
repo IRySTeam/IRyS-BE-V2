@@ -1,6 +1,6 @@
 from typing import TypeVar, Type, Optional, Generic
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, insert
 
 from core.db.session import Base, session
 from core.repository.enum import SynchronizeSessionEnum
@@ -14,7 +14,8 @@ class BaseRepo(Generic[ModelType]):
 
     async def get_by_id(self, id: int) -> Optional[ModelType]:
         query = select(self.model).where(self.model.id == id)
-        return await session.execute(query).scalars().first()
+        result = await session.execute(query)
+        return result.scalars().first()
 
     async def update_by_id(
         self,
@@ -45,6 +46,6 @@ class BaseRepo(Generic[ModelType]):
         )
         await session.execute(query)
 
-    async def save(self, model: ModelType) -> ModelType:
-        saved = await session.add(model)
-        return saved
+    async def save(self, params: dict) -> ModelType:
+        query = insert(self.model).values(**params)
+        return await session.execute(query)
