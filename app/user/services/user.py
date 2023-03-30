@@ -121,7 +121,7 @@ class UserService:
 
         access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": True,})
         refresh_token = HashHelper.get_hash(StringHelper.random_string(10))
-        refresh_token_valid_until = TokenHelper.get_refresh_token_valid_until(7)
+        refresh_token_valid_until = datetime.utcnow() + timedelta(hours=24)
         
         # Update user
         user.last_login = datetime.utcnow()
