@@ -30,6 +30,7 @@ class BaseRepo(Generic[ModelType]):
             .execution_options(synchronize_session=synchronize_session)
         )
         await session.execute(query)
+        await session.commit()
 
     async def delete(self, model: ModelType) -> None:
         await session.delete(model)
@@ -45,6 +46,7 @@ class BaseRepo(Generic[ModelType]):
             .execution_options(synchronize_session=synchronize_session)
         )
         await session.execute(query)
+        await session.commit()
 
     async def save(self, params: dict) -> ModelType:
         query = insert(self.model).values(**params)
