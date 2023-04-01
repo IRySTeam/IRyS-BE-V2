@@ -22,7 +22,7 @@ class BaseRepo(Generic[ModelType]):
         id: int,
         params: dict,
         synchronize_session: SynchronizeSessionEnum = False,
-    ) -> None:
+    ):
         query = (
             update(self.model)
             .where(self.model.id == id)
@@ -30,7 +30,6 @@ class BaseRepo(Generic[ModelType]):
             .execution_options(synchronize_session=synchronize_session)
         )
         await session.execute(query)
-        await session.commit()
 
     async def delete(self, model: ModelType) -> None:
         await session.delete(model)

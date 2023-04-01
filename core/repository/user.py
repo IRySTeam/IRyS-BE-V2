@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from core.repository import BaseRepo
 from app.user.models import User
 from core.db.session import session
