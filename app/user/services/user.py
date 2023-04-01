@@ -1,10 +1,15 @@
 from typing import Optional, List
 
-from sqlalchemy import or_, select, and_, update, insert
 from datetime import datetime, timedelta
 
 from app.user.models import User
-from app.user.schemas.user import LoginResponseSchema, RegisterResponseSchema, VerifyOTPResponseSchema
+from app.user.schemas.user import (
+    LoginResponseSchema, 
+    RegisterResponseSchema, 
+    VerifyOTPResponseSchema, 
+    ResendOTPResponseSchema,
+    VerifyEmailResponseSchema
+)
 from core.db import Transactional, session
 from core.exceptions import (
     PasswordDoesNotMatchException,
@@ -14,7 +19,8 @@ from core.exceptions import (
     WrongOTPException,
     InvalidEmailException,
     InvalidPasswordException,
-    EmailAlreadyVerifiedException
+    EmailAlreadyVerifiedException,
+    EmailNotVerifiedException
 )
 from core.repository import UserRepo
 from core.utils.token_helper import TokenHelper
@@ -28,23 +34,6 @@ class UserService:
 
     def __init__(self):
         ...
-
-    async def get_user_list(
-        self,
-        limit: int = 12,
-        prev: Optional[int] = None,
-    ) -> List[User]:
-        query = select(User)
-
-        if prev:
-            query = query.where(User.id < prev)
-
-        if limit > 12:
-            limit = 12
-
-        query = query.limit(limit)
-        result = await session.execute(query)
-        return result.scalars().all()
     
     async def get_user_by_id(self, id: int) -> User:
         return await self.user_repo.get_by_id(id=id)
@@ -65,7 +54,7 @@ class UserService:
             raise InvalidPasswordException
 
         # Generate OTP
-        otp = StringHelper.random_string_number(6)
+        otp = StringHelper.random_string_number(4)
         
         # Save to DB
         user = await self.user_repo.save({
@@ -94,41 +83,33 @@ class UserService:
         )
 
         return RegisterResponseSchema(token=access_token, refresh_token=refresh_token)
-        
-
-    async def is_admin(self, user_id: int) -> bool:
-        result = await session.execute(select(User).where(User.id == user_id))
-        user = result.scalars().first()
-        if not user:
-            return False
-
-        if user.is_admin is False:
-            return False
-
-        return True
 
     @Transactional()
     async def login(self, email: str, password: str) -> LoginResponseSchema:
-        result = await session.execute(
-            select(User).where(and_(User.email == email, password == password))
-        )
-        user = result.scalars().first()
+        user = await self.user_repo.get_by_email(email=email)
+
         if not user:
             raise UserNotFoundException
 
         if not HashHelper.check_hash(password, user.password):
             raise PasswordDoesNotMatchException
+        
+        if user.otp is not None:
+            raise EmailNotVerifiedException
 
         access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": True,})
         refresh_token = HashHelper.get_hash(StringHelper.random_string(10))
         refresh_token_valid_until = datetime.utcnow() + timedelta(hours=24)
         
         # Update user
-        user.last_login = datetime.utcnow()
-        user.refresh_token = refresh_token
-        user.refresh_token_valid_until = refresh_token_valid_until
-
-        await session.commit()
+        await self.user_repo.update_by_id(
+            id=user.id,
+            params={
+                "last_login": datetime.utcnow(),
+                "refresh_token": refresh_token,
+                "refresh_token_valid_until": refresh_token_valid_until
+            },
+        )
         
         response = LoginResponseSchema(
             token=access_token,
@@ -136,6 +117,7 @@ class UserService:
         )
         return response
     
+    @Transactional()
     async def verify_otp(self, user_id: int, otp: str) -> VerifyOTPResponseSchema: 
         user = await self.user_repo.get_by_id(id=user_id)
 
@@ -145,11 +127,9 @@ class UserService:
         if not user.otp:
             raise EmailAlreadyVerifiedException
         
-        if (user.otp == otp):
+        if user.otp == otp:
             diff = datetime.utcnow() - user.otp_valid_until
-            diff_in_seconds = diff.total_seconds()
-
-            if (diff_in_seconds > 300):
+            if (diff.total_seconds() > 0):
                 raise ExpiredOTPException
 
             # Update user
@@ -160,7 +140,7 @@ class UserService:
                     "otp_valid_until": None
                 },
             )
-            
+
             return VerifyOTPResponseSchema(
                 email=user.email,
                 first_name=user.first_name,
@@ -168,3 +148,84 @@ class UserService:
             )
         else:
             raise WrongOTPException
+        
+    @Transactional()
+    async def resend_otp(self, user_id: int) -> ResendOTPResponseSchema:
+        user = await self.user_repo.get_by_id(id=user_id)
+
+        if not user:
+            raise UserNotFoundException
+        
+        if not user.otp:
+            raise EmailAlreadyVerifiedException
+        
+        # Generate OTP
+        otp = StringHelper.random_string_number(4)
+        
+        # Update user
+        await self.user_repo.update_by_id(
+            id=user.id,
+            params={
+                "otp": otp,
+                "otp_valid_until": datetime.utcnow() + timedelta(minutes=5)
+            },
+        )
+        
+        # Send OTP to user's email
+        await Mailer.send_registration_otp_email(user.email, { "first_name": user.first_name, "otp": otp })
+
+        access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": False,})
+        refresh_token = HashHelper.get_hash(StringHelper.random_string(10))
+        refresh_token_valid_until = datetime.utcnow() + timedelta(hours=24)
+
+        # Update user
+        await self.user_repo.update_by_id(
+            id=user.id,
+            params={
+                "refresh_token": refresh_token,
+                "refresh_token_valid_until": refresh_token_valid_until
+            },
+        )
+
+        return ResendOTPResponseSchema(token=access_token, refresh_token=refresh_token)
+
+
+    @Transactional()
+    async def verify_email(self, email: str) -> VerifyEmailResponseSchema:
+        user = await self.user_repo.get_by_email(email=email)
+
+        if not user:
+            raise UserNotFoundException
+        
+        if not user.otp:
+            raise EmailAlreadyVerifiedException
+        
+        # Generate OTP
+        otp = StringHelper.random_string_number(4)
+        
+        # Update user
+        await self.user_repo.update_by_id(
+            id=user.id,
+            params={
+                "otp": otp,
+                "otp_valid_until": datetime.utcnow() + timedelta(minutes=5)
+            },
+        )
+        
+        # Send OTP to user's email
+        await Mailer.send_registration_otp_email(user.email, { "first_name": user.first_name, "otp": otp })
+
+        access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": False,})
+        refresh_token = HashHelper.get_hash(StringHelper.random_string(10))
+        refresh_token_valid_until = datetime.utcnow() + timedelta(hours=24)
+
+        # Update user
+        await self.user_repo.update_by_id(
+            id=user.id,
+            params={
+                "refresh_token": refresh_token,
+                "refresh_token_valid_until": refresh_token_valid_until
+            },
+        )
+
+        return VerifyEmailResponseSchema(token=access_token, refresh_token=refresh_token)
