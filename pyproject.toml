@@ -25,6 +25,7 @@ python-dotenv = "^1.0.0"
 bcrypt = "^4.0.1"
 python-semantic-release = "^7.33.2"
 fastapi-mail = "^1.2.6"
+uvloop = "^0.17.0"
 
 [tool.poetry.dev-dependencies]
 behave = "^1.2.6"
