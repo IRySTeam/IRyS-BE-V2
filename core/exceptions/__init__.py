@@ -6,6 +6,8 @@ from .base import (
     UnprocessableEntity,
     DuplicateValueException,
     UnauthorizedException,
+    ConflictException,
+    FailedDependencyException
 )
 from .token import DecodeTokenException, ExpiredTokenException
 from .user import (
@@ -31,6 +33,8 @@ __all__ = [
     "UnauthorizedException",
     "EmailAlreadyVerifiedException",
     "EmailNotVerifiedException",
+    "ConflictException",
+    "FailedDependencyException",
     "DecodeTokenException",
     "ExpiredTokenException",
     "PasswordDoesNotMatchException",

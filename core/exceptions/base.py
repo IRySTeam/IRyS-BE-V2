@@ -35,6 +35,12 @@ class UnauthorizedException(CustomException):
     message = HTTPStatus.UNAUTHORIZED.description
 
 
+class ConflictException(CustomException):
+    code = HTTPStatus.CONFLICT
+    error_code = HTTPStatus.CONFLICT
+    message = HTTPStatus.CONFLICT.description
+
+
 class UnprocessableEntity(CustomException):
     code = HTTPStatus.UNPROCESSABLE_ENTITY
     error_code = HTTPStatus.UNPROCESSABLE_ENTITY
@@ -45,5 +51,9 @@ class DuplicateValueException(CustomException):
     code = HTTPStatus.UNPROCESSABLE_ENTITY
     error_code = HTTPStatus.UNPROCESSABLE_ENTITY
     message = HTTPStatus.UNPROCESSABLE_ENTITY.description
-
-
+    
+    
+class FailedDependencyException(CustomException):
+    code = HTTPStatus.FAILED_DEPENDENCY
+    error_code = HTTPStatus.FAILED_DEPENDENCY
+    message = HTTPStatus.FAILED_DEPENDENCY.description
