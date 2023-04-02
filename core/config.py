@@ -20,6 +20,10 @@ class Config(BaseSettings):
     CELERY_BACKEND_URL: str = "redis://:password123@localhost:6379/0"
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
+    MAIL_SERVER = os.getenv("MAIL_SERVER")
+    MAIL_PORT = os.getenv("MAIL_PORT")
     ELASTICSEARCH_CLOUD: str = "False"
     ELASTICSEARCH_CLOUD_ID: Optional[str] = "fc4cb02e0dfc461cabf401c50b41a44e:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlvOjQ0MyQ0NGMxMDY1NzE5NWE0Y2M2OTVhNTRkNWU1M2MzYmYzMiRiNjMxNTFmM2ZlNjM0OTBhOWFkODNhZTcxNzljNjA3YQ=="
     ELASTICSEARCH_USER: str = "elastic"
