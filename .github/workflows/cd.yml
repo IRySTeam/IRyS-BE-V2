@@ -44,6 +44,7 @@ jobs:
           key: ${{ secrets.DEV_PRIVATE_KEY }}
           port: 22
           script: |
+            echo "TCPKeepAlive yes" >> ~/.ssh/config
             cd ~
             docker login ghcr.io -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
             docker-compose down
