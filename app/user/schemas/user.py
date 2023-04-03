@@ -58,3 +58,4 @@ class VerifyEmailRequestSchema(BaseModel):
 class VerifyEmailResponseSchema(BaseModel):
     token: str = Field(..., description="Token")
     refresh_token: str = Field(..., description="Refresh Token")
+
