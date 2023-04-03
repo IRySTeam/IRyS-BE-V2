@@ -43,7 +43,3 @@ class TokenHelper:
             )
         except jwt.exceptions.DecodeError:
             raise DecodeTokenException
-    
-    @staticmethod
-    def get_refresh_token_valid_until(expire_period: int) -> datetime:
-        return datetime.utcnow() + timedelta(days=expire_period)

@@ -37,10 +37,12 @@ class AuthBackend(AuthenticationBackend):
                 algorithms=[config.JWT_ALGORITHM],
             )
             user_id = payload.get("user_id")
+            is_email_verified = payload.get("is_email_verified")
         except jwt.exceptions.PyJWTError:
             return False, current_user
 
         current_user.id = user_id
+        current_user.is_email_verified = is_email_verified
         return True, current_user
 
 

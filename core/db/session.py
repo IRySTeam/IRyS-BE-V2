@@ -1,3 +1,8 @@
+import uvloop
+import asyncio
+
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
 from contextvars import ContextVar, Token
 from typing import Union
 
