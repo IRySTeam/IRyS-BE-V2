@@ -1,7 +1,12 @@
+import json
 from typing import Optional, List
 
 from api.search.v1.request import SemanticSearchRequest
 from api.search.v1.response import SemanticSearchResponse
+
+from app.search.schemas.search_result import ElasticSearchResult
+from app.search.constants.search import DOMAIN_INDEXES
+from app.elastic.client import search_semantic
 
 class SearchService:
     def __init__(self, request: SemanticSearchRequest):
@@ -32,10 +37,13 @@ class SearchService:
         Executes first part of search, calls elastic search to perform keyword based search
         [Parameters]
         [Returns]
-          retrieved_documents: ? # TODO: Define a schema for elastic search retrieved documents
+          retrieved_documents: ElasticSearchResult
         """
-        pass
-    
+        raw_data = search_semantic(self.processed_query, DOMAIN_INDEXES[self.domain])
+        data = json.load(raw_data) # TODO: Possible data = retrieved documents, so might directly return data
+        # retrieved_documents = Call some function to parse data into ElasticSearchResult
+        return data
+
     def evaluate_advanced_filter(self, retrived_documents):
         """
         Executes second part of search, filtering retrieved documents based on entity filters
