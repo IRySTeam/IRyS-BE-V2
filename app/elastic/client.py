@@ -180,4 +180,32 @@ class ElasticsearchClient:
     except Exception as e:
       raise FailedDependencyException(e)
     
+  def search_semantic(self, query: str, index_name: str):
+    """
+    Retrieve documents from an Elasticsearch index based on an input query
+    [Parameters]
+      query: str -> User search prompt
+      index_name: str -> Name of index that will be the base of the search
+    """
+    try:
+      query_vector = self.client.encode([query])[0]
+      script_query = {
+        "script_score": {
+          "query": {"match_all": {}},
+          "script": {
+            "source": "cosineSimilarity(params.query_vector, 'text_vector') + 1.0",
+              "params": {"query_vector": query_vector}
+          }
+        }
+      }
+      response = self.client.search(
+        index=index_name,
+        query=script_query
+      )
+      return response
+    except ApiError as e:
+      raise classify_error(e)
+    except Exception as e:
+      raise FailedDependencyException(e) #TODO: Create new exception type
+    
     
