@@ -1,5 +1,13 @@
 from pydantic import BaseModel, Field
 
+# ==============================================================================
+# Request Body-related Schemas.
+# ==============================================================================
+
+
+# ==============================================================================
+# Response Body-related Schemas.
+# ==============================================================================
 class ElasticVersion(BaseModel):
 	number: str = Field(..., description="Version number")
 	build_flavor: str = Field(..., description="Build flavor")
@@ -24,3 +32,11 @@ class ElasticInfo(BaseModel):
 	cluster_uuid: str = Field(..., description="Unique identifier for the cluster")
 	version: ElasticVersion = Field(..., description="Version of the Elastic Stack")
 	tagline: str = Field(..., description="Catch phrase for the Elastic Stack")
+ 
+# ==============================================================================
+# Path parameters-related Schemas.
+# ==============================================================================
+    
+# ==============================================================================
+# Query parameters-related Schemas.
+# ==============================================================================

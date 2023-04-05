@@ -162,3 +162,8 @@ cython_debug/
 *.pem
 
 .DS_Store
+
+bertserving/cased_*
+bertserving/uncased_*
+app/classification/dump/*
+!app/classification/dump/.gitkeep

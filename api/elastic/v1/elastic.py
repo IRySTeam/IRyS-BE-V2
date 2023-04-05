@@ -9,15 +9,11 @@ from app.elastic.schemas import (
   ElasticIndexCat, 
   ElasticIndexDetail,
   ElasticCreateIndexResponse,
-  ElasticDocumentIndexedResponse
-)
-from api.elastic.v1.request import (
+  ElasticDocumentIndexedResponse,
   IndexNamePathParams,
   GetAllIndexQueryParams,  
   CreateIndexBody,
   UpdateIndexBody,
-)
-from api.elastic.v1.response import (
   ElasticIndexUpdateResponse,
   ElasticIndexDeleteResponse
 )

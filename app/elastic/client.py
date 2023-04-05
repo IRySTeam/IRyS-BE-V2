@@ -7,8 +7,8 @@ from core.config import config
 from core.exceptions.base import FailedDependencyException, NotFoundException
 from app.elastic.helpers import classify_error
 from app.elastic.configuration import (
-  DEFAULT_ELASTICSEARCH_INDEX_SETTINGS, 
-  DEFAULT_ELASTICSEARCH_INDEX_MAPPINGS
+  GENERAL_ELASTICSEARCH_INDEX_SETTINGS, 
+  GENERAL_ELASTICSEARCH_INDEX_MAPPINGS
 )
 from app.elastic.schemas import (
   ElasticInfo, 
@@ -113,10 +113,10 @@ class ElasticsearchClient:
       ElasticCreateIndexResponse: Response of creating an index.
     """
     try:
-      if mapping is None:
-        mapping = DEFAULT_ELASTICSEARCH_INDEX_MAPPINGS
-      if settings is None:
-        settings = DEFAULT_ELASTICSEARCH_INDEX_SETTINGS
+      if mapping is None or mapping == {}:
+        mapping = GENERAL_ELASTICSEARCH_INDEX_MAPPINGS
+      if settings is None or settings == {}:
+        settings = GENERAL_ELASTICSEARCH_INDEX_SETTINGS
       return self.indices_client.create(index=index_name, mappings=mapping, settings=settings)
     except ApiError as e:
       raise classify_error(e)
