@@ -52,7 +52,10 @@ class SearchService:
         [Returns]
           filtered_documents: ? # TODO: Should the schema be the same as retrieved documents or directly as API response schema?
         """
-        pass
+        filtered_documents = {} # TODO: Make this into yet another new schema or just use the existing final response schema?
+        if (bool(self.advanced_filter)):
+            pass # TODO: Filter retrieved_documents according to the advanced filter
+        return filtered_documents
     
     def run_search(self):
         """
