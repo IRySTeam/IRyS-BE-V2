@@ -1,12 +1,10 @@
-from typing import Optional, List
-
 from datetime import datetime, timedelta
 
 from app.user.models import User
 from app.user.schemas.user import (
-    LoginResponseSchema, 
-    RegisterResponseSchema, 
-    VerifyOTPResponseSchema, 
+    LoginResponseSchema,
+    RegisterResponseSchema,
+    VerifyOTPResponseSchema,
     ResendOTPResponseSchema,
     VerifyEmailResponseSchema
 )
@@ -70,14 +68,15 @@ class UserService:
         await Mailer.send_registration_otp_email(email, { "first_name": first_name, "otp": otp })
         
         access_token = TokenHelper.encode(payload={"user_id": user.inserted_primary_key[0], "is_email_verified": False,})
-        refresh_token = HashHelper.get_hash(StringHelper.random_string(10))
+        raw_refresh_token = StringHelper.random_string(10)
+        refresh_token = HashHelper.get_hash(raw_refresh_token)
         refresh_token_valid_until = datetime.utcnow() + timedelta(hours=24)
 
         # Update user
         await self.user_repo.update_by_id(
             id=user.inserted_primary_key[0],
             params={
-                "refresh_token": refresh_token,
+                "refresh_token": raw_refresh_token,
                 "refresh_token_valid_until": refresh_token_valid_until
             },
         )
@@ -98,7 +97,8 @@ class UserService:
             raise EmailNotVerifiedException
 
         access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": True,})
-        refresh_token = HashHelper.get_hash(StringHelper.random_string(10))
+        raw_refresh_token = StringHelper.random_string(10)
+        refresh_token = HashHelper.get_hash(raw_refresh_token)
         refresh_token_valid_until = datetime.utcnow() + timedelta(hours=24)
         
         # Update user
@@ -106,7 +106,7 @@ class UserService:
             id=user.id,
             params={
                 "last_login": datetime.utcnow(),
-                "refresh_token": refresh_token,
+                "refresh_token": raw_refresh_token,
                 "refresh_token_valid_until": refresh_token_valid_until
             },
         )
@@ -175,14 +175,15 @@ class UserService:
         await Mailer.send_registration_otp_email(user.email, { "first_name": user.first_name, "otp": otp })
 
         access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": False,})
-        refresh_token = HashHelper.get_hash(StringHelper.random_string(10))
+        raw_refresh_token = StringHelper.random_string(10)
+        refresh_token = HashHelper.get_hash(raw_refresh_token)
         refresh_token_valid_until = datetime.utcnow() + timedelta(hours=24)
 
         # Update user
         await self.user_repo.update_by_id(
             id=user.id,
             params={
-                "refresh_token": refresh_token,
+                "refresh_token": raw_refresh_token,
                 "refresh_token_valid_until": refresh_token_valid_until
             },
         )
@@ -216,14 +217,15 @@ class UserService:
         await Mailer.send_registration_otp_email(user.email, { "first_name": user.first_name, "otp": otp })
 
         access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": False,})
-        refresh_token = HashHelper.get_hash(StringHelper.random_string(10))
+        raw_refresh_token = StringHelper.random_string(10)
+        refresh_token = HashHelper.get_hash(raw_refresh_token)
         refresh_token_valid_until = datetime.utcnow() + timedelta(hours=24)
 
         # Update user
         await self.user_repo.update_by_id(
             id=user.id,
             params={
-                "refresh_token": refresh_token,
+                "refresh_token": raw_refresh_token,
                 "refresh_token_valid_until": refresh_token_valid_until
             },
         )
