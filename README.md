@@ -162,21 +162,22 @@ To setup elasticsearch locally, you can follow the steps below:
 ## Local development
 ### Installing required dependency
 1. Install each dependency from the requirements section above.
-2. Train the Machine Learning model for document classification by running this command:
-    ```zsh
-    python3 app/classification/mlutil/classifier_train.py
-    ```
-3. Install python dependencies
+2. Install python dependecies by running
     ```bash
     poetry install
     ```
+3. Run ```poetry shell``` to open Poetry Shell
+4. Train the Machine Learning model for document classification by running this command:
+    ```zsh
+    python3 app/classification/mlutil/classifier_training.py
+    ```
     NOTE: If you get error while installing `psycopg2-binary` package, try to
     run: `$ poetry run pip install psycopg2-binary` first then re-run `$ poetry install`
-4. Install pre-commit git hook (for auto formatting purpose)
+5. Install pre-commit git hook (for auto formatting purpose)
     ```
     pre-commit install
     ```
-5. Install some additional dependencies such
+6. Install some additional dependencies such
    1. libmagic:
     ```bash
     sudo apt-get install libmagic1 (Debian/Ubuntu)
@@ -257,11 +258,7 @@ Below are some useful commands for docker:
 
 ### Running the app
 1. Run ```poetry shell``` to open Poetry Shell
-2. Install all dependecies by running
-    ```bash
-    poetry install
-    ```
-3. Lastly, run the app using this command:
+2. Lastly, run the app using this command:
     ```python
     python3 main.py --env local|dev|prod --debug
     ```
