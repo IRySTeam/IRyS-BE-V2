@@ -15,21 +15,24 @@ class Document(Base, TimestampMixin):
     title = Column(Unicode(255), nullable=False)
     doc_created_at = Column(DateTime, nullable=True)
     doc_updated_at = Column(DateTime, nullable=True)
-    
+
     index = relationship(
         "DocumentIndex",
-        back_populates="doc", 
+        back_populates="doc",
         uselist=False,
     )
+
 
 class DocumentIndex(Base, TimestampMixin):
     __tablename__ = "document_indexes"
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     doc_id = Column(BigInteger, ForeignKey("documents.id", ondelete="CASCADE"))
-    status = Column(Enum(IndexingStatusEnum), nullable=False, default=IndexingStatusEnum.READY)
+    status = Column(
+        Enum(IndexingStatusEnum), nullable=False, default=IndexingStatusEnum.READY
+    )
     reason = Column(Unicode(255), nullable=True)
-    
+
     doc = relationship(
-        "Document", 
+        "Document",
         back_populates="index",
     )

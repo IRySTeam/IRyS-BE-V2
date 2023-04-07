@@ -10,15 +10,13 @@ from app.document.enums.document import IndexingStatusEnum
 from app.document.services import document_index_service
 from app.preprocess import OCRUtil, PreprocessUtil
 from app.classification import Classifier
-from app.elastic import EsClient, GENERAL_ELASTICSEARCH_INDEX_NAME 
+from app.elastic import EsClient, GENERAL_ELASTICSEARCH_INDEX_NAME
 from bert_serving.client import BertClient
+
 
 @celery.task(name="tasks.parsing")
 def parsing(
-    document_id: int, 
-    document_title: str,
-    file_content_str: str, 
-    with_ocr: bool = True
+    document_id: int, document_title: str, file_content_str: str, with_ocr: bool = True
 ) -> Union[bool, str]:
     """
     Celery task for parsing document. The parsing task will be split into 2 subtasks:
@@ -32,7 +30,7 @@ def parsing(
     [Returns]
         Union[bool, str] -> True if parsing is successful, else error message.
     """
-    try :
+    try:
         # TODO: Fix context error.
         # async_to_sync(document_index_service.update_indexing_status)(
         #     doc_id=document_id,
@@ -40,15 +38,17 @@ def parsing(
         # )
         # Parsing content and predict extension.
         file_content = a2b_base64(file_content_str)
-        file_extension = mimetypes.guess_extension(magic.from_buffer(file_content, mime=True))
+        file_extension = mimetypes.guess_extension(
+            magic.from_buffer(file_content, mime=True)
+        )
         if file_extension not in [".pdf", ".doc", ".docx", ".txt"]:
             # TODO: Raise error unsupported file type
             pass
         file_text: str = parser.from_buffer(file_content)["content"]
         # TODO: Check if document is scanned, if so, OCR it regardless of with_ocr boolean status.
-        if (file_extension == ".pdf" and with_ocr):
+        if file_extension == ".pdf" and with_ocr:
             file_text = OCRUtil.ocr(file_content)
-        
+
         # Preprocess text.
         preprocessed_file_text = PreprocessUtil.preprocess(file_text)
         extraction.delay(
@@ -56,7 +56,7 @@ def parsing(
             document_title=document_title,
             file_content_str=file_content_str,
             file_raw_text=file_text,
-            file_preprocessed_text=preprocessed_file_text
+            file_preprocessed_text=preprocessed_file_text,
         )
         return True
     except Exception as e:
@@ -69,16 +69,17 @@ def parsing(
         print(e)
         raise e
 
+
 @celery.task(name="tasks.extracting")
 def extraction(
     document_id: int,
     document_title: str,
     file_content_str: str,
     file_raw_text: str,
-    file_preprocessed_text: List[str]
+    file_preprocessed_text: List[str],
 ) -> Union[bool, str]:
     """
-    Celery task for extracting information from document. The extraction task will be split into 2 
+    Celery task for extracting information from document. The extraction task will be split into 2
     subtasks:
         1. Predicting document type.
         2. Extracting high-level information from document such as metadata, entities, etc.
@@ -90,7 +91,7 @@ def extraction(
     [Returns]
         Union[bool, str] -> True if extraction is successful, else error message.
     """
-    try :
+    try:
         # TODO: Fix context error.
         # async_to_sync(document_index_service.update_indexing_status)(
         #     doc_id=document_id,
@@ -108,7 +109,7 @@ def extraction(
             file_preprocessed_text=file_preprocessed_text,
             document_label=document_label,
             document_metadata=document_metadata,
-            document_entities=document_entities
+            document_entities=document_entities,
         )
         return True
     except Exception as e:
@@ -120,6 +121,7 @@ def extraction(
         # )
         print(e)
         raise e
+
 
 @celery.task(name="tasks.indexing")
 def indexing(
@@ -155,15 +157,12 @@ def indexing(
         # )
         file_content = a2b_base64(file_content_str)
         # TODO: Add bertclient data to env file.
-        bc = BertClient(
-            ip='bertserving',
-            output_fmt='list'
-        )
+        bc = BertClient(ip="bertserving", output_fmt="list")
         embedding = bc.encode([" ".join(file_preprocessed_text)])
         # TODO: Index document according to document type.
         EsClient.index_doc(
             index=GENERAL_ELASTICSEARCH_INDEX_NAME,
-            doc = {
+            doc={
                 "document_id": document_id,
                 "title": document_title,
                 "raw_text": file_raw_text,
@@ -171,10 +170,10 @@ def indexing(
                 "text_vector": embedding[0],
                 "document_label": document_label,
                 "document_metadata": document_metadata,
-                "document_entities": document_entities       
-            }
+                "document_entities": document_entities,
+            },
         )
-        # TODO: Fix context error.        
+        # TODO: Fix context error.
         # async_to_sync(document_index_service.update_indexing_status)(
         #     doc_id=document_id,
         #     status=IndexingStatusEnum.SUCCESS,

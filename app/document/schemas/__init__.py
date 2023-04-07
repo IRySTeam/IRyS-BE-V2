@@ -1,7 +1,7 @@
 from app.document.schemas.document import (
     DocumentResponseSchema,
-    DocumentPathParams, 
-    IncludeIndexQueryParams
+    DocumentPathParams,
+    IncludeIndexQueryParams,
 )
 
 __all__ = [

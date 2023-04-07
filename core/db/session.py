@@ -19,6 +19,7 @@ from core.config import config
 
 session_context: ContextVar[str] = ContextVar("session_context")
 
+
 def get_session_context() -> str:
     return session_context.get()
 

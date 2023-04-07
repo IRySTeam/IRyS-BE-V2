@@ -1,18 +1,19 @@
 from sqlalchemy import update
 
-from core.db import  session, Transactional
+from core.db import session, Transactional
 from app.document.enums.document import IndexingStatusEnum
 from app.document.models import DocumentIndex
+
 
 class DocumentIndexService:
     """
     DocumentIndexService is a class that handles the business logic for document index when
     interacting with the database.
     """
-    
+
     def __init__(self):
         ...
-    
+
     @Transactional()
     async def update_indexing_status(
         self,

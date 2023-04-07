@@ -7,10 +7,10 @@ from fastapi.security.base import SecurityBase
 
 from app.user.services import UserService
 from core.exceptions import (
-    CustomException, 
-    UnauthorizedException, 
-    EmailNotVerifiedException, 
-    EmailAlreadyVerifiedException
+    CustomException,
+    UnauthorizedException,
+    EmailNotVerifiedException,
+    EmailAlreadyVerifiedException,
 )
 
 
@@ -45,7 +45,7 @@ class IsEmailNotVerified(BasePermission):
 
     async def has_permission(self, request: Request) -> bool:
         return request.user.is_email_verified == False
-    
+
 
 class IsEmailVerified(BasePermission):
     exception = EmailNotVerifiedException

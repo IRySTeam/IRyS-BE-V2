@@ -1,11 +1,12 @@
 # Import CustomException
 from core.exceptions import CustomException
 
+
 class CustomExceptionHelper:
     @staticmethod
     def get_exception_response(exception: CustomException, description: str) -> dict:
         return {
-            "description": description, 
+            "description": description,
             "content": {
                 "application/json": {
                     "example": {
@@ -14,5 +15,5 @@ class CustomExceptionHelper:
                         "message": exception.message,
                     }
                 }
-            }
+            },
         }
