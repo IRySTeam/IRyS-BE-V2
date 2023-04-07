@@ -16,7 +16,7 @@
 1. Train the Machine Learning model for document classification by running this command:
 ```zsh
 python3 app/classification/mlutil/classifier_train.py
-``` 
+```
 1. Download the BERT model by running this command:
 <details>
     <summary>List of released pretrained BERT models (click to expand...)</summary>
@@ -76,7 +76,7 @@ Note that if you don't download the BERT model in local, the script in the docke
 
 ### Running application (non-docker)
 1. Install [Poetry](https://python-poetry.org/docs/)
-2. Run ```poetry shell``` to open Poetry Shell 
+2. Run ```poetry shell``` to open Poetry Shell
 3. Install all dependecies by running ```poetry install```
 4. Lastly, run the app using this command:
 ```python
@@ -146,7 +146,7 @@ docker exec -it <container_name> bash
 Note
 1. You can find Elasticsearch Cloud deployment ID by going to Elasticsearch Cloud -> sidebar -> Manage this deployment -> Copy deployment ID
 2. You can find Elasticsearch user and password by asking to the creator of the Elasticsearch instance or reset it by going to Elasticsearch Cloud -> sidebar -> Manage this deployment -> Security -> Reset password
-3. You can get Elasticsearch API key by 
+3. You can get Elasticsearch API key by
 
 ### Celery
 | Name | Description | Example Value |
@@ -227,12 +227,12 @@ After line 18, assign values that you added on `CurrentUser`.
 
 **Note. Available from version 0.62 or higher.**
 Set a callable function when initialize FastAPI() app through `dependencies` argument.
-Refer `Logging` class inside of `core/fastapi/dependencies/logging.py` 
+Refer `Logging` class inside of `core/fastapi/dependencies/logging.py`
 
 ## Dependencies for specific permissions
 
 Permissions `IsAdmin`, `IsAuthenticated`, `AllowAll` have already been implemented.
- 
+
 ```python
 from core.fastapi.dependencies import (
     PermissionDependency,

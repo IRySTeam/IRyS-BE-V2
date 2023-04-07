@@ -16,7 +16,7 @@ services:
       - db
     volumes:
       - $PWD:/home
- 
+
   db:
     build:
       context: .

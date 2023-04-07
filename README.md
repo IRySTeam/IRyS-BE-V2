@@ -73,11 +73,11 @@ To get a local copy up and running follow these simple steps.
 
 ## Requirements
 * [Pyenv](https://github.com/pyenv/pyenv) (**Recommended**) for python version management
-* Python ^3.8.x 
+* Python ^3.8.x
   * To install using pyenv
     ```
     pyenv install 3.8.x
-    ``` 
+    ```
 * [Poetry](https://python-poetry.org/) for Python package and environment management.
 * Postgres
 * Redis
@@ -165,7 +165,7 @@ To setup elasticsearch locally, you can follow the steps below:
 2. Train the Machine Learning model for document classification by running this command:
     ```zsh
     python3 app/classification/mlutil/classifier_train.py
-    ``` 
+    ```
 3. Install python dependencies
     ```bash
     poetry install
@@ -194,7 +194,7 @@ To setup elasticsearch locally, you can follow the steps below:
 3. Open newly created files and adjust the content according to your environment. To see the explanation of each environment variable, you can check the [environment variable section](#environment-variables).
 
 ### Database Migration (Optional)
-This section is only if you want to run the database locally or you want to add/update the database schema.If you want to use the database from the cloud, you can skip this section. 
+This section is only if you want to run the database locally or you want to add/update the database schema.If you want to use the database from the cloud, you can skip this section.
 #### Migrate Up
 If you want to migrate the database, you can run the following command.
 ```bash
@@ -256,9 +256,9 @@ Below are some useful commands for docker:
     ```
 
 ### Running the app
-1. Run ```poetry shell``` to open Poetry Shell 
-2. Install all dependecies by running 
-    ```bash 
+1. Run ```poetry shell``` to open Poetry Shell
+2. Install all dependecies by running
+    ```bash
     poetry install
     ```
 3. Lastly, run the app using this command:
@@ -333,4 +333,3 @@ List of Maintainers
 
 ## License
 Copyright (c) 2023, [IRyS-Team](https://github.com/IRySTeam).
-
