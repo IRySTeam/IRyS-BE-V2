@@ -176,6 +176,14 @@ To setup elasticsearch locally, you can follow the steps below:
     ```
     pre-commit install
     ```
+5. Install some additional dependencies such
+   1. libmagic:
+    ```bash
+    sudo apt-get install libmagic1 (Debian/Ubuntu)
+    brew install libmagic (Mac)
+    pip install python-magic-bin (Windows)
+    ```
+   2. TODO: Actually there are more dependencies, but they are already installed while running docker-compose. You don't need to install them manually because they are used by celery worker and bert-serving (which is running in docker). But if you want to run those services locally (which is not recommended), you need to install them manually.
 
 ### Configure App
 1. Find all files below.
