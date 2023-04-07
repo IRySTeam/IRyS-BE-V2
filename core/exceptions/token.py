@@ -7,6 +7,12 @@ class DecodeTokenException(CustomException):
     message = "token decode error"
 
 
+class InvalidTokenException(CustomException):
+    code = 400
+    error_code = "TOKEN__INVALID_TOKEN"
+    message = "invalid token"
+
+
 class ExpiredTokenException(CustomException):
     code = 400
     error_code = "TOKEN__EXPIRE_TOKEN"

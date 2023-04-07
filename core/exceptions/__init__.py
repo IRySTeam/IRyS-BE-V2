@@ -7,9 +7,9 @@ from .base import (
     DuplicateValueException,
     UnauthorizedException,
     ConflictException,
-    FailedDependencyException
+    FailedDependencyException,
 )
-from .token import DecodeTokenException, ExpiredTokenException
+from .token import DecodeTokenException, ExpiredTokenException, InvalidTokenException
 from .user import (
     PasswordDoesNotMatchException,
     DuplicateEmailException,
@@ -43,5 +43,6 @@ __all__ = [
     "ExpiredOTPException",
     "WrongOTPException",
     "InvalidEmailException",
-    "InvalidPasswordException"
+    "InvalidPasswordException",
+    "InvalidTokenException"
 ]
