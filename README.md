@@ -1,336 +1,238 @@
-# FastAPI Boilerplate
+<!-- PROJECT LOGO -->
+<div align="center">
+<p>
+  <a href="https://github.com/IRySTeam/IRyS-BE-V2">
+    <img src="assets/logo.png" alt="Logo">
+  </a>
 
-# Features
-- Async SQLAlchemy session
-- Custom user class
-- Top-level dependency
-- Dependencies for specific permissions
-- Celery
-- Dockerize(Hot reload)
-- Event dispatcher
-- Cache
+  <h3 align="center">IRyS</h3>
 
-## How to Run
+  <p align="center">
+    Intelligent Repository System
+    <br/>
+    <a href="https://github.com/IRySTeam/IRyS-BE-V2">
+      <strong>Explore the docs »</strong>
+    </a>
+    <br/><br/>
+    <a href="https://github.com/IRySTeam/IRyS-BE-V2/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/IRySTeam/IRyS-BE-V2/discussions/landing">Request Feature</a>
+  </p>
+</p>
+</div>
 
-### Installing some dependencies
-1. Train the Machine Learning model for document classification by running this command:
-```zsh
-python3 app/classification/mlutil/classifier_train.py
-``` 
-1. Download the BERT model by running this command:
-<details>
-    <summary>List of released pretrained BERT models (click to expand...)</summary>
-    <table>
-        <tr>
-            <td>
-                <a href="https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip">BERT-Base, Uncased</a>
-            </td>
-            <td>12-layer, 768-hidden, 12-heads, 110M parameters</td>
-        </tr>
-        <tr>
-            <td>
-                <a href="https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-24_H-1024_A-16.zip">BERT-Large, Uncased</a>
-            </td>
-            <td>24-layer, 1024-hidden, 16-heads, 340M parameters</td>
-        </tr>
-        <tr>
-            <td>
-                <a href="https://storage.googleapis.com/bert_models/2018_10_18/cased_L-12_H-768_A-12.zip">BERT-Base, Cased</a>
-            </td>
-            <td>12-layer, 768-hidden, 12-heads , 110M parameters</td>
-        </tr>
-        <tr>
-            <td>
-                <a href="https://storage.googleapis.com/bert_models/2018_10_18/cased_L-24_H-1024_A-16.zip">BERT-Large, Cased</a>
-            </td>
-            <td>24-layer, 1024-hidden, 16-heads, 340M parameters</td>
-        </tr>
-        <tr>
-            <td>
-                <a href="https://storage.googleapis.com/bert_models/2018_11_23/multi_cased_L-12_H-768_A-12.zip">BERT-Base, Multilingual Cased (New)</a></td><td>104 languages, 12-layer, 768-hidden, 12-heads, 110M parameters
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <a href="https://storage.googleapis.com/bert_models/2018_11_03/multilingual_L-12_H-768_A-12.zip">BERT-Base, Multilingual Cased (Old)
-                </a>
-            </td>
-            <td>102 languages, 12-layer, 768-hidden, 12-heads, 110M parameters</td>
-        </tr>
-        <tr>
-            <td>
-                <a href="https://storage.googleapis.com/bert_models/2018_11_03/chinese_L-12_H-768_A-12.zip">BERT-Base, Chinese</a>
-            </td>
-            <td>Chinese Simplified and Traditional, 12-layer, 768-hidden, 12-heads, 110M parameters</td>
-        </tr>
-    </table>
-</details>
 
-You can run following commands to download the BERT model:
-```zsh
-cd bertserving
-wget https://storage.googleapis.com/bert_models/2018_10_18/cased_L-12_H-768_A-12.zip
-unzip cased_L-12_H-768_A-12.zip
+<!-- TABLE OF CONTENTS -->
+## Table of Contents
+
+- [Table of Contents](#table-of-contents)
+- [About The Project](#about-the-project)
+  - [Built With](#built-with)
+- [Getting Started](#getting-started)
+- [Requirements](#requirements)
+- [Local development](#local-development)
+  - [Installing required dependency](#installing-required-dependency)
+  - [Configure App](#configure-app)
+  - [Configure Keycloak in Development](#configure-keycloak-in-development)
+  - [Running the app](#running-the-app)
+- [Usage](#usage)
+- [Roadmap](#roadmap)
+- [Maintainers](#maintainers)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
+
+
+
+<!-- ABOUT THE PROJECT -->
+## About The Project
+
+![Screenshot](assets/screenshot.jpg)
+
+Meeting analytics is Web App to help user transcribe their meeting in realtime and non-realtime mode
+
+### Built With
+
+* [django](https://www.djangoproject.com)
+* [django-ninja](https://django-ninja.rest-framework.com/)
+* [python-socketio](https://python-socketio.readthedocs.io/en/latest/)
+* [arq](https://arq-docs.helpmanual.io/)
+* [keycloak](https://www.keycloak.org/)
+
+
+<!-- GETTING STARTED -->
+## Getting Started
+
+To get a local copy up and running follow these simple steps.
+
+## Requirements
+* [Pyenv](https://github.com/pyenv/pyenv) (**Recommended**) for python version management
+* Python 3.9.13 
+  * To install using pyenv
+    ```
+    pyenv install 3.9.13
+    ``` 
+* [Poetry](https://python-poetry.org/) for Python package and environment management.
+* Postgres
+* Redis
+* Sox
+  * Linux (debian based): `sudo apt-get install sox`
+  * OSX: `brew install sox`
+* Libsndfile
+  * Linux (debian based): `sudo apt-get install libsndfile1`
+  * On OSX, this dependency is installed alongside the python SoundFile module on the previous step
+* FFMPEG
+  * OSX: `brew install ffmpeg`
+  * Linux (debian based): `sudo apt install ffmpeg`
+* ZIP
+  * Linux (debian based)L `sudo apt install zip` 
+* Keycloak
+  * See keycloak requirements [here] (https://www.keycloak.org/docs/15.0/server_installation/). Probably just need to install java 8 JDK.
+  * Download Keycloak from [here](https://www.keycloak.org/archive/downloads-15.0.2.html)
+  * Extract the zip file to home directory (you can use anoter directory if you want)
+
+## Local development
+### Installing required dependency
+1. Install each dependency from the requirements section above.
+2. config poetry credentials for installing from prosa pypi
+    ```
+    poetry config http-basic.prosa prosa ProsaCerdasbandung10!
+    ```
+3. Install python dependencies
+    ```
+    poetry install
+    ```
+    NOTE: If you get error while installing `psycopg2-binary` package, try to
+    run: `$ poetry run pip install psycopg2-binary` first then re-run `$ poetry install`
+
+4. Install pre-commit git hook (for auto formatting purpose)
+    ```
+    pre-commit install
+    ```
+
+### Configure App
+1. Find all files below.
+   - [`./config/default.env`](./config/default.env)
+   - [`./config/engines-default.yaml`](./config/engines-default.yaml)
+   - [`./config/worker_config-default.yaml`](./config/worker_config-default.yaml)
+   - [`./meeting_analytics/settings/environments/local.py.default`](./meeting_analytics/settings/environments/local.py.default)
+2. Duplicate those files and rename the duplicate files from `[prefix_name]-default.[ext]` or `[prefix_name].[ext].default` pattern to `[prefix_name].[ext]`
+3. Open newly created files and adjust the content
+
+### Configure Keycloak in Development
+The default keycloak host is on `localhost:8080`. 
+1. Make sure you have installed Keycloak (details in requirements section)
+2. Go to the Keycloak extracted directory and run the following command:
+    ```
+    ./bin/standalone.sh 
+    ```
+3. Open Keycloak in the browser (http://localhost:8080) and create initial admin user. Make sure you remember the username and password.
+4. Create a new realm (hover the mouse to the current realm name and click `add realm` button), the realm name must be same with env variable `AUTH_REALM` 
+5. Open http://localhost:8080/auth/realms/(realm-name) and save the content to a JSON file (e.g. keycloak.json) in root directory. The content of JSON file should be look like this
 ```
-Note that if you don't download the BERT model in local, the script in the docker will download it for you.
-
-### Running application (non-docker)
-1. Install [Poetry](https://python-poetry.org/docs/)
-2. Run ```poetry shell``` to open Poetry Shell 
-3. Install all dependecies by running ```poetry install```
-4. Lastly, run the app using this command:
-```python
-python3 main.py --env local|dev|prod --debug
+{
+    "realm": "(realm-name)",
+    "public_key": "string",
+    "token-service": "url",
+    "account-service": "url",
+    "tokens-not-before": 0
+}
 ```
-
-### Running celery, redis, bertserving, etc (docker)
-1. Run docker compose by running
-```zsh
-docker-compose -f docker-compose-local.yml up
-```
-2. Below are services that are running:
-   1. bert-serving -> Used for sentence embedding using BERT
-   2. redis -> Used for celery result backend and message broker
-   3. celery_worker -> Used for running celery tasks
-   4. celery_beat -> Used for running celery beat (cron jobs scheduler)
-   5. flower -> Used for monitoring celery tasks, located at http://localhost:5557
-
-### Etc
-Below are some useful commands for docker:
-1. To rebuild docker containers, run
-```zsh
-docker-compose -f docker-compose-local.yml up --build
-```
-2. To remove unused docker containers, run
-```zsh
-docker container prune
-```
-3. To remove unused docker images, run
-```zsh
- docker rmi $(docker images --filter "dangling=true" -q --no-trunc)
-```
-4. To exec into a docker container, run
-```zsh
-docker exec -it <container_name> bash
-```
-
-## Environment Variables
-### Development Database
-| Name | Description | Example Value |
-| --- | --- | --- |
-| DEV_DB_HOST | Database host address | localhost |
-| DEV_DB_USER | Database user's username | postgres |
-| DEV_DB_PASSWORD | Database user's password | postgres |
-| DEV_DB_NAME | Database name used for application | IRyS_v1 |
-
-### Production Database
-| Name | Description | Example Value |
-| --- | --- | --- |
-| `PROD_DB_HOST` | Database host address | localhost |
-| `PROD_DB_USER` | Database user username | postgres |
-| `PROD_DB_PASSWORD` | Database user password | postgres |
-| `PROD_DB_NAME` | Database name used for application | IRyS_v1 |
-
-### Elasticsearch (Cloud and Local)
-| Name | Description | Example Value |
-| --- | --- | --- |
-| `ELASTICSEARCH_CLOUD` | Whether using Elasticsearch Cloud or not | True |
-| `ELASTICSEARCH_CLOUD_ID` | Elasticsearch Cloud deployment ID | fcggg111hgg2jjh2:jhhhllk |
-| `ELASTICSEARCH_USER` | Elasticsearch username (either using Elasticsearch Cloud or not) | elastic |
-| `ELASTICSEARCH_PASSWORD` | Elasticsearch password (either using Elasticsearch Cloud or not) | password |
-| `ELASTICSEARCH_API_KEY` | Elasticsearch API key (when using Elasticsearch Cloud) | 1234567890 |
-| `ELASTICSEARCH_SCHEME` | Elasticsearch scheme (when using local Elasticsearch) | http |
-| `ELASTICSEARCH_HOST` | Elasticsearch host address (when using local Elasticsearch) | localhost |
-| `ELASTICSEARCH_PORT` | Elasticsearch port (when using local Elasticsearch) | 9200 |
-
-Note
-1. You can find Elasticsearch Cloud deployment ID by going to Elasticsearch Cloud -> sidebar -> Manage this deployment -> Copy deployment ID
-2. You can find Elasticsearch user and password by asking to the creator of the Elasticsearch instance or reset it by going to Elasticsearch Cloud -> sidebar -> Manage this deployment -> Security -> Reset password
-3. You can get Elasticsearch API key by 
-
-### Celery
-| Name | Description | Example Value |
-| --- | --- | --- |
-| `CELERY_BROKER_URL` | Celery broker URL | redis://localhost:6379/0 |
-| `CELERY_RESULT_BACKEND` | Celery result backend URL | redis://localhost:6379/0 |
-
-
-## SQLAlchemy for asyncio context
-
-```python
-from core.db import Transactional, session
-
-@Transactional()
-async def create_user(self):
-    session.add(User(email="padocon@naver.com"))
-```
-
-Do not use explicit `commit()`. `Transactional` class automatically do.
-
-### Standalone session
-
-According to the current settings, the session is set through middleware.
-However, it doesn't go through middleware in tests or background tasks.
-So you need to use the `@standalone_session` decorator.
-
-```python
-from core.db import standalone_session
-
-@standalone_session
-def test_something():
-    ...
-```
-
-### Multiple databases
-
-Go to `core/config.py` and edit `WRITER_DB_URL` and `READER_DB_URL` in the config class.
-
-If you need additional logic to use the database, refer to the `get_bind()` method of `RoutingClass`.
-
-## Custom user for authentication
-
-```python
-from fastapi import Request
-
-@home_router.get("/")
-def home(request: Request):
-    return request.user.id
-```
-
-**Note. you have to pass jwt token via header like `Authorization: Bearer 1234`**
-
-Custom user class automatically decodes header token and store user information into `request.user`
-
-If you want to modify custom user class, you have to update below files.
-
-1. `core/fastapi/schemas/current_user.py`
-2. `core/fastapi/middlewares/authentication.py`
-
-### CurrentUser
-
-```python
-class CurrentUser(BaseModel):
-    id: int = Field(None, description="ID")
-```
-
-Simply add more fields based on your needs.
-
-### AuthBackend
-
-```python
-current_user = CurrentUser()
-```
-
-After line 18, assign values that you added on `CurrentUser`.
-
-## Top-level dependency
-
-**Note. Available from version 0.62 or higher.**
-Set a callable function when initialize FastAPI() app through `dependencies` argument.
-Refer `Logging` class inside of `core/fastapi/dependencies/logging.py` 
-
-## Dependencies for specific permissions
-
-Permissions `IsAdmin`, `IsAuthenticated`, `AllowAll` have already been implemented.
- 
-```python
-from core.fastapi.dependencies import (
-    PermissionDependency,
-    IsAdmin,
-)
-
-user_router = APIRouter()
-
-@user_router.get(
-    "",
-    response_model=List[GetUserListResponseSchema],
-    response_model_exclude={"id"},
-    responses={"400": {"model": ExceptionResponseSchema}},
-    dependencies=[Depends(PermissionDependency([IsAdmin]))],  # HERE
-)
-async def get_user_list(
-    limit: int = Query(10, description="Limit"),
-    prev: int = Query(None, description="Prev ID"),
-):
-    pass
-```
-Insert permission through `dependencies` argument.
-
-If you want to make your own permission, inherit `BasePermission` and implement `has_permission()` function.
-
-**Note. In order to use swagger's authorize function, you must put `PermissionDependency` as an argument of `dependencies`.**
-
-## Event dispatcher
-
-Refer the README of https://github.com/teamhide/fastapi-event
-
-## Cache
-
-### Caching by prefix
-```python
-from core.helpers.cache import Cache
-
-
-@Cache.cached(prefix="get_user", ttl=60)
-async def get_user():
-    ...
-```
-
-### Caching by tag
-```python
-from core.helpers.cache import Cache, CacheTag
-
-
-@Cache.cached(tag=CacheTag.GET_USER_LIST, ttl=60)
-async def get_user():
-    ...
-```
-Use the `Cache` decorator to cache the return value of a function.
-
-Depending on the argument of the function, caching is stored with a different value through internal processing.
-
-### Custom Key builder
-
-```python
-from core.helpers.cache.base import BaseKeyMaker
-
-class CustomKeyMaker(BaseKeyMaker):
-    async def make(self, function: Callable, prefix: str) -> str:
-        ...
-```
-
-If you want to create a custom key, inherit the BaseKeyMaker class and implement the make() method.
-
-### Custom Backend
-
-```python
-from core.helpers.cache.base import BaseBackend
-
-class RedisBackend(BaseBackend):
-    async def get(self, key: str) -> Any:
-        ...
-
-    async def set(self, response: Any, key: str, ttl: int = 60) -> None:
-        ...
-
-    async def delete_startswith(self, value: str) -> None:
-        ...
-```
-
-If you want to create a custom key, inherit the BaseBackend class and implement the `get()`, `set()`, `delete_startswith()` method.
-
-Pass your custom backend or keymaker as an argument to init. (`/app/server.py`)
-
-```python
-def init_cache() -> None:
-    Cache.init(backend=RedisBackend(), key_maker=CustomKeyMaker())
-```
-
-### Remove all cache by prefix/tag
-
-```python
-from core.helpers.cache import Cache, CacheTag
-
-await Cache.remove_by_prefix(prefix="get_user_list")
-await Cache.remove_by_tag(tag=CacheTag.GET_USER_LIST)
-```
+6. Open the newly created Keycloak realm
+7. Create a new client (find the menu on the sidebar) and click `save`. Use client id with value same as env variable `AUTH_CLIENT_ID`.
+8. Open the newly created client, set client access type to `confidential` and set the `redirect url` to `localhost:3000`, then click `save`. 
+9. Open the newly created client `Credentials` tab. Set the `Client Authenticator` to `Client Id and Secret`. Client secret should appear in the `Secret` field.
+10. Fill the environment variable.
+    - `AUTH_BASE_URL`= Keycloak url, default http://127.0.0 1:8080
+    - `AUTH_CERT_PATH`= Keycloak JSON file in root directory, e.g. keycloak.json
+    - `AUTH_CLIENT_ID`= Keycloak client id.
+    - `AUTH_CLIENT_SECRET`= Keycloak client secret, find it on Keycloak created client credentials tab
+    - `AUTH_REALM`= Keycloak realm name
+11. Configure Keycloak audience, see [here](https://stackoverflow.com/questions/53550321/keycloak-gatekeeper-aud-claim-and-client-id-do-not-match)
+12. Add new user with the following credentials:
+    - username: Same as env variable `DEFAULT_USERNAME`
+    - email: Same as env variable `DEFAULT_EMAIL`
+13. Open the created user `credentials` tab, set the password same as env variable `DEFAULT_PASSWORD`
+14. Open the created user `Role Mapping` tab:
+    1.  Select `realm-management` under `Client Roles`.
+    2.  Select all available roles and press Add selected. (`realm-admin` is enough, other roles are inherited. Effective Roles will show the role mapping for the client)
+
+### Running the app
+1. Run postgres, create database and user (Find database config on [`./config/.env`](./config/.env))
+2. Run Redis server
+3. Enter prosa internal network using VPN if you want to use speech engines on prosa server
+4. Run poetry shell
+    ```
+    poetry shell
+    ```
+5. Run database migrations script
+    ```
+    python manage.py migrate
+    ```
+6. Create first superuser according to the [`./config/.env`](./config/.env) file
+    ```
+    python manage.py createfirstuser
+    ```
+7.  Run django web dev server
+    ```
+    python manage.py runserver 0.0.0.0:8000
+    ```
+8.  Enter [localhost:8000](localhost:8000) on your web browser to go to user page
+9.  Enter [localhost:8000/admin](localhost:8000/admin) to your web browser to access admin page
+10. Run Realtime (online ASR) diarizer process
+    ```
+    python manage.py runworker realtime-diarizer
+    ``` 
+11. Run offline ASR job manager
+    ```
+    arq meeting_diarization.jobs.SpeechWorkerSetting
+    ```
+12. Run transcript formatter job manager
+    ```
+    arq meeting_diarization.jobs.FormattingWorkerSetting
+    ```
+
+<!-- USAGE EXAMPLES -->
+## Usage
+1. To run unit tests :
+    ```
+    python manage.py test
+    ```
+    Make sure keycloak is running and configured properly.
+
+
+<!-- ROADMAP -->
+## Roadmap
+
+See the [open issues](https://pm.dev.prosa.ai/projects/meeting-analytics-system/issues) for a list of proposed features (and known issues).
+
+
+<!-- MAINTAINERS -->
+## Maintainers
+List of Maintainers
+* [Marvin Jeremy Budiman](mailto:marvin.budiman@prosa.ai)
+* [Widya Anugrah Putra](mailto:widya.putra@prosa.ai)
+* [Hafid Abi Daniswara](mailto:hafid.daniswara@prosa.ai)
+* [Reihan Andhika Putra](mailto:reihan.putra@prosa.ai)
+  
+<!-- ACKNOWLEDGEMENTS -->
+## Acknowledgements
+ List of library used
+
+* [Gitlab CI](https://docs.gitlab.com/ee/ci/)
+* [Markdown](https://www.markdownguide.org/)
+* [Dockerfile](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
+* [django](https://www.djangoproject.com)
+* [django-ninja](https://django-ninja.rest-framework.com/)
+* [python-socketio](https://python-socketio.readthedocs.io/en/latest/)
+* [arq](https://arq-docs.helpmanual.io/)
+* [ffmpeg-python](https://pypi.org/project/ffmpeg-python/)
+* [django-async-redis](https://pypi.org/project/django-async-redis/)
+* [factory-boy](https://factoryboy.readthedocs.io/en/stable/)
+
+
+## License
+
+Copyright (c) 2022, [Prosa.ai](https://prosa.ai).
+
+<!-- MARKDOWN LINKS & IMAGES -->
+![product-screenshot](assets/Meemo.png)
