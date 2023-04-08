@@ -10,7 +10,9 @@ from core.exceptions import (
     CustomException, 
     UnauthorizedException, 
     EmailNotVerifiedException, 
-    EmailAlreadyVerifiedException
+    EmailAlreadyVerifiedException,
+    ForgotPasswordOTPNotVerifiedException,
+    ForgotPasswordOTPVerifiedException,
 )
 
 
@@ -55,14 +57,14 @@ class IsEmailVerified(BasePermission):
     
 
 class IsForgotPasswordOtpVerified(BasePermission):
-    exception = EmailNotVerifiedException
+    exception = ForgotPasswordOTPNotVerifiedException
 
     async def has_permission(self, request: Request) -> bool:
         return request.user.is_forgot_password_otp_verified == True
     
 
 class IsForgotPasswordOtpNotVerified(BasePermission):
-    exception = EmailAlreadyVerifiedException
+    exception = ForgotPasswordOTPVerifiedException
 
     async def has_permission(self, request: Request) -> bool:
         return request.user.is_forgot_password_otp_verified == False
