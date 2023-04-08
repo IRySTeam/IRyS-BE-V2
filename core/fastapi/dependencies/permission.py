@@ -52,6 +52,20 @@ class IsEmailVerified(BasePermission):
 
     async def has_permission(self, request: Request) -> bool:
         return request.user.is_email_verified == True
+    
+
+class IsForgotPasswordOtpVerified(BasePermission):
+    exception = EmailNotVerifiedException
+
+    async def has_permission(self, request: Request) -> bool:
+        return request.user.is_forgot_password_otp_verified == True
+    
+
+class IsForgotPasswordOtpNotVerified(BasePermission):
+    exception = EmailAlreadyVerifiedException
+
+    async def has_permission(self, request: Request) -> bool:
+        return request.user.is_forgot_password_otp_verified == False
 
 
 class AllowAll(BasePermission):
