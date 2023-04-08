@@ -53,3 +53,21 @@ class EmailNotVerifiedException(CustomException):
     code = 403
     error_code = "USER__EMAIL_NOT_VERIFIED"
     message = "Email is not verified"
+
+
+class ForgotPasswordOTPNotVerifiedException(CustomException):
+    code = 403
+    error_code = "USER__FORGOT_PASSWORD_OTP_NOT_VERIFIED"
+    message = "Forgot password OTP is not verified"
+
+
+class ForgotPasswordOTPExpiredException(CustomException):
+    code = 403
+    error_code = "USER__FORGOT_PASSWORD_OTP_EXPIRED"
+    message = "Forgot password OTP is expired"
+
+
+class WrongForgotPasswordOTPException(CustomException):
+    code = 403
+    error_code = "USER__WRONG_FORGOT_PASSWORD_OTP"
+    message = "Wrong forgot password OTP"
