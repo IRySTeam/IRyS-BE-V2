@@ -13,7 +13,7 @@ from app.user.schemas import (
     VerifyOTPResponseSchema,
     ResendOTPResponseSchema,
     VerifyEmailRequestSchema,
-    VerifyEmailResponseSchema
+    VerifyEmailResponseSchema,
 )
 from app.user.services import UserService
 from core.exceptions import (
@@ -26,23 +26,26 @@ from core.exceptions import (
     EmailAlreadyVerifiedException,
     ExpiredOTPException,
     WrongOTPException,
-    UnauthorizedException
+    UnauthorizedException,
 )
-from core.utils import (
-    CustomExceptionHelper
-)
+from core.utils import CustomExceptionHelper
 from core.fastapi.dependencies import (
     PermissionDependency,
     IsAuthenticated,
-    IsEmailNotVerified
+    IsEmailNotVerified,
 )
 
 user_router = APIRouter()
 
+
 @user_router.get(
     "/me",
     response_model=GetUserByIdResponseSchema,
-    responses={"401": CustomExceptionHelper.get_exception_response(UnauthorizedException, "Unauthorized")},
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        )
+    },
     dependencies=[Depends(PermissionDependency([IsAuthenticated]))],
 )
 async def get_user_by_id(request: Request):
@@ -52,9 +55,17 @@ async def get_user_by_id(request: Request):
 @user_router.post(
     "/register",
     response_model=RegisterResponseSchema,
-    responses={"400": CustomExceptionHelper.get_exception_response(DuplicateEmailException, "Email already exist"),
-               "400": CustomExceptionHelper.get_exception_response(InvalidEmailException, "Invalid email"),
-               "400": CustomExceptionHelper.get_exception_response(InvalidPasswordException, "Invalid password")},
+    responses={
+        "400": CustomExceptionHelper.get_exception_response(
+            DuplicateEmailException, "Email already exist"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            InvalidEmailException, "Invalid email"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            InvalidPasswordException, "Invalid password"
+        ),
+    },
 )
 async def register(body: RegisterRequestSchema):
     return await UserService().register_user(**body.dict())
@@ -63,9 +74,16 @@ async def register(body: RegisterRequestSchema):
 @user_router.post(
     "/login",
     response_model=LoginResponse,
-    responses={"404": CustomExceptionHelper.get_exception_response(UserNotFoundException, "User not found"), 
-               "401": CustomExceptionHelper.get_exception_response(PasswordDoesNotMatchException, "Password does not match"), 
-               "403": CustomExceptionHelper.get_exception_response(EmailNotVerifiedException, "Email not verified"),
+    responses={
+        "404": CustomExceptionHelper.get_exception_response(
+            UserNotFoundException, "User not found"
+        ),
+        "401": CustomExceptionHelper.get_exception_response(
+            PasswordDoesNotMatchException, "Password does not match"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
     },
 )
 async def login(body: LoginRequest):
@@ -76,11 +94,22 @@ async def login(body: LoginRequest):
 @user_router.post(
     "/verify-otp",
     response_model=VerifyOTPResponseSchema,
-    responses={"404": CustomExceptionHelper.get_exception_response(UserNotFoundException, "User not found"),
-               "403": CustomExceptionHelper.get_exception_response(EmailAlreadyVerifiedException, "Email already verified"),
-               "400": CustomExceptionHelper.get_exception_response(ExpiredOTPException, "OTP expired"),
-               "400": CustomExceptionHelper.get_exception_response(WrongOTPException, "Wrong OTP"),
-               "401": CustomExceptionHelper.get_exception_response(UnauthorizedException, "Unauthorized")
+    responses={
+        "404": CustomExceptionHelper.get_exception_response(
+            UserNotFoundException, "User not found"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailAlreadyVerifiedException, "Email already verified"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            ExpiredOTPException, "OTP expired"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            WrongOTPException, "Wrong OTP"
+        ),
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
     },
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailNotVerified]))],
 )
@@ -91,9 +120,16 @@ async def verify_otp(request: Request, body: VerifyOTPRequestSchema):
 @user_router.post(
     "/resend-otp",
     response_model=ResendOTPResponseSchema,
-    responses={"404": CustomExceptionHelper.get_exception_response(UserNotFoundException, "User not found"),
-               "403": CustomExceptionHelper.get_exception_response(EmailAlreadyVerifiedException, "Email already verified"),
-               "401": CustomExceptionHelper.get_exception_response(UnauthorizedException, "Unauthorized")
+    responses={
+        "404": CustomExceptionHelper.get_exception_response(
+            UserNotFoundException, "User not found"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailAlreadyVerifiedException, "Email already verified"
+        ),
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
     },
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailNotVerified]))],
 )
@@ -104,8 +140,13 @@ async def resend_otp(request: Request):
 @user_router.post(
     "/verify-email",
     response_model=VerifyEmailResponseSchema,
-    responses={"404": CustomExceptionHelper.get_exception_response(UserNotFoundException, "User not found"),
-               "403": CustomExceptionHelper.get_exception_response(EmailAlreadyVerifiedException, "Email already verified")
+    responses={
+        "404": CustomExceptionHelper.get_exception_response(
+            UserNotFoundException, "User not found"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailAlreadyVerifiedException, "Email already verified"
+        ),
     },
 )
 async def verify_email(body: VerifyEmailRequestSchema):

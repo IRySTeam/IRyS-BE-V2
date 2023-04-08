@@ -19,7 +19,7 @@ from .user import (
     InvalidEmailException,
     InvalidPasswordException,
     EmailAlreadyVerifiedException,
-    EmailNotVerifiedException
+    EmailNotVerifiedException,
 )
 
 
@@ -44,5 +44,5 @@ __all__ = [
     "WrongOTPException",
     "InvalidEmailException",
     "InvalidPasswordException",
-    "InvalidTokenException"
+    "InvalidTokenException",
 ]
