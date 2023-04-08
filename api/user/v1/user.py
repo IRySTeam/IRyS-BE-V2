@@ -16,6 +16,7 @@ from core.exceptions import (
     UnauthorizedException,
     ForgotPasswordOTPNotVerifiedException,
     TokenAlreadyUsedException,
+    ForgotPasswordOTPAlreadySentException
 )
 from core.utils import (
     CustomExceptionHelper
@@ -108,7 +109,8 @@ async def verify_email(body: VerifyEmailRequestSchema):
     "/forgot-password/send-otp",
     response_model=SendForgotPasswordOTPResponseSchema,
     responses={ "404": CustomExceptionHelper.get_exception_response(UserNotFoundException, "User not found"),
-                "403": CustomExceptionHelper.get_exception_response(EmailNotVerifiedException, "Email not verified")
+                "403": CustomExceptionHelper.get_exception_response(EmailNotVerifiedException, "Email not verified"),
+                "429": CustomExceptionHelper.get_exception_response(ForgotPasswordOTPAlreadySentException, "OTP already sent"),
     },
 )
 async def send_forgot_password_otp(body: SendForgotPasswordOTPRequestSchema):

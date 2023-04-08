@@ -61,6 +61,12 @@ class ForgotPasswordOTPNotVerifiedException(CustomException):
     message = "Forgot password OTP is not verified"
 
 
+class ForgotPasswordOTPVerifiedException(CustomException):
+    code = 403
+    error_code = "USER__FORGOT_PASSWORD_OTP_ALREADY_VERIFIED"
+    message = "Forgot password OTP has already been verified"
+
+
 class ForgotPasswordOTPExpiredException(CustomException):
     code = 403
     error_code = "USER__FORGOT_PASSWORD_OTP_EXPIRED"
@@ -71,3 +77,9 @@ class WrongForgotPasswordOTPException(CustomException):
     code = 403
     error_code = "USER__WRONG_FORGOT_PASSWORD_OTP"
     message = "Wrong forgot password OTP"
+
+
+class ForgotPasswordOTPAlreadySentException(CustomException):
+    code = 429
+    error_code = "USER__FORGOT_PASSWORD_OTP_ALREADY_SENT"
+    message = "Forgot password OTP has already been sent"

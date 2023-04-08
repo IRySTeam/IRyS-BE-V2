@@ -24,7 +24,8 @@ from core.exceptions import (
     EmailAlreadyVerifiedException,
     EmailNotVerifiedException,
     ForgotPasswordOTPNotVerifiedException,
-    TokenAlreadyUsedException
+    TokenAlreadyUsedException,
+    ForgotPasswordOTPAlreadySentException
 )
 from core.repository import UserRepo
 from core.utils.token_helper import TokenHelper
@@ -248,6 +249,11 @@ class UserService:
         if user.otp is not None:
             raise EmailNotVerifiedException
         
+        if user.forgot_password_otp is not None or user.forgot_password_otp_valid_until is not None:
+            diff = datetime.utcnow() - user.forgot_password_otp_valid_until
+            if diff.total_seconds() <= 0:
+                raise ForgotPasswordOTPAlreadySentException
+        
         # Generate OTP
         otp = StringHelper.random_string_number(4)
         
@@ -263,7 +269,7 @@ class UserService:
         # Send OTP to user's email
         await Mailer.send_forgot_password_otp_email(user.email, { "first_name": user.first_name, "otp": otp })
 
-        access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": False, "is_forgot_password_otp_verified": False})
+        access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": True, "is_forgot_password_otp_verified": False})
         raw_refresh_token = StringHelper.random_string(10)
         refresh_token = HashHelper.get_hash(raw_refresh_token)
         refresh_token_valid_until = datetime.utcnow() + timedelta(hours=24)
@@ -304,7 +310,7 @@ class UserService:
         # Send OTP to user's email
         await Mailer.send_forgot_password_otp_email(user.email, { "first_name": user.first_name, "otp": otp })
 
-        access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": False, "is_forgot_password_otp_verified": False})
+        access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": True, "is_forgot_password_otp_verified": False})
         raw_refresh_token = StringHelper.random_string(10)
         refresh_token = HashHelper.get_hash(raw_refresh_token)
         refresh_token_valid_until = datetime.utcnow() + timedelta(hours=24)
@@ -332,7 +338,7 @@ class UserService:
             if (diff.total_seconds() > 0):
                 raise ExpiredOTPException
 
-            access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": False, "is_forgot_password_otp_verified": True})
+            access_token = TokenHelper.encode(payload={"user_id": user.id, "is_email_verified": True, "is_forgot_password_otp_verified": True})
             raw_refresh_token = StringHelper.random_string(10)
             refresh_token = HashHelper.get_hash(raw_refresh_token)
             refresh_token_valid_until = datetime.utcnow() + timedelta(hours=24)
