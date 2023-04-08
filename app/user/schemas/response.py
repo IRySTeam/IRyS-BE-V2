@@ -9,6 +9,12 @@ class GetUserListResponseSchema(BaseModel):
     class Config:
         orm_mode = True
 
+
+class LoginResponseSchema(BaseModel):
+    token: str = Field(..., description="Token")
+    refresh_token: str = Field(..., description="Refresh Token")
+
+
 class GetUserByIdResponseSchema(BaseModel):
     id: int = Field(..., description="ID")
     email: str = Field(..., description="Email")
@@ -19,20 +25,9 @@ class GetUserByIdResponseSchema(BaseModel):
         orm_mode = True
 
 
-class RegisterRequestSchema(BaseModel):
-    email: str = Field(..., description="Email")
-    first_name: str = Field(..., description="First Name")
-    last_name: str = Field(..., description="Last Name")
-    password: str = Field(..., description="Password")
-
-
 class RegisterResponseSchema(BaseModel):
     token: str = Field(..., description="Token")
     refresh_token: str = Field(..., description="Refresh Token")
-
-
-class VerifyOTPRequestSchema(BaseModel):
-    otp: str = Field(..., description="OTP")
 
 
 class VerifyOTPResponseSchema(BaseModel):
@@ -51,10 +46,25 @@ class ResendOTPResponseSchema(BaseModel):
     refresh_token: str = Field(..., description="Refresh Token")
 
 
-class VerifyEmailRequestSchema(BaseModel):
-    email: str = Field(..., description="Email")
-
-
 class VerifyEmailResponseSchema(BaseModel):
+    token: str = Field(..., description="Token")
+    refresh_token: str = Field(..., description="Refresh Token")
+
+
+class SendForgotPasswordOTPResponseSchema(BaseModel):
+    token: str = Field(..., description="Token")
+    refresh_token: str = Field(..., description="Refresh Token")
+
+
+class VerifyForgotPasswordOTPResponseSchema(BaseModel):
+    token: str = Field(..., description="Token")
+    refresh_token: str = Field(..., description="Refresh Token")
+
+
+class ChangePasswordResponseSchema(BaseModel):
+    message: str = Field(..., description="Message")
+
+
+class ResendForgotPasswordOTPResponseSchema(BaseModel):
     token: str = Field(..., description="Token")
     refresh_token: str = Field(..., description="Refresh Token")
