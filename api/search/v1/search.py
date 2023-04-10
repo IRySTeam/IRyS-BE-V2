@@ -1,9 +1,11 @@
+import json
+
 from typing import List
 
 from fastapi import APIRouter, Depends, Query
 
-from api.search.v1.search import SemanticSearchRequest
-from api.search.v1.search import SemanticSearchResponse
+from app.search.services.search import SearchService
+from app.search.schemas.search import SemanticSearchRequest
 
 from core.fastapi.dependencies import (
     PermissionDependency,
@@ -12,10 +14,11 @@ from core.fastapi.dependencies import (
 )
 
 search_router = APIRouter()
+ss = SearchService(None, None, None)
 
-@search_router.get(
-    "/search",
-    response_model=SemanticSearchResponse,
+@search_router.post(
+    "/",
+    description="Fetches relevant documents based on search query and advanced filter"
 )
 async def search(request: SemanticSearchRequest):
-    pass
+    return ss.run_search(request.query, request.advanced_filter)
