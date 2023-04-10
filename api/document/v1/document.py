@@ -6,6 +6,7 @@ from app.exception import BaseHttpErrorSchema
 from core.db.session import get_session_context
 from core.exceptions.base import CustomException
 from celery_app import parsing
+from app.preprocess import OCRUtil
 from app.document.services import document_service
 from app.document.schemas import (
     DocumentResponseSchema,
@@ -43,7 +44,7 @@ async def get_all_documents(query: IncludeIndexQueryParams = Depends()):
         documents = await document_service.get_document_list(
             include_index=query.include_index
         )
-        return documents
+        return [doc.__dict__ for doc in documents]
     except CustomException as e:
         raise HTTPException(
             status_code=e.error_code,
@@ -69,7 +70,7 @@ async def get_document(
         document = await document_service.get_document_by_id(
             id=path.doc_id, include_index=query.include_index
         )
-        return document
+        return document.__dict__
     except CustomException as e:
         raise HTTPException(
             status_code=e.error_code,
@@ -91,21 +92,36 @@ async def get_document(
 async def upload_document(file: UploadFile = File(...)):
     # Get file type.
     try:
+        file_bytes = file.file.read()
         # TODO: Is this the correct way to get the title?
         title = ".".join(file.filename.split(".")[:-1])
         document = DocumentResponseSchema.from_orm(
             await document_service.create_document(title=title)
         )
-        # TODO: Add with OCR choice.
+
         # TODO: Add check duplicate.
+        with_ocr = True
+        text_percentage = OCRUtil.get_text_percentage(file_bytes)
+        print(text_percentage)
+        if text_percentage < OCRUtil.TEXT_PERCENTAGE_THRESHOLD:
+            with_ocr = False
+
         parsing.delay(
             document_id=document.id,
             document_title=title,
-            file_content_str=b2a_base64(file.file.read()).decode("utf-8"),
+            file_content_str=b2a_base64(file_bytes).decode("utf-8"),
+            with_ocr=with_ocr,
         )
         return document
-    except CustomException as e:
-        raise HTTPException(
-            status_code=e.error_code,
-            detail=e.message,
+    except Exception as e:
+        # Delete the document if there is an error.
+        if document:
+            await document_service.delete_document(document.id)
+        final_exc = HTTPException(
+            status_code=500,
+            detail=str(e),
         )
+        if isinstance(e, CustomException):
+            final_exc.status_code = e.error_code
+            final_exc.detail = e.message
+        raise final_exc

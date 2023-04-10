@@ -29,14 +29,11 @@ class DocumentService:
             List[Document] -> List of documents.
         """
         query = select(Document)
-        include_index = False
         if include_index:
             query = query.options(selectinload(Document.index))
         result = await session.execute(query)
         data = result.scalars().all()
-        # Return the dict representation of the object to avoid pydantic accessing doc.index
-        # to lazy load the indexing status.
-        return [doc.__dict__ for doc in data]
+        return data
 
     async def get_document_by_id(
         self, id: int, include_index: bool = False
@@ -56,9 +53,7 @@ class DocumentService:
         data = result.scalars().first()
         if not data:
             raise NotFoundException("Document not with specified id not found")
-        # Return the dict representation of the object to avoid pydantic accessing doc.index
-        # to lazy load the indexing status.
-        return data.__dict__
+        return data
 
     @Transactional()
     async def create_document(
@@ -91,3 +86,17 @@ class DocumentService:
         session.add(document_index)
         document.index = document_index
         return document
+
+    @Transactional()
+    async def delete_document(self, id: int) -> bool:
+        """
+        Delete a document and the corresponding indexing status.
+        [Parameters]
+            id: int -> Document id.
+        [Returns]
+            bool -> True if successful.
+        """
+        document = await self.get_document_by_id(id)
+        await session.delete(document)
+        await session.delete(document.index)
+        return True

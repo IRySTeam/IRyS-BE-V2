@@ -1,8 +1,9 @@
 import cv2
-from PIL import Image
-from pdf2image import convert_from_bytes
 import pytesseract
 import numpy as np
+import fitz
+from PIL import Image
+from pdf2image import convert_from_bytes
 
 
 class OCRUtil:
@@ -10,6 +11,8 @@ class OCRUtil:
     OCRUtil is an utility class that provided several static methods to do OCR using tesseract
     OCR engine and OpenCV.
     """
+
+    TEXT_PERCENTAGE_THRESHOLD = 0.01
 
     @classmethod
     def get_skew_angle(cls, cv_image: np.ndarray) -> float:
@@ -131,3 +134,31 @@ class OCRUtil:
             ocr_text = pytesseract.image_to_string(img_rgb)
             ocr_texts.append(ocr_text)
         return " ".join(ocr_texts)
+
+    @classmethod
+    def get_text_percentage(
+        self,
+        file_bytes: bytes,
+    ) -> float:
+        """
+        Calculate the percentage of document that is covered by (searchable) text.
+        If the returned percentage of text is very low, the document is
+        most likely a scanned PDF
+        [Parameters]
+            file_bytes: bytes -> The PDF file to be processed.
+        [Returns]
+            float: The percentage of text in the PDF file.
+        """
+        total_page_area = 0.0
+        total_text_area = 0.0
+
+        doc = fitz.open(stream=file_bytes, filetype="pdf")
+        for _, page in enumerate(doc):
+            total_page_area = total_page_area + abs(page.rect)
+            text_area = 0.0
+            for b in page.get_text_blocks():
+                r = fitz.Rect(b[:4])  # rectangle where block text appears
+                text_area = text_area + abs(r)
+            total_text_area = total_text_area + text_area
+        doc.close()
+        return total_text_area / total_page_area
