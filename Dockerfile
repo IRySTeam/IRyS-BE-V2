@@ -34,6 +34,8 @@ RUN poetry config virtualenvs.create false \
 
 RUN python -m nltk.downloader punkt wordnet stopwords averaged_perceptron_tagger
 
+RUN python app/classification/mlutil/classifier_training.py
+
 EXPOSE 8000
 
 CMD ["python3", "main.py"]
