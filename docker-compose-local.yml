@@ -9,8 +9,8 @@ services:
     env_file:
       - ./bertserving/.env
     ports:
-      - "5555:5555"
-      - "5556:5556"
+      - 5555:5555
+      - 5556:5556
   
   # Celery
   redis:
