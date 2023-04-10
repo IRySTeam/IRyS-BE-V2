@@ -219,10 +219,8 @@ class ElasticsearchClient:
                 query=script_query,
                 source={"includes": ["title", "preprocessed_text"]}
             )
-            print(response)
             return response
         except ApiError as e:
-            print(format(str(e)))
             raise classify_error(e)
         except Exception as e:
             raise FailedDependencyException(e)  # TODO: Create new exception type
