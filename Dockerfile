@@ -9,7 +9,7 @@ RUN pip install "poetry"
 RUN poetry config virtualenvs.create false \
     && poetry install --no-dev
 
-RUN python3 -m nltk.downloader corpora
+RUN python -m nltk.downloader punkt wordnet stopwords averaged_perceptron_tagger
 
 EXPOSE 8000
 
