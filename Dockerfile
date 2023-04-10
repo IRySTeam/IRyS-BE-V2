@@ -9,7 +9,7 @@ RUN pip install "poetry"
 RUN poetry config virtualenvs.create false \
     && poetry install --no-dev
 
-RUN python3 -m nltk.downloader wordnet
+RUN python3 -m nltk.downloader corpora
 
 EXPOSE 8000
 
