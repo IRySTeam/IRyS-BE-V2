@@ -208,10 +208,6 @@ class ElasticsearchClient:
                 }
             }
 
-            basic_query = {
-                
-            }
-
             response = self.client.search(
                 index='general-0001', 
                 size=5,
