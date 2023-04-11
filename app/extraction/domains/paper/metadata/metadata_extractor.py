@@ -277,7 +277,7 @@ class PaperMetadataExtractor(MetadataExtractor):
                             block_font_sizes[span["size"]] += len(span["text"])
                         reference_lines.append(line_text)
                         block_text += line_text
-                        # print("linetxt", line_text)
+
                         # Find if reference in line_text
                         if id == 0 and not reference_header_found:
                             if any(
@@ -311,8 +311,6 @@ class PaperMetadataExtractor(MetadataExtractor):
                     current_block += 1
                     reference_font_size = block_texts[current_block]["font_size"]
                     reference_block_texts = block_texts[current_block:]
-
-                # print("refbltxt", reference_block_texts)
 
                 # Add reference until line with different font size and contains letters
                 for block in reference_block_texts:
