@@ -203,9 +203,13 @@ class ElasticsearchClient:
                     "query": {"match_all": {}},
                     "script": {
                         "source": "doc[\"text_vector\"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, \"text_vector\") + 1.0",
-                        "params": {"query_vector": query_vector}, # TODO: Change query vector to actual bc embedding result
+                        "params": {"query_vector": query_vector}, 
                     },
                 }
+            }
+
+            basic_query = {
+                
             }
 
             response = self.client.search(
