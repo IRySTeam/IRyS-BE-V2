@@ -38,11 +38,13 @@ class AuthBackend(AuthenticationBackend):
             )
             user_id = payload.get("user_id")
             is_email_verified = payload.get("is_email_verified")
+            is_forgot_password_otp_verified = payload.get("is_forgot_password_otp_verified")
         except jwt.exceptions.PyJWTError:
             return False, current_user
 
         current_user.id = user_id
         current_user.is_email_verified = is_email_verified
+        current_user.is_forgot_password_otp_verified = is_forgot_password_otp_verified
         return True, current_user
 
 

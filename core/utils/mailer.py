@@ -28,3 +28,14 @@ class Mailer:
         )
         fm = FastMail(Mailer.conf)
         await fm.send_message(message, template_name="registration_otp_email.html")
+
+    @staticmethod
+    async def send_forgot_password_otp_email(email_to: str, body: dict):
+        message = MessageSchema(
+            subject="Your Password Reset OTP from IRyS!",
+            recipients=[email_to],
+            template_body=body,
+            subtype="html",
+        )
+        fm = FastMail(Mailer.conf)
+        await fm.send_message(message, template_name="forgot_password_otp_email.html")
