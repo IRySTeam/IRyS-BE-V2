@@ -2,14 +2,15 @@ from typing import Optional
 from elasticsearch.exceptions import ApiError
 
 from core.exceptions import (
-  CustomException, 
-  BadRequestException,
-  UnauthorizedException,
-  ForbiddenException,
-  NotFoundException,
-  ConflictException,
-  FailedDependencyException 
+    CustomException,
+    BadRequestException,
+    UnauthorizedException,
+    ForbiddenException,
+    NotFoundException,
+    ConflictException,
+    FailedDependencyException,
 )
+
 
 def classify_error(error: ApiError) -> CustomException:
     """
@@ -22,18 +23,19 @@ def classify_error(error: ApiError) -> CustomException:
     reason = find_reason(error)
     print(reason)
     if error.status_code == 400:
-      return BadRequestException(reason) 
+        return BadRequestException(reason)
     elif error.status_code == 401:
-      return UnauthorizedException(reason)
+        return UnauthorizedException(reason)
     elif error.status_code == 403:
-      return ForbiddenException(reason)
+        return ForbiddenException(reason)
     elif error.status_code == 404:
-      return NotFoundException(reason)
+        return NotFoundException(reason)
     elif error.status_code == 409:
-      return ConflictException(reason)
+        return ConflictException(reason)
     else:
-      reason = reason or "Failed to connect to Elasticsearch."
-      return FailedDependencyException(reason)
+        reason = reason or "Failed to connect to Elasticsearch."
+        return FailedDependencyException(reason)
+
 
 def find_reason(err: ApiError) -> Optional[str]:
     """
@@ -45,12 +47,12 @@ def find_reason(err: ApiError) -> Optional[str]:
     """
     reason = None
     try:
-      if err.body and isinstance(err.body, dict) and "error" in err.body:
-        if isinstance(err.body["error"], dict):
-          root_cause = err.body["error"]["root_cause"][0]
-          reason = root_cause["reason"] or err.body["error"]["reason"]
-        else:
-          reason = err.body["error"]
+        if err.body and isinstance(err.body, dict) and "error" in err.body:
+            if isinstance(err.body["error"], dict):
+                root_cause = err.body["error"]["root_cause"][0]
+                reason = root_cause["reason"] or err.body["error"]["reason"]
+            else:
+                reason = err.body["error"]
     except LookupError:
-      pass
+        pass
     return reason

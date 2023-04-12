@@ -4,9 +4,4 @@ from .hash_helper import HashHelper
 from .string_helper import StringHelper
 
 
-__all__ = [
-    "TokenHelper",
-    "CustomExceptionHelper",
-    "HashHelper",
-    "StringHelper"
-]
+__all__ = ["TokenHelper", "CustomExceptionHelper", "HashHelper", "StringHelper"]

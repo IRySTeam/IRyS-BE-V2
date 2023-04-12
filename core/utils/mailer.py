@@ -2,19 +2,20 @@ import os
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
 from core.config import config
 
+
 class Mailer:
     conf = ConnectionConfig(
-        MAIL_USERNAME = config.MAIL_USERNAME,
-        MAIL_PASSWORD = config.MAIL_PASSWORD,
-        MAIL_FROM = config.MAIL_USERNAME,
-        MAIL_PORT = config.MAIL_PORT,
-        MAIL_SERVER = config.MAIL_SERVER,
-        MAIL_FROM_NAME = "IRyS Team",
+        MAIL_USERNAME=config.MAIL_USERNAME,
+        MAIL_PASSWORD=config.MAIL_PASSWORD,
+        MAIL_FROM=config.MAIL_USERNAME,
+        MAIL_PORT=config.MAIL_PORT,
+        MAIL_SERVER=config.MAIL_SERVER,
+        MAIL_FROM_NAME="IRyS Team",
         MAIL_STARTTLS=True,
         MAIL_SSL_TLS=False,
         USE_CREDENTIALS=True,
         VALIDATE_CERTS=False,
-        TEMPLATE_FOLDER=os.path.join(os.getcwd(), "assets", "templates")
+        TEMPLATE_FOLDER=os.path.join(os.getcwd(), "assets", "templates"),
     )
 
     @staticmethod
