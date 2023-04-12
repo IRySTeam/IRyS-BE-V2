@@ -1,6 +1,5 @@
 import os
 import re
-import json
 import fitz
 import string
 import pickle
@@ -12,9 +11,9 @@ from app.extraction.metadata_extractor import MetadataExtractor
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
-class PaperMetadataExtractor(MetadataExtractor):
+class ScientificMetadataExtractor(MetadataExtractor):
     """
-    PaperMetadataExtractor class is a class for extracting metadata from paper file.
+    ScientificMetadataExtractor class is a class for extracting metadata from scientific paper file.
     """
 
     abstract_keywords = ["abstract"]
