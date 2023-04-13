@@ -21,6 +21,7 @@ from .user import (
     EmailAlreadyVerifiedException,
     EmailNotVerifiedException,
 )
+from .repository import RepositoryDetailsEmptyException
 
 
 __all__ = [
@@ -45,4 +46,5 @@ __all__ = [
     "InvalidEmailException",
     "InvalidPasswordException",
     "InvalidTokenException",
+    "RepositoryDetailsEmptyException",
 ]
