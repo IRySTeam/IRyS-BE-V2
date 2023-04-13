@@ -228,7 +228,7 @@ class ScientificExtractor(GeneralExtractor):
 
                     # Find first line that contains introduction
                     if introduction_line == 99999 and any(
-                        keyword in line_text.lower()
+                        line_text.lower().startswith(keyword)
                         for keyword in self.introduction_keywords
                     ):
                         introduction_line = len(page_lines) - 1
