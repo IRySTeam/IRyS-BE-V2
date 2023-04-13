@@ -1,8 +1,10 @@
 import os
+import io
 import re
 import fitz
 import string
 import pickle
+import pathlib
 import pandas as pd
 from typing import IO, List
 from collections import defaultdict
@@ -15,6 +17,10 @@ class ScientificMetadataExtractor(MetadataExtractor):
     """
     ScientificMetadataExtractor class is a class for extracting metadata from scientific paper file.
     """
+
+    author_classifier = pickle.load(
+        open(os.path.join(dir_path, "dump", "svm_author_classifier.pkl"), "rb")
+    )
 
     abstract_keywords = ["abstract"]
     introduction_keywords = ["introduction"]
@@ -55,7 +61,16 @@ class ScientificMetadataExtractor(MetadataExtractor):
         }
 
         # TODO: Check file type (pdf/docx/txt) and handle accordingly
-        doc = fitz.open(file)
+
+        memf = io.BytesIO()
+        if hasattr(file, "read"):
+            memf.write(file.read())
+            memf.seek(0)
+            doc = fitz.open(stream=memf, filetype="pdf")
+        elif isinstance(file, str) or isinstance(file, pathlib.Path):
+            doc = fitz.open(str(file), filetype="pdf")
+        else:
+            raise TypeError("path must be string or io object")
 
         # Extract pages from document without images
         pages = []
@@ -90,8 +105,8 @@ class ScientificMetadataExtractor(MetadataExtractor):
                 span_font_sizes = defaultdict(int)
                 span_flags = defaultdict(int)
                 for span in line["spans"]:
-                    # Ignore span if it is a superscript
-                    if span["flags"] & 2**0:
+                    # Ignore span if it is a non space superscript
+                    if span["flags"] & 2**0 and not span["text"].isspace():
                         continue
                     span_text = span["text"]
                     line_text += span_text
@@ -120,21 +135,21 @@ class ScientificMetadataExtractor(MetadataExtractor):
 
                     # Find first line that contains abstract
                     if abstract_line == 99999 and any(
-                        keyword in line_text.lower()
+                        line_text.lower().startswith(keyword)
                         for keyword in self.abstract_keywords
                     ):
                         abstract_line = len(page_lines) - 1
 
                     # Find first line that contains introduction
                     if introduction_line == 99999 and any(
-                        keyword in line_text.lower()
+                        line_text.lower().startswith(keyword)
                         for keyword in self.introduction_keywords
                     ):
                         introduction_line = len(page_lines) - 1
 
                     # Find first line that contains keywords
                     if keywords_line == 99999 and any(
-                        keyword in line_text.lower()
+                        line_text.lower().startswith(keyword)
                         for keyword in self.keywords_keywords
                     ):
                         keywords_line = len(page_lines) - 1
@@ -224,14 +239,8 @@ class ScientificMetadataExtractor(MetadataExtractor):
 
         dataframe = pd.DataFrame(lines_features)
 
-        # Load classifier from dump folder
-        with open(
-            os.path.join(dir_path, "dump", "svm_author_classifier.pkl"), "rb"
-        ) as f:
-            author_classifier = pickle.load(f)
-
         # Predict author lines
-        author_labels = author_classifier.predict(dataframe)
+        author_labels = self.author_classifier.predict(dataframe)
 
         # Add author lines to authors list
         for idx, label in enumerate(author_labels):
@@ -415,32 +424,38 @@ class ScientificMetadataExtractor(MetadataExtractor):
         metadata["title"] = " ".join([text.strip() for text in metadata["title"]])
 
         # Process authors
-        authors = " ".join([text.strip() for text in metadata["authors"]])
-        authors = authors.split(",")
-        authors = [text.strip() for text in authors]
-        authors = [text for text in authors if len(text) > 1]
-        if authors[-1].lower().startswith("and "):
-            authors[-1] = authors[-1][4:]
+        author_pattern = re.compile(r",\s*(and)?|and")
+        author_split = author_pattern.split
+        authors = [
+            part.strip()
+            for author in metadata["authors"]
+            for part in author_split(author)
+            if part and not author_pattern.match(part)
+        ]
         metadata["authors"] = authors
 
         # Process affiliations
         # TODO: Should there be preprocessing for affiliation
         #       e.g. when one affiliation is split in two or more lines
+        affiliations = [text.strip() for text in metadata["affiliations"]]
+        metadata["affiliations"] = affiliations
 
         # Process abstract
-        abstract_text = " ".join([text.strip() for text in metadata["abstract"]])
-        if abstract_text.lower().startswith("abstract"):
-            abstract_text = abstract_text[8:]
-        metadata["abstract"] = re.sub(r"^\W+", "", abstract_text)
+        if metadata["abstract"] != []:
+            abstract_text = " ".join([text.strip() for text in metadata["abstract"]])
+            if abstract_text.lower().startswith("abstract"):
+                abstract_text = abstract_text[8:]
+            metadata["abstract"] = re.sub(r"^\W+", "", abstract_text)
 
         # Process keywords
-        keywords_text = " ".join([text.strip() for text in metadata["keywords"]])
-        for word in self.keywords_keywords:
-            if word in keywords_text.lower():
-                keywords_text = keywords_text[len(word) :]
-                break
-        keywords_text = re.sub(r"^\W+", "", keywords_text)
-        metadata["keywords"] = re.split(r"\s*[,;|]\s*", keywords_text)
+        if metadata["keywords"] != []:
+            keywords_text = " ".join([text.strip() for text in metadata["keywords"]])
+            for word in self.keywords_keywords:
+                if word in keywords_text.lower():
+                    keywords_text = keywords_text[len(word) :]
+                    break
+            keywords_text = re.sub(r"^\W+", "", keywords_text)
+            metadata["keywords"] = re.split(r"\s*[,;|]\s*", keywords_text)
 
         # Process references
         # TODO: Is there a better way to do this? as this assumes the references are in the format '[1] ...'
