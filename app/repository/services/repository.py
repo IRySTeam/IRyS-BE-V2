@@ -1,4 +1,11 @@
-from app.repository.schemas import CreateRepositoryResponseSchema
+from typing import List
+
+from app.repository.schemas import (
+    CreateRepositoryResponseSchema,
+    RepositorySchema,
+    GetJoinedRepositoriesSchema,
+    RepositoryOwnerSchema,
+)
 from core.db import Transactional
 from core.exceptions import RepositoryDetailsEmptyException
 from core.repository import RepositoryRepo
@@ -24,4 +31,44 @@ class RepositoryService:
 
         return CreateRepositoryResponseSchema(
             name=name, description=description, is_public=is_public
+        )
+
+    async def get_joined_repositories(
+        self,
+        user_id: int,
+        name: str,
+        type: str,
+        sort_by: str,
+        page_no: int,
+        page_size: int,
+    ) -> GetJoinedRepositoriesSchema:
+        (
+            repositories,
+            total_page,
+            total_items,
+        ) = await self.repository_repo.get_joined_repositories(
+            user_id=user_id,
+            name=name,
+            type=type,
+            order_by=sort_by,
+            page_no=page_no,
+            page_size=page_size,
+        )
+        results = []
+        for repo in repositories:
+            results.append(
+                RepositorySchema(
+                    id=repo.id,
+                    name=repo.name,
+                    description=repo.description,
+                    is_public=repo.is_public,
+                    owner=RepositoryOwnerSchema(
+                        id=repo.owner_id,
+                        first_name=repo.owner_first_name,
+                        last_name=repo.owner_last_name,
+                    ),
+                )
+            )
+        return GetJoinedRepositoriesSchema(
+            results=results, total_page=total_page, total_items=total_items
         )
