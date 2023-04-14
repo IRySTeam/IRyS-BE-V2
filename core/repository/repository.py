@@ -34,7 +34,7 @@ class RepositoryRepo(BaseRepo[Repository]):
         page_size: int,
     ) -> Tuple[List, int, int]:
         query = """
-        SELECT r.*, a2.owner_id, a2.owner_first_name, a2.owner_last_name
+        SELECT DISTINCT r.*, a2.owner_id, a2.owner_first_name, a2.owner_last_name
         FROM repositories r
         INNER JOIN user_repositories ur ON ur.repository_id = r.id
         INNER JOIN
@@ -105,6 +105,61 @@ class RepositoryRepo(BaseRepo[Repository]):
         count_result = await session.execute(
             text(count_query), {"user_id": user_id, "search": f"%{name}%"}
         )
+        total_items = count_result.fetchone().total_count
+        total_pages = (total_items + limit - 1) // limit
+
+        return repositories, total_pages, total_items
+
+    async def get_public_repositories(
+        self, name: str, page_no: int, page_size: int
+    ) -> Tuple[List, int, int]:
+        query = """
+        SELECT DISTINCT r.*, a2.owner_id, a2.owner_first_name, a2.owner_last_name
+        FROM repositories r
+        INNER JOIN user_repositories ur ON ur.repository_id = r.id
+        INNER JOIN
+        (
+            SELECT u2.id AS owner_id, u2.first_name AS owner_first_name, u2.last_name AS owner_last_name, r2.id AS repository_id
+            FROM users u2
+            INNER JOIN user_repositories ur2 ON u2.id = ur2.user_id
+            INNER JOIN repositories r2 ON ur2.repository_id = r2.id
+            WHERE ur2.role = 'Owner'
+        ) a2 ON ur.repository_id = a2.repository_id
+        WHERE r.is_public = TRUE
+        """
+
+        # Add search filter if provided
+        if name:
+            query += " AND r.name ILIKE :search"
+
+        # Add limit and offset
+        query += " LIMIT :limit OFFSET :offset"
+        limit = page_size
+        offset = (page_no - 1) * page_size
+
+        # Execute the raw SQL query with parameters
+        results = await session.execute(
+            text(query),
+            {
+                "search": f"%{name}%",
+                "limit": limit,
+                "offset": offset,
+            },
+        )
+
+        # Fetch the results
+        repositories = results.fetchall()
+
+        count_query = """
+            SELECT COUNT(r.id) as total_count
+            FROM repositories r
+            WHERE r.is_public = TRUE
+        """
+        # Add search filter if provided
+        if name:
+            count_query += " AND r.name ILIKE :search"
+
+        count_result = await session.execute(text(count_query), {"search": f"%{name}%"})
         total_items = count_result.fetchone().total_count
         total_pages = (total_items + limit - 1) // limit
 

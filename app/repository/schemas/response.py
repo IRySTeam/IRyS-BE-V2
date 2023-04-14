@@ -32,3 +32,9 @@ class GetJoinedRepositoriesSchema(BaseModel):
     results: List[RepositorySchema] = Field(..., description="Results")
     total_page: int = Field(..., description="Total Page")
     total_items: int = Field(..., description="Total Items")
+
+
+class GetPublicRepositoriesResponseSchema(BaseModel):
+    results: List[RepositorySchema] = Field(..., description="Results")
+    total_page: int = Field(..., description="Total Page")
+    total_items: int = Field(..., description="Total Items")
