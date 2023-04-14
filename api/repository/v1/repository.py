@@ -48,7 +48,14 @@ async def create_repository(request: Request, body: CreateRepositoryRequestSchem
 @repository_router.get(
     "/joined",
     response_model=GetJoinedRepositoriesSchema,
-    responses={},
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+    },
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def get_joined_repositories(
@@ -72,7 +79,14 @@ async def get_joined_repositories(
 @repository_router.get(
     "/public",
     response_model=GetPublicRepositoriesResponseSchema,
-    responses={},
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+    },
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def get_public_repositories(
