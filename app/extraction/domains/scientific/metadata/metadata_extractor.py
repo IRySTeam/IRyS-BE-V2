@@ -84,7 +84,7 @@ class ScientificMetadataExtractor(MetadataExtractor):
                     & ~fitz.TEXT_PRESERVE_IMAGES,
                 )
             )
-            search = page.search_for("References") + page.search_for("Bibliography")
+            search = page.search_for("references") + page.search_for("bibliography")
             if search != []:
                 reference_pages_numbers.append(page.number)
 
@@ -142,7 +142,7 @@ class ScientificMetadataExtractor(MetadataExtractor):
 
                     # Find first line that contains introduction
                     if introduction_line == 99999 and any(
-                        line_text.lower().startswith(keyword)
+                        keyword in line_text.lower()
                         for keyword in self.introduction_keywords
                     ):
                         introduction_line = len(page_lines) - 1
@@ -424,7 +424,7 @@ class ScientificMetadataExtractor(MetadataExtractor):
         metadata["title"] = " ".join([text.strip() for text in metadata["title"]])
 
         # Process authors
-        author_pattern = re.compile(r",\s*(and)?|and")
+        author_pattern = re.compile(r",\s+(and)?|\s+and")
         author_split = author_pattern.split
         authors = [
             part.strip()
