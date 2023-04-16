@@ -39,7 +39,7 @@ class SearchService:
         [Output]
           - retrieved_documents: ElasticSearchResult
         """
-        data = ElasticsearchClient().search_semantic(query, 'general-0001')
+        data = ElasticsearchClient().search_semantic(query, 'general-0001', 5)
         # TODO: Possible data = retrieved documents, so might directly return data
         # retrieved_documents = Call some function to parse data into ElasticSearchResult
         return data
