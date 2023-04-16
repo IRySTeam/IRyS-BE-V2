@@ -41,8 +41,6 @@ asgiref = "^3.6.0"
 bert-serving-client = "^1.10.0"
 fastapi-mail = "^1.2.6"
 uvloop = "^0.17.0"
-transformers = "^4.27.3"
-torch = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 behave = "^1.2.6"
