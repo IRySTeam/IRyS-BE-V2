@@ -14,5 +14,3 @@ done
 >&2 echo 'Celery workers is available'
 
 celery --app=celery_app.main.celery --broker="${CELERY_BROKER_URL}" flower
-    
-    

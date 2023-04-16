@@ -10,6 +10,8 @@ RUN pip install --no-cache-dir -U bert-serving-server bert-serving-client
 COPY ./ /app
 
 COPY ./entrypoint.sh /app
+RUN sed -i 's/\r$//g' /app/entrypoint.sh \
+    && chmod +x /app/entrypoint.sh
 
 WORKDIR /app
 

@@ -22,7 +22,7 @@ class TokenService:
         token: str,
         refresh_token: str,
     ) -> RefreshTokenSchema:
-        token = TokenHelper.decode(token=token)
+        token = TokenHelper.decode_expired_token(token=token)
         user = await UserRepo().get_by_id(id=token.get("user_id"))
 
         if not HashHelper.check_hash(user.refresh_token, refresh_token):

@@ -73,11 +73,11 @@ To get a local copy up and running follow these simple steps.
 
 ## Requirements
 * [Pyenv](https://github.com/pyenv/pyenv) (**Recommended**) for python version management
-* Python ^3.8.x 
+* Python ^3.8.x
   * To install using pyenv
     ```
     pyenv install 3.8.x
-    ``` 
+    ```
 * [Poetry](https://python-poetry.org/) for Python package and environment management.
 * Postgres
 * Redis
@@ -162,20 +162,29 @@ To setup elasticsearch locally, you can follow the steps below:
 ## Local development
 ### Installing required dependency
 1. Install each dependency from the requirements section above.
-2. Train the Machine Learning model for document classification by running this command:
-    ```zsh
-    python3 app/classification/mlutil/classifier_train.py
-    ``` 
-3. Install python dependencies
+2. Install python dependecies by running
     ```bash
     poetry install
     ```
+3. Run ```poetry shell``` to open Poetry Shell
+4. Train the Machine Learning model for document classification by running this command:
+    ```zsh
+    python3 app/classification/mlutil/classifier_training.py
+    ```
     NOTE: If you get error while installing `psycopg2-binary` package, try to
     run: `$ poetry run pip install psycopg2-binary` first then re-run `$ poetry install`
-4. Install pre-commit git hook (for auto formatting purpose)
+5. Install pre-commit git hook (for auto formatting purpose)
     ```
     pre-commit install
     ```
+6. Install some additional dependencies such
+   1. libmagic:
+    ```bash
+    sudo apt-get install libmagic1 (Debian/Ubuntu)
+    brew install libmagic (Mac)
+    pip install python-magic-bin (Windows)
+    ```
+   2. TODO: Actually there are more dependencies, but they are already installed while running docker-compose. You don't need to install them manually because they are used by celery worker and bert-serving (which is running in docker). But if you want to run those services locally (which is not recommended), you need to install them manually.
 
 ### Configure App
 1. Find all files below.
@@ -186,7 +195,7 @@ To setup elasticsearch locally, you can follow the steps below:
 3. Open newly created files and adjust the content according to your environment. To see the explanation of each environment variable, you can check the [environment variable section](#environment-variables).
 
 ### Database Migration (Optional)
-This section is only if you want to run the database locally or you want to add/update the database schema.If you want to use the database from the cloud, you can skip this section. 
+This section is only if you want to run the database locally or you want to add/update the database schema.If you want to use the database from the cloud, you can skip this section.
 #### Migrate Up
 If you want to migrate the database, you can run the following command.
 ```bash
@@ -248,12 +257,8 @@ Below are some useful commands for docker:
     ```
 
 ### Running the app
-1. Run ```poetry shell``` to open Poetry Shell 
-2. Install all dependecies by running 
-    ```bash 
-    poetry install
-    ```
-3. Lastly, run the app using this command:
+1. Run ```poetry shell``` to open Poetry Shell
+2. Lastly, run the app using this command:
     ```python
     python3 main.py --env local|dev|prod --debug
     ```
@@ -325,4 +330,3 @@ List of Maintainers
 
 ## License
 Copyright (c) 2023, [IRyS-Team](https://github.com/IRySTeam).
-
