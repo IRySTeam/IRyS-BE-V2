@@ -187,7 +187,7 @@ class ElasticsearchClient:
         except Exception as e:
             raise FailedDependencyException(e)
 
-    def search_semantic(self, query: str, index: str, size: int):
+    def search_semantic(self, query: str, index: str, size: int, source: List[str]):
         """
         Retrieve documents from an Elasticsearch index based on an input query
         [Parameters]
@@ -212,7 +212,7 @@ class ElasticsearchClient:
                 index=index, 
                 size=size,
                 query=script_query,
-                source={"includes": ["title", "preprocessed_text"]}
+                source={"includes": source}
             )
         
         except TimeoutError as e:
