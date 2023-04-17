@@ -15,6 +15,6 @@ class Repository(Base, TimestampMixin):
     name = Column(Unicode(255), nullable=False)
     description = Column(Unicode(255))
     is_public = Column(Boolean, default=True)
-    users: Mapped[List["User"]]  = relationship(
-        secondary=user_repositories, back_populates="repositories"
+    users: Mapped[List["User"]] = relationship(
+        "User", secondary=user_repositories, back_populates="repositories"
     )
