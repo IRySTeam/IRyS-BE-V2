@@ -7,10 +7,12 @@ from fastapi.security.base import SecurityBase
 
 from app.user.services import UserService
 from core.exceptions import (
-    CustomException,
-    UnauthorizedException,
-    EmailNotVerifiedException,
+    CustomException, 
+    UnauthorizedException, 
+    EmailNotVerifiedException, 
     EmailAlreadyVerifiedException,
+    ForgotPasswordOTPNotVerifiedException,
+    ForgotPasswordOTPVerifiedException,
 )
 
 
@@ -52,6 +54,20 @@ class IsEmailVerified(BasePermission):
 
     async def has_permission(self, request: Request) -> bool:
         return request.user.is_email_verified == True
+    
+
+class IsForgotPasswordOtpVerified(BasePermission):
+    exception = ForgotPasswordOTPNotVerifiedException
+
+    async def has_permission(self, request: Request) -> bool:
+        return request.user.is_forgot_password_otp_verified == True
+    
+
+class IsForgotPasswordOtpNotVerified(BasePermission):
+    exception = ForgotPasswordOTPVerifiedException
+
+    async def has_permission(self, request: Request) -> bool:
+        return request.user.is_forgot_password_otp_verified == False
 
 
 class AllowAll(BasePermission):
