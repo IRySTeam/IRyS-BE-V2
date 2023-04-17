@@ -18,6 +18,7 @@ class ExpiredTokenException(CustomException):
     error_code = "TOKEN__EXPIRE_TOKEN"
     message = "expired token"
 
+
 class TokenAlreadyUsedException(CustomException):
     code = 409
     error_code = "TOKEN__TOKEN_ALREADY_USED"
