@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -48,3 +48,7 @@ class RepositoryMemberSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class EditRepositoryResponseSchema(BaseModel):
+    message: str = Field(..., description="Message")
