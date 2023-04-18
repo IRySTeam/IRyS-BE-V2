@@ -119,9 +119,10 @@ class SearchService:
                                         and d.document_metadata.get(filter.key) 
                                             is not None]
             case FilterOperatorEnum.GT:
+
                 # TODO: Check for sufficient values:
-                #   - numerical values (check and convert)
-                #   - date values (check and convert)
+                #   - numerical values (check and convert) --> Is it okay to just generalize everything as floats?
+                #   - date values (check and convert) --> How to deal with the various ways of date writing?
                 #   - if not sufficient raise 400 error
                 #   - if sufficient then proceed to filter
                 print('Got a reading of GREATER THAN')
