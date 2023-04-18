@@ -9,6 +9,7 @@ from typing import Optional, List
 from app.search.constants.search import DOMAIN_INDEXES
 from app.search.enums.search import DomainEnum, FilterOperatorEnum
 from app.search.schemas.elastic import MatchedDocument, SearchResult
+from app.search.schemas.advanced_search import BasicFilterConditions, SemanticFilterConditions
 from app.elastic.client import ElasticsearchClient
 
 class SearchService:
@@ -79,21 +80,50 @@ class SearchService:
                 advanced_search_result = self.evaluate_semantic_filter(advanced_search_result, filter)
         return advanced_search_result
     
-    def evaluate_basic_filter(self, search_result, filter):
+    def evaluate_basic_filter(self, search_result: MatchedDocument, filter: BasicFilterConditions):
+        """
+        Performs filtering using basic operators from retrieved documents
+        [Parameters]
+          search_result: MatchedDocument
+          filter: BasicFilterConditions
+        [Returns]
+          MatchedDocument
+        """
         match filter.operator:
             case FilterOperatorEnum.IN:
-                print('Got a reading of IN')
+                search_result.result = [d for d in search_result.result 
+                                        if d.document_metadata.get(filter.key) 
+                                            in filter.value]
             case FilterOperatorEnum.NIN:
-                print('Got a reading of NOT IN')
+                search_result.result = [d for d in search_result.result 
+                                        if d.document_metadata.get(filter.key) 
+                                            not in filter.value
+                                        and d.document_metadata.get(filter.key) 
+                                            is not None]
             case FilterOperatorEnum.EXI:
-                print('Got a reading of EXISTS')
+                search_result.result = [d for d in search_result.result 
+                                        if d.document_metadata.get(filter.key) 
+                                            is not None]
             case FilterOperatorEnum.NEXI:
-                print('Got a reading of NOT EXISTS')
+                search_result.result = [d for d in search_result.result 
+                                        if d.document_metadata.get(filter.key) 
+                                            is None]
             case FilterOperatorEnum.EQ:
-                print('Got a reading of EQUAL')
+                search_result.result = [d for d in search_result.result 
+                                        if d.document_metadata.get(filter.key) 
+                                            == filter.value]
             case FilterOperatorEnum.NEQ:
-                print('Got a reading of NOT EQUAL')
+                search_result.result = [d for d in search_result.result 
+                                        if d.document_metadata.get(filter.key) 
+                                            != filter.value
+                                        and d.document_metadata.get(filter.key) 
+                                            is not None]
             case FilterOperatorEnum.GT:
+                # TODO: Check for sufficient values:
+                #   - numerical values (check and convert)
+                #   - date values (check and convert)
+                #   - if not sufficient raise 400 error
+                #   - if sufficient then proceed to filter
                 print('Got a reading of GREATER THAN')
             case FilterOperatorEnum.LT:
                 print('Got a reading of LESS THAN')
@@ -105,13 +135,21 @@ class SearchService:
                 print('No operator match found')
         return search_result
     
-    def evaluate_semantic_filter(self, search_result, filter):
+    def evaluate_semantic_filter(self, search_result: MatchedDocument, filter: SemanticFilterConditions):
+        """
+        Performs filtering using semantic search on specific metadata and entities from retrieved documents
+        [Parameters]
+          search_result: MatchedDocument
+          filter: SemanticFilterConditions
+        [Returns]
+          MatchedDocument
+        """
         data = ElasticsearchClient().search_semantic(
             query=filter.value,
             index='general-0001', 
             size=filter.top_n,
-            source=["title", "preprocessed_text"]
-            # Add variable for text_vector based on key
+            source=["title", "preprocessed_text", "document_metadata", "document_entities"]
+            # TODO: Add variable for text_vector based on key
         )
         return search_result
 
