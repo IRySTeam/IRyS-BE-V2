@@ -6,6 +6,7 @@ from app.repository.schemas import (
     CreateRepositoryResponseSchema,
     GetJoinedRepositoriesSchema,
     GetPublicRepositoriesResponseSchema,
+    RepositoryMemberSchema,
 )
 from app.repository.services import RepositoryService
 from core.exceptions import (
@@ -97,3 +98,15 @@ async def get_public_repositories(
     return await RepositoryService().get_public_repositories(
         name=name, page_no=page_no, page_size=page_size
     )
+
+
+@repository_router.get(
+    "/{repository_id}/members",
+    response_model=List[RepositoryMemberSchema],
+    responses={},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def get_repository_members(
+    repository_id: int,
+):
+    return await RepositoryService().get_repository_members(repository_id=repository_id)

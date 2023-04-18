@@ -164,3 +164,26 @@ class RepositoryRepo(BaseRepo[Repository]):
         total_pages = (total_items + limit - 1) // limit
 
         return repositories, total_pages, total_items
+
+    async def get_repository_members(self, repository_id: int) -> List[User]:
+        query = """
+        SELECT u.*, ur.role
+        FROM users u
+        INNER JOIN user_repositories ur ON ur.user_id = u.id
+        WHERE ur.repository_id = :repository_id
+        """
+        results = await session.execute(text(query), {"repository_id": repository_id})
+        return results.fetchall()
+
+    async def is_user_id_member_of_repository(
+        self, user_id: int, repository_id: int
+    ) -> bool:
+        query = """
+        SELECT COUNT(ur.id) as total_count
+        FROM user_repositories ur
+        WHERE ur.user_id = :user_id AND ur.repository_id = :repository_id
+        """
+        results = await session.execute(
+            text(query), {"user_id": user_id, "repository_id": repository_id}
+        )
+        return results.fetchone().total_count > 0

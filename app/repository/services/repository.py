@@ -6,6 +6,7 @@ from app.repository.schemas import (
     GetJoinedRepositoriesSchema,
     RepositoryOwnerSchema,
     GetPublicRepositoriesResponseSchema,
+    RepositoryMemberSchema,
 )
 from core.db import Transactional
 from core.exceptions import RepositoryDetailsEmptyException
@@ -102,3 +103,26 @@ class RepositoryService:
         return GetPublicRepositoriesResponseSchema(
             results=results, total_page=total_page, total_items=total_items
         )
+
+    async def get_repository_members(
+        self, user_id: int, repository_id: int
+    ) -> List[RepositoryMemberSchema]:
+
+        if not self.repository_repo.is_user_id_member_of_repository(
+            user_id=user_id, repository_id=repository_id
+        ):
+            raise RepositoryDetailsEmptyException
+        members = await self.repository_repo.get_repository_members(
+            repository_id=repository_id
+        )
+        print(members)
+        # results = []
+        # for member in members:
+        #     results.append(
+        #         RepositoryOwnerSchema(
+        #             id=member.id,
+        #             first_name=member.first_name,
+        #             last_name=member.last_name,
+        #         )
+        #     )
+        return []

@@ -38,3 +38,13 @@ class GetPublicRepositoriesResponseSchema(BaseModel):
     results: List[RepositorySchema] = Field(..., description="Results")
     total_page: int = Field(..., description="Total Page")
     total_items: int = Field(..., description="Total Items")
+
+
+class RepositoryMemberSchema(BaseModel):
+    id: int = Field(..., description="User ID")
+    first_name: str = Field(..., description="First Name")
+    last_name: str = Field(..., description="Last Name")
+    role: str = Field(..., description="Role")
+
+    class Config:
+        orm_mode = True
