@@ -74,8 +74,8 @@ class SearchService:
                 advanced_search_result = self.evaluate_basic_filter(advanced_search_result, filter)
 
         # Evaluate semantic filters
-        if (bool(advanced_filter['semantic_match'])):
-            for filter in advanced_filter['semantic_match']:
+        if (bool(advanced_filter.semantic_match)):
+            for filter in advanced_filter.semantic_match:
                 advanced_search_result = self.evaluate_semantic_filter(advanced_search_result, filter)
         return advanced_search_result
     
