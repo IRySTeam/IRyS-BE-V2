@@ -24,7 +24,7 @@ jobs:
       - name: Push image api
         run: docker push ghcr.io/irysteam/irys-api:latest
       - name: Build image bertserving
-        run: docker build -f ./berserving/Dockerfile -t ghcr.io/irysteam/irys-bert-serving:latest ./bertserving
+        run: docker build -f ./bertserving/Dockerfile -t ghcr.io/irysteam/irys-bert-serving:latest ./bertserving
       - name: Push image bertserving
         run: docker push ghcr.io/irysteam/irys-bert-serving:latest
       - name: Build image celery
