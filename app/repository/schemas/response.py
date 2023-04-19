@@ -1,5 +1,9 @@
-from typing import List, Optional
+from typing import List
 from pydantic import BaseModel, Field
+
+
+class MessageResponseSchema(BaseModel):
+    message: str = Field(..., description="Message")
 
 
 class CreateRepositoryResponseSchema(BaseModel):
@@ -28,7 +32,7 @@ class RepositorySchema(BaseModel):
     owner: RepositoryOwnerSchema = Field(..., description="Repository Owner")
 
 
-class GetJoinedRepositoriesSchema(BaseModel):
+class GetJoinedRepositoriesResponseSchema(BaseModel):
     results: List[RepositorySchema] = Field(..., description="Results")
     total_page: int = Field(..., description="Total Page")
     total_items: int = Field(..., description="Total Items")
@@ -40,15 +44,12 @@ class GetPublicRepositoriesResponseSchema(BaseModel):
     total_items: int = Field(..., description="Total Items")
 
 
-class RepositoryMemberSchema(BaseModel):
+class RepositoryCollaboratorSchema(BaseModel):
     id: int = Field(..., description="User ID")
     first_name: str = Field(..., description="First Name")
     last_name: str = Field(..., description="Last Name")
+    email: str = Field(..., description="Email")
     role: str = Field(..., description="Role")
 
     class Config:
         orm_mode = True
-
-
-class EditRepositoryResponseSchema(BaseModel):
-    message: str = Field(..., description="Message")
