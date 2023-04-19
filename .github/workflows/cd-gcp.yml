@@ -44,9 +44,10 @@ jobs:
       - name: Deploy Using ssh
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.DEV_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.DEV_PRIVATE_KEY }}
+          host: ${{ secrets.GCP_HOST }}
+          username: ${{ secrets.GCP_USERNAME }}
+          key: ${{ secrets.GCP_PRIVATE_KEY }}
+          command_timeout: 60m
           port: 22
           script: |
             cd ~
