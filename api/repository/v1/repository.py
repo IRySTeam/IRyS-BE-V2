@@ -8,7 +8,9 @@ from core.exceptions import (
     EmailNotVerifiedException,
     RepositoryDetailsEmptyException,
     RepositoryNotFoundException,
-    NotAllowedException,
+    UserNotAllowedException,
+    InvalidRepositoryRoleException,
+    DuplicateCollaboratorException,
 )
 from core.fastapi.dependencies import (
     PermissionDependency,
@@ -44,7 +46,7 @@ async def create_repository(request: Request, body: CreateRepositoryRequestSchem
 
 @repository_router.get(
     "/joined",
-    response_model=GetJoinedRepositoriesSchema,
+    response_model=GetJoinedRepositoriesResponseSchema,
     responses={
         "401": CustomExceptionHelper.get_exception_response(
             UnauthorizedException, "Unauthorized"
@@ -98,7 +100,7 @@ async def get_public_repositories(
 
 @repository_router.post(
     "/{repository_id}/edit",
-    response_model=EditRepositoryResponseSchema,
+    response_model=MessageResponseSchema,
     responses={
         "401": CustomExceptionHelper.get_exception_response(
             UnauthorizedException, "Unauthorized"
@@ -107,7 +109,7 @@ async def get_public_repositories(
             EmailNotVerifiedException, "Email not verified"
         ),
         "403": CustomExceptionHelper.get_exception_response(
-            NotAllowedException, "Not allowed"
+            UserNotAllowedException, "Not allowed"
         ),
         "404": CustomExceptionHelper.get_exception_response(
             RepositoryNotFoundException, "Repository not found"
@@ -123,16 +125,115 @@ async def edit_repository(
     await RepositoryService().edit_repository(
         user_id=request.user.id, repository_id=repository_id, params=body.dict()
     )
-    return EditRepositoryResponseSchema(message="Successful")
+    return MessageResponseSchema(message="Successful")
 
 
 @repository_router.get(
     "/{repository_id}/members",
-    response_model=List[RepositoryMemberSchema],
+    response_model=List[RepositoryCollaboratorSchema],
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def get_repository_collaborators(
+    request: Request,
+    repository_id: int,
+):
+    return await RepositoryService().get_repository_collaborators(
+        user_id=request.user.id, repository_id=repository_id
+    )
+
+
+@repository_router.post(
+    "/{repository_id}/members/add",
+    response_model=MessageResponseSchema,
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            InvalidRepositoryRoleException, "Invalid repository role"
+        ),
+        "422": CustomExceptionHelper.get_exception_response(
+            DuplicateCollaboratorException, "Duplicate collaborator"
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def add_repository_collaborator(
+    request: Request,
+    repository_id: int,
+    body: AddRepositoryCollaboratorRequestSchema,
+):
+    await RepositoryService().add_repository_collaborator(
+        user_id=request.user.id, repository_id=repository_id, params=body.dict()
+    )
+    return MessageResponseSchema(message="Successful")
+
+
+@repository_router.post(
+    "/{repository_id}/members/edit",
+    response_model=MessageResponseSchema,
     responses={},
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
-async def get_repository_members(
+async def edit_repository_collaborator(
+    request: Request,
     repository_id: int,
+    body: EditRepositoryCollaboratorRequestSchema,
 ):
-    return await RepositoryService().get_repository_members(repository_id=repository_id)
+    await RepositoryService().edit_repository_collaborator(
+        user_id=request.user.id, repository_id=repository_id, **body.dict()
+    )
+    return MessageResponseSchema(message="Successful")
+
+
+@repository_router.post(
+    "/{repository_id}/members/remove",
+    response_model=MessageResponseSchema,
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def remove_repository_collaborator(
+    request: Request,
+    repository_id: int,
+    body: MessageResponseSchema,
+):
+    await RepositoryService().remove_repository_collaborator(
+        user_id=request.user.id, repository_id=repository_id, params=body.dict()
+    )
+    return MessageResponseSchema(message="Successful")
