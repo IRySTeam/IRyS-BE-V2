@@ -1,10 +1,7 @@
-from typing import IO, Dict, Any
+from typing import Dict, Any
 
-# from app.extraction.entity_extractor import EntityExtractor
-from app.extraction.metadata_extractor import MetadataExtractor
-
-# from app.extraction.domains.scientific import ScientificEntityExtractor
-from app.extraction.domains.scientific import ScientificMetadataExtractor
+from app.extraction.general_extractor import GeneralExtractor
+from app.extraction.domains.scientific.scientific_extractor import ScientificExtractor
 
 
 class InformationExtractor:
@@ -16,19 +13,9 @@ class InformationExtractor:
         metadata_extractor: MetadataExtractor -> MetadataExtractor class for extracting metadata from text.
     """
 
-    domain_mapping = {
-        "general": (
-            # EntityExtractor,
-            MetadataExtractor,
-        ),
-        "scientific": (
-            # ScientificEntityExtractor,
-            ScientificMetadataExtractor,
-        ),
-        # "recruitment": {
-        # RecruitmentEntityExtractor,
-        # RecruitmentMetadataExtractor,
-        # }
+    extractor_mapping = {
+        "general": GeneralExtractor,
+        "scientific": ScientificExtractor,
     }
 
     def __init__(self, domain: str = "general") -> None:
@@ -39,14 +26,12 @@ class InformationExtractor:
             entity_extractor: EntityExtractor -> EntityExtractor class for extracting entities from text.
             metadata_extractor: MetadataExtractor -> MetadataExtractor class for extracting metadata from text.
         """
-        if domain not in self.domain_mapping:
+        if domain not in self.extractor_mapping:
             domain = "general"
 
-        # self.entity_extractor = self.domain_mapping[domain][0]()
-        self.metadata_extractor = self.domain_mapping[domain][0]()
+        self.extractor = self.extractor_mapping[domain]()
 
-    # TODO: should the input be just the file and the text are extracted from the file
-    def extract_all(self, text: str, file: IO) -> Dict[str, Any]:
+    def extract(self, file: bytes) -> Dict[str, Any]:
         """
         Extract entities and metadata from text
 
@@ -55,27 +40,4 @@ class InformationExtractor:
             file: IO -> File to extract metadata from
         """
 
-        entities = self.extract_entities(text)
-        metadata = self.extract_metadata(file)
-        return {"entities": entities, "metadata": metadata}
-
-    def extract_entities(self, text: str) -> Dict[str, Any]:
-        """
-        Extract entities from text
-
-        [Arguments]
-            text: str -> Text to extract entities from
-        """
-
-        # return self.entity_extractor.extract(text)
-        return {}
-
-    def extract_metadata(self, file: IO) -> Dict[str, Any]:
-        """
-        Extract metadata from text
-
-        [Arguments]
-            file: IO -> File to extract metadata from
-        """
-
-        return self.metadata_extractor.extract(file)
+        return self.extractor.extract(file)

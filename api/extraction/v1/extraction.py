@@ -2,10 +2,10 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 
 from app.exception import BaseHttpErrorSchema
-from app.extraction import TYPE_OPERATORS, METADATA
+from app.extraction import TYPE_OPERATORS, EXTRACTED_INFORMATION
 from app.extraction.schemas import (
-    DomainMetadataResponse,
-    DomainMetadataPathParams,
+    ExtractedInformationResponse,
+    ExtractedInformationPathParams,
 )
 
 extraction_router = APIRouter()
@@ -17,13 +17,13 @@ extraction_router = APIRouter()
     description="Get all domains",
 )
 async def get_domains():
-    return list(METADATA.keys())
+    return list(EXTRACTED_INFORMATION.keys())
 
 
 @extraction_router.get(
-    "/metadata/{domain}",
-    response_model=List[DomainMetadataResponse],
-    description="Get metadata list of a domain",
+    "/information/{domain}",
+    response_model=ExtractedInformationResponse,
+    description="Get extracted information list of a domain",
     responses={
         400: {
             "model": BaseHttpErrorSchema,
@@ -31,13 +31,16 @@ async def get_domains():
         },
     },
 )
-async def get_entities(path: DomainMetadataPathParams = Depends()):
-    if path.domain not in METADATA:
+async def get_information(path: ExtractedInformationPathParams = Depends()):
+    if path.domain not in EXTRACTED_INFORMATION:
         raise HTTPException(
             status_code=400,
             detail="Domain does not exist",
         )
-    entities = METADATA[path.domain]
-    for entity in entities:
+    information = EXTRACTED_INFORMATION[path.domain]
+    for entity in information["entities"]:
         entity["operators"] = TYPE_OPERATORS[entity["type"]]
-    return entities
+    for info in information["information"]:
+        info["operators"] = TYPE_OPERATORS[info["type"]]
+
+    return information

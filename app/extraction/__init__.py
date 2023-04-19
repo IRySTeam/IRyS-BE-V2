@@ -1,15 +1,14 @@
 from app.extraction.information_extractor import InformationExtractor
 
-# from app.extraction.entity_extractor import EntityExtractor
-from app.extraction.metadata_extractor import MetadataExtractor
-from app.extraction.domains.scientific import ScientificMetadataExtractor
-from app.extraction.configuration import TYPE_OPERATORS, ENTITES, METADATA
+from app.extraction.general_extractor import GeneralExtractor
+from app.extraction.domains.scientific import ScientificExtractor
+from app.extraction.configuration import TYPE_OPERATORS, ENTITES, EXTRACTED_INFORMATION
 
 __all__ = [
     "InformationExtractor",
-    "MetadataExtractor",
-    "ScientificMetadataExtractor",
+    "GeneralExtractor",
+    "ScientificExtractor",
     "TYPE_OPERATORS",
     "ENTITES",
-    "METADATA",
+    "EXTRACTED_INFORMATION",
 ]

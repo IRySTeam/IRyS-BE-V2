@@ -2,20 +2,25 @@ import os
 import io
 import re
 import fitz
+import nltk
 import string
 import pickle
 import pathlib
 import pandas as pd
-from typing import IO, List
+
+# from transformers import pipeline
+from typing import List, Union, Dict, Any
 from collections import defaultdict
-from app.extraction.metadata_extractor import MetadataExtractor
+from app.extraction.general_extractor import GeneralExtractor
+
+# from app.extraction.ner_result import NERResult
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
-class ScientificMetadataExtractor(MetadataExtractor):
+class ScientificExtractor(GeneralExtractor):
     """
-    ScientificMetadataExtractor class is a class for extracting metadata from scientific paper file.
+    ScientificExtractor class is a class for extracting information from scientific text.
     """
 
     author_classifier = pickle.load(
@@ -41,14 +46,94 @@ class ScientificMetadataExtractor(MetadataExtractor):
     ]
     reference_keywords = ["references", "bibliography"]
 
-    def extract(self, file: IO) -> dict:
+    def __init__(self):
         """
-        Extract metadata from a paper file
+        Constructor of ScientificExtractor class
+        """
+
+        # self.pipeline = pipeline(
+        #     "ner", model="topmas/IRyS-NER-Paper", aggregation_strategy="first"
+        # )
+
+    def preprocess(self, text: str) -> Union[str, List[str]]:
+        """
+        Preprocess text for scientific domain
 
         [Arguments]
-            file: IO -> File to extract metadata from
+            text: str -> Text to preprocess
+        """
+        headers = []
+        textsplit = text.splitlines()
+
+        for idx, line in enumerate(textsplit):
+            if "Abstract" in line or idx == 20:
+                break
+            headers.append(line)
+
+        header = "\n".join(headers)
+        body = "\n".join(textsplit[len(headers) :])
+
+        print("h", header)
+        print("b", body)
+
+        preprocessed = nltk.sent_tokenize(body)
+        preprocessed = [header] + [sent.replace("\n", " ") for sent in preprocessed]
+
+        return preprocessed
+
+    def extract(self, file: bytes) -> Dict[str, Any]:
+        """
+        Extract information from a paper file
+
+        [Arguments]
+            file: bytes -> File bytes to extract information from
         [Returns]
-            metadata: dict -> Dictionary containing extracted metadata
+            Dict -> Dictionary containing extracted information
+        """
+
+        result = super().extract(file)
+
+        # TODO: Handle other extension if possible
+        if result["extension"] == ".pdf":
+            metadata = self.extract_scientific_metadata(file)
+            result = result | metadata
+        return result
+
+    # def extract_entities(self, text: str) -> List[Dict[str, Any]]:
+    #     """
+    #     Extract entities from text
+
+    #     [Arguments]
+    #         text: str -> Text to extract entities from
+    #     [Returns]
+    #         List[Dict] -> List of dictionaries containing extracted entities
+    #     """
+    #     preprocessed = self.preprocess(text)
+    #     ner_results = [self.pipeline(sent) for sent in preprocessed]
+
+    #     full_text = "".join(preprocessed)
+
+    #     result = []
+    #     cur_len = 0
+    #     for idx, sent in enumerate(preprocessed):
+    #         sent_len = len(sent)
+    #         for ner in ner_results[idx]:
+    #             ner["start"] += cur_len
+    #             ner["end"] += cur_len
+    #             ner["score"] = ner["score"].item()
+    #         cur_len += sent_len
+    #         result += ner_results[idx]
+
+    #     return NERResult(full_text, result)
+
+    def extract_scientific_metadata(self, file: bytes) -> Dict[str, Any]:
+        """
+        Extract scientific metadata from a paper file
+
+        [Arguments]
+            file: bytes -> File bytes to extract metadata from
+        [Returns]
+            Dict -> Dictionary containing extracted metadata
         """
 
         metadata = {
@@ -60,13 +145,14 @@ class ScientificMetadataExtractor(MetadataExtractor):
             "references": [],
         }
 
-        # TODO: Check file type (pdf/docx/txt) and handle accordingly
-
+        # TODO: Remove type checking if the input is guaranteed to be bytes
         memf = io.BytesIO()
         if hasattr(file, "read"):
             memf.write(file.read())
             memf.seek(0)
             doc = fitz.open(stream=memf, filetype="pdf")
+        elif isinstance(file, bytes):
+            doc = fitz.open(stream=file, filetype="pdf")
         elif isinstance(file, str) or isinstance(file, pathlib.Path):
             doc = fitz.open(str(file), filetype="pdf")
         else:
@@ -424,13 +510,13 @@ class ScientificMetadataExtractor(MetadataExtractor):
         metadata["title"] = " ".join([text.strip() for text in metadata["title"]])
 
         # Process authors
-        author_pattern = re.compile(r",\s+(and)?|\s+and")
+        author_pattern = re.compile(r",\s+(?:and)?|\s+and")
         author_split = author_pattern.split
         authors = [
             part.strip()
             for author in metadata["authors"]
             for part in author_split(author)
-            if part and not author_pattern.match(part)
+            if part
         ]
         metadata["authors"] = authors
 

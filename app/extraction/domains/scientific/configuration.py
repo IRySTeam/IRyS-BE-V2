@@ -29,7 +29,7 @@ SCIENTIFIC_ENTITIES = [
     },
 ]
 
-SCIENTIFIC_METADATA = [
+SCIENTIFIC_INFORMATION = [
     {
         "name": "title",
         "type": "text",

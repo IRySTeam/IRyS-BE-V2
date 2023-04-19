@@ -1,9 +1,13 @@
-from app.extraction.schemas.metadata import (
-    DomainMetadataResponse,
-    DomainMetadataPathParams,
+from app.extraction.schemas.extraction import (
+    DomainInformationResponse,
+    ExtractedInformationPathParams,
+    DomainEntitiesResponse,
+    ExtractedInformationResponse,
 )
 
 __all__ = [
-    "DomainMetadataResponse",
-    "DomainMetadataPathParams",
+    "DomainInformationResponse",
+    "ExtractedInformationPathParams",
+    "DomainEntitiesResponse",
+    "ExtractedInformationResponse",
 ]
