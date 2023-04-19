@@ -31,3 +31,4 @@ async def refresh_token(request: RefreshTokenRequest):
 async def verify_token(request: VerifyTokenRequest):
     await TokenService().verify_token(token=request.token)
     return Response(status_code=200)
+
