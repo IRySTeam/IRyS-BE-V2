@@ -31,7 +31,7 @@ TYPE_OPERATORS = {
     ],
 }
 
-ENTITES = {
+ENTITIES = {
     "general": [
         {
             "name": "LOC",
@@ -70,11 +70,11 @@ GENERAL_INFORMATION = [
 
 EXTRACTED_INFORMATION = {
     "general": {
-        "entities": ENTITES["general"],
+        "entities": ENTITIES["general"],
         "information": GENERAL_INFORMATION,
     },
     "scientific": {
-        "entities": ENTITES["scientific"],
+        "entities": ENTITIES["scientific"],
         "information": GENERAL_INFORMATION + SCIENTIFIC_INFORMATION,
     },
 }
