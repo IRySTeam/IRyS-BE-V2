@@ -8,12 +8,12 @@ import pickle
 import pathlib
 import pandas as pd
 
-# from transformers import pipeline
+from transformers import pipeline
 from typing import List, Union, Dict, Any
 from collections import defaultdict
 from app.extraction.general_extractor import GeneralExtractor
 
-# from app.extraction.ner_result import NERResult
+from app.extraction.ner_result import NERResult
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -51,9 +51,9 @@ class ScientificExtractor(GeneralExtractor):
         Constructor of ScientificExtractor class
         """
 
-        # self.pipeline = pipeline(
-        #     "ner", model="topmas/IRyS-NER-Paper", aggregation_strategy="first"
-        # )
+        self.pipeline = pipeline(
+            "ner", model="topmas/IRyS-NER-Paper", aggregation_strategy="first"
+        )
 
     def preprocess(self, text: str) -> Union[str, List[str]]:
         """
@@ -72,9 +72,6 @@ class ScientificExtractor(GeneralExtractor):
 
         header = "\n".join(headers)
         body = "\n".join(textsplit[len(headers) :])
-
-        print("h", header)
-        print("b", body)
 
         preprocessed = nltk.sent_tokenize(body)
         preprocessed = [header] + [sent.replace("\n", " ") for sent in preprocessed]
@@ -99,32 +96,32 @@ class ScientificExtractor(GeneralExtractor):
             result = result | metadata
         return result
 
-    # def extract_entities(self, text: str) -> List[Dict[str, Any]]:
-    #     """
-    #     Extract entities from text
+    def extract_entities(self, text: str) -> List[Dict[str, Any]]:
+        """
+        Extract entities from text
 
-    #     [Arguments]
-    #         text: str -> Text to extract entities from
-    #     [Returns]
-    #         List[Dict] -> List of dictionaries containing extracted entities
-    #     """
-    #     preprocessed = self.preprocess(text)
-    #     ner_results = [self.pipeline(sent) for sent in preprocessed]
+        [Arguments]
+            text: str -> Text to extract entities from
+        [Returns]
+            List[Dict] -> List of dictionaries containing extracted entities
+        """
+        preprocessed = self.preprocess(text)
+        ner_results = [self.pipeline(sent) for sent in preprocessed]
 
-    #     full_text = "".join(preprocessed)
+        full_text = "".join(preprocessed)
 
-    #     result = []
-    #     cur_len = 0
-    #     for idx, sent in enumerate(preprocessed):
-    #         sent_len = len(sent)
-    #         for ner in ner_results[idx]:
-    #             ner["start"] += cur_len
-    #             ner["end"] += cur_len
-    #             ner["score"] = ner["score"].item()
-    #         cur_len += sent_len
-    #         result += ner_results[idx]
+        result = []
+        cur_len = 0
+        for idx, sent in enumerate(preprocessed):
+            sent_len = len(sent)
+            for ner in ner_results[idx]:
+                ner["start"] += cur_len
+                ner["end"] += cur_len
+                ner["score"] = ner["score"].item()
+            cur_len += sent_len
+            result += ner_results[idx]
 
-    #     return NERResult(full_text, result)
+        return NERResult(full_text, result)
 
     def extract_scientific_metadata(self, file: bytes) -> Dict[str, Any]:
         """
