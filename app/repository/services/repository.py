@@ -57,12 +57,14 @@ class RepositoryService:
         )
         results = []
         for repo in repositories:
+            print(repo)
             results.append(
                 RepositorySchema(
                     id=repo.id,
                     name=repo.name,
                     description=repo.description,
                     is_public=repo.is_public,
+                    updated_at=repo.updated_at,
                     owner=RepositoryOwnerSchema(
                         id=repo.owner_id,
                         first_name=repo.owner_first_name,
@@ -70,8 +72,15 @@ class RepositoryService:
                     ),
                 )
             )
+        does_user_have_any_repos = (
+            await self.repository_repo.does_user_id_have_any_repository(user_id=user_id)
+        )
+        print(does_user_have_any_repos)
         return GetJoinedRepositoriesSchema(
-            results=results, total_page=total_page, total_items=total_items
+            does_user_have_any_repos=does_user_have_any_repos,
+            results=results,
+            total_page=total_page,
+            total_items=total_items,
         )
 
     async def get_public_repositories(
@@ -92,6 +101,7 @@ class RepositoryService:
                     name=repo.name,
                     description=repo.description,
                     is_public=repo.is_public,
+                    updated_at=repo.updated_at,
                     owner=RepositoryOwnerSchema(
                         id=repo.owner_id,
                         first_name=repo.owner_first_name,
