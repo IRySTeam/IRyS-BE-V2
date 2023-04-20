@@ -1,0 +1,61 @@
+name: CD-PROD
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+    paths-ignore:
+      - '.github/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v3
+        with:
+          ref: master
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Docker login
+        run: docker login ghcr.io --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_TOKEN }}
+      - name: Build image api
+        run: docker build -f Dockerfile -t ghcr.io/irysteam/irys-api-prod:latest .
+      - name: Push image api
+        run: docker push ghcr.io/irysteam/irys-api-prod:latest
+      - name: Build image bertserving
+        run: docker build -f ./bertserving/Dockerfile -t ghcr.io/irysteam/irys-bert-serving-prod:latest ./bertserving
+      - name: Push image bertserving
+        run: docker push ghcr.io/irysteam/irys-bert-serving-prod:latest
+      - name: Build image celery
+        run: docker build -f ./celery_app/Dockerfile -t ghcr.io/irysteam/irys-celery-prod:latest .
+      - name: Push image celery
+        run: docker push ghcr.io/irysteam/irys-celery-prod:latest
+
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: master
+
+      - name: Deploy Using ssh
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_PRIVATE_KEY }}
+          command_timeout: 60m
+          port: 22
+          script: |
+            cd ~
+            sudo docker login ghcr.io -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
+            sudo docker-compose down
+            sudo docker rmi -f $(docker images -aq)
+            sudo docker-compose up -d
