@@ -36,4 +36,4 @@ RUN python -m nltk.downloader punkt wordnet stopwords averaged_perceptron_tagger
 
 EXPOSE 8000
 
-CMD ["ENV=production", "python3", "main.py"]
+CMD ["ENV=development", "python3", "main.py"]
