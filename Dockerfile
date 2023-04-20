@@ -36,4 +36,6 @@ RUN python -m nltk.downloader punkt wordnet stopwords averaged_perceptron_tagger
 
 EXPOSE 80
 
-CMD ["ENV=production", "python3", "main.py"]
+ENV ENV=production
+
+CMD ["python3", "main.py"]
