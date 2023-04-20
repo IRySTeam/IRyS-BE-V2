@@ -1,6 +1,11 @@
 name: CD-PROD
 
 on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '.github/**'
   pull_request:
     types:
       - closed
