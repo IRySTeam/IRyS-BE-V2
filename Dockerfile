@@ -34,6 +34,6 @@ RUN poetry config virtualenvs.create false \
 
 RUN python -m nltk.downloader punkt wordnet stopwords averaged_perceptron_tagger
 
-EXPOSE 8000
+EXPOSE 80
 
 CMD ["ENV=production", "python3", "main.py"]
