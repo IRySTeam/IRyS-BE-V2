@@ -80,7 +80,6 @@ class RepositoryService:
         does_user_have_any_repos = (
             await self.repository_repo.does_user_id_have_any_repository(user_id=user_id)
         )
-        print(does_user_have_any_repos)
         return GetJoinedRepositoriesSchema(
             does_user_have_any_repos=does_user_have_any_repos,
             results=results,
