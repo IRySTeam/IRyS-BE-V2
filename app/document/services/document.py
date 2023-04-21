@@ -101,7 +101,7 @@ class DocumentService:
         # TODO: Add with OCR choice.
         # TODO: Add check duplicate.
 
-        print(b2a_base64(file.file.read()).decode("utf-8"))
+        file.file.seek(0)
         parsing.delay(
             document_id=document.inserted_primary_key[0],
             document_title=title,
