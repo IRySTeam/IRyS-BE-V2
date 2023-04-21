@@ -6,8 +6,6 @@ from asgiref.sync import async_to_sync
 from tika import parser
 
 from celery_app.main import celery
-from app.document.enums.document import IndexingStatusEnum
-from app.document.services import document_index_service
 from app.preprocess import OCRUtil, PreprocessUtil
 from app.classification import Classifier
 from app.elastic import EsClient, GENERAL_ELASTICSEARCH_INDEX_NAME
