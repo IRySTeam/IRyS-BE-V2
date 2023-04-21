@@ -1,18 +1,14 @@
-from binascii import b2a_base64
 from typing import List
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 
 from app.exception import BaseHttpErrorSchema
-from core.db.session import get_session_context
 from core.exceptions.base import CustomException
-from celery_app import parsing
-from app.document.services import document_service
+from app.document.services import DocumentService
 from app.document.schemas import (
     DocumentResponseSchema,
     IncludeIndexQueryParams,
     DocumentPathParams,
 )
-from core.utils import GCStorage
 
 document_router = APIRouter(
     responses={
@@ -90,26 +86,4 @@ async def get_document(
     },
 )
 async def upload_document(file: UploadFile = File(...)):
-    # Get file type.
-    try:
-        # TODO: Is this the correct way to get the title?
-        title = ".".join(file.filename.split(".")[:-1])
-        uploaded_file_url = GCStorage().upload_file(file, "documents/")
-        document = DocumentResponseSchema.from_orm(
-            await document_service.create_document(
-                title=title, file_url=uploaded_file_url
-            )
-        )
-        # TODO: Add with OCR choice.
-        # TODO: Add check duplicate.
-        parsing.delay(
-            document_id=document.id,
-            document_title=title,
-            file_content_str=b2a_base64(file.file.read()).decode("utf-8"),
-        )
-        return document
-    except CustomException as e:
-        raise HTTPException(
-            status_code=e.error_code,
-            detail=e.message,
-        )
+    return await DocumentService().create_document(file=file)

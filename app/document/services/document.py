@@ -1,11 +1,17 @@
+from binascii import b2a_base64
 from typing import List
-from datetime import datetime
+from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.document.models import Document, DocumentIndex
+from app.document.schemas import DocumentResponseSchema, DocumentIndexing
+from app.document.enums.document import IndexingStatusEnum
+from celery_app import parsing
 from core.db import Transactional, session
 from core.exceptions import NotFoundException
+from core.repository import DocumentRepo, DocumentIndexRepo
+from core.utils import GCStorage
 
 
 class DocumentService:
@@ -13,6 +19,9 @@ class DocumentService:
     DocumentService is a class that handles the business logic for document when
     interacting with the database.
     """
+
+    document_repo = DocumentRepo()
+    document_index_repo = DocumentIndexRepo()
 
     def __init__(self):
         ...
@@ -63,11 +72,8 @@ class DocumentService:
     @Transactional()
     async def create_document(
         self,
-        title: str,
-        file_url: str,
-        elastic_doc_id: int = None,
-        elastic_index_name: int = None,
-    ) -> Document:
+        file: UploadFile,
+    ) -> DocumentResponseSchema:
         """
         Create a document and the corresponding indexing status.
         [Parameters]
@@ -75,15 +81,39 @@ class DocumentService:
             elastic_doc_id: int = None -> Document id in Elasticsearch.
             elastic_index_name: int = None -> Elasticsearch index name.
         """
-        document = Document(
-            title=title,
-            file_url=file_url,
-            elastic_doc_id=elastic_doc_id,
-            elastic_index_name=elastic_index_name,
+        # TODO: Is this the correct way to get the title?
+        title = ".".join(file.filename.split(".")[:-1])
+
+        # Upload file to GCS
+        uploaded_file_url = GCStorage().upload_file(file, "documents/")
+        document = await self.document_repo.save(
+            {
+                "title": title,
+                "file_url": uploaded_file_url,
+            }
         )
-        session.add(document)
-        await session.flush()
-        document_index = DocumentIndex(doc_id=document.id)
-        session.add(document_index)
-        document.index = document_index
-        return document
+        document_index = await self.document_index_repo.save(
+            {
+                "doc_id": document.inserted_primary_key[0],
+            }
+        )
+
+        # TODO: Add with OCR choice.
+        # TODO: Add check duplicate.
+
+        print(b2a_base64(file.file.read()).decode("utf-8"))
+        parsing.delay(
+            document_id=document.inserted_primary_key[0],
+            document_title=title,
+            file_content_str=b2a_base64(file.file.read()).decode("utf-8"),
+        )
+        return DocumentResponseSchema(
+            id=document.inserted_primary_key[0],
+            title=title,
+            file_url=uploaded_file_url,
+            index=DocumentIndexing(
+                id=document_index.inserted_primary_key[0],
+                doc_id=document.inserted_primary_key[0],
+                status=IndexingStatusEnum.READY,
+            ),
+        )
