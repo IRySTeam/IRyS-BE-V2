@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Unicode, BigInteger, Enum, DateTime, ForeignKey
+from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship
 
 from core.db import Base
@@ -10,7 +11,7 @@ class Document(Base, TimestampMixin):
     __tablename__ = "documents"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    elastic_doc_id = Column(BigInteger, nullable=True)
+    elastic_doc_id = Column(Unicode(255), nullable=True)
     elastic_index_name = Column(Unicode(255), nullable=True)
     title = Column(Unicode(255), nullable=False)
     doc_created_at = Column(DateTime, nullable=True)
@@ -30,7 +31,7 @@ class DocumentIndex(Base, TimestampMixin):
     status = Column(
         Enum(IndexingStatusEnum), nullable=False, default=IndexingStatusEnum.READY
     )
-    reason = Column(Unicode(255), nullable=True)
+    reason = Column(LONGTEXT, nullable=True)
 
     doc = relationship(
         "Document",

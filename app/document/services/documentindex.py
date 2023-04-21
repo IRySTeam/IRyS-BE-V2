@@ -1,6 +1,6 @@
 from sqlalchemy import update
 
-from core.db import session, Transactional
+from core.db import session, Transactional, standalone_session
 from app.document.enums.document import IndexingStatusEnum
 from app.document.models import DocumentIndex
 
@@ -36,4 +36,29 @@ class DocumentIndexService:
                 reason=reason,
             )
         )
-        session.execute(update_stmt)
+        await session.execute(update_stmt)
+
+    @standalone_session
+    @Transactional()
+    async def update_indexing_status_celery(
+        self,
+        doc_id: int,
+        status: IndexingStatusEnum,
+        reason: str = None,
+    ) -> None:
+        """
+        Update the indexing status of a document.
+        [Parameters]
+            doc_id: int -> Document id.
+            status: IndexingStatusEnum -> Indexing status.
+            reason: str -> Reason for the indexing status.
+        """
+        update_stmt = (
+            update(DocumentIndex)
+            .where(DocumentIndex.doc_id == doc_id)
+            .values(
+                status=status,
+                reason=reason,
+            )
+        )
+        await session.execute(update_stmt)

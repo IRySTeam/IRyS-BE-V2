@@ -3,10 +3,8 @@ from typing import List
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 
 from app.exception import BaseHttpErrorSchema
-from core.db.session import get_session_context
 from core.exceptions.base import CustomException
 from celery_app import parsing
-from app.preprocess import OCRUtil
 from app.document.services import document_service
 from app.document.schemas import (
     DocumentResponseSchema,
@@ -99,18 +97,10 @@ async def upload_document(file: UploadFile = File(...)):
             await document_service.create_document(title=title)
         )
 
-        # TODO: Add check duplicate.
-        with_ocr = True
-        text_percentage = OCRUtil.get_text_percentage(file_bytes)
-        print(text_percentage)
-        if text_percentage < OCRUtil.TEXT_PERCENTAGE_THRESHOLD:
-            with_ocr = False
-
         parsing.delay(
             document_id=document.id,
             document_title=title,
             file_content_str=b2a_base64(file_bytes).decode("utf-8"),
-            with_ocr=with_ocr,
         )
         return document
     except Exception as e:

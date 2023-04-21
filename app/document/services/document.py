@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.document.models import Document, DocumentIndex
-from core.db import Transactional, session
+from core.db import Transactional, session, standalone_session
 from core.exceptions import NotFoundException
 
 
@@ -61,8 +61,8 @@ class DocumentService:
         title: str,
         doc_created_at: datetime = None,
         doc_updated_at: datetime = None,
-        elastic_doc_id: int = None,
-        elastic_index_name: int = None,
+        elastic_doc_id: str = None,
+        elastic_index_name: str = None,
     ) -> Document:
         """
         Create a document and the corresponding indexing status.
@@ -70,8 +70,8 @@ class DocumentService:
             title: str -> Document title.
             doc_created_at: datetime -> Document created at.
             doc_updated_at: datetime -> Document updated at.
-            elastic_doc_id: int = None -> Document id in Elasticsearch.
-            elastic_index_name: int = None -> Elasticsearch index name.
+            elastic_doc_id: str = None -> Document id in Elasticsearch.
+            elastic_index_name: str = None -> Elasticsearch index name.
         """
         document = Document(
             title=title,
@@ -85,6 +85,107 @@ class DocumentService:
         document_index = DocumentIndex(doc_id=document.id)
         session.add(document_index)
         document.index = document_index
+        return document
+
+    @Transactional()
+    async def update_document(
+        self,
+        id: int,
+        title: str,
+        doc_created_at: datetime = None,
+        doc_updated_at: datetime = None,
+        elastic_doc_id: int = None,
+        elastic_index_name: str = None,
+    ) -> Document:
+        """
+        Update a document.
+        [Parameters]
+            id: int -> Document id.
+            title: str -> Document title.
+            doc_created_at: datetime -> Document created at.
+            doc_updated_at: datetime -> Document updated at.
+            elastic_doc_id: str = None -> Document id in Elasticsearch.
+            elastic_index_name: str = None -> Elasticsearch index name.
+        [Returns]
+            Document -> Document.
+        """
+        document = await self.get_document_by_id(id)
+        document.title = title
+        document.doc_created_at = doc_created_at
+        document.doc_updated_at = doc_updated_at
+        document.elastic_doc_id = elastic_doc_id
+        document.elastic_index_name = elastic_index_name
+        return document
+
+    @Transactional()
+    async def partial_update_document(
+        self,
+        id: int,
+        title: str = None,
+        doc_created_at: datetime = None,
+        doc_updated_at: datetime = None,
+        elastic_doc_id: int = None,
+        elastic_index_name: str = None,
+    ) -> Document:
+        """
+        Partially update a document.
+        [Parameters]
+            id: int -> Document id.
+            title: str -> Document title.
+            doc_created_at: datetime -> Document created at.
+            doc_updated_at: datetime -> Document updated at.
+            elastic_doc_id: str = None -> Document id in Elasticsearch.
+            elastic_index_name: str = None -> Elasticsearch index name.
+        [Returns]
+            Document -> Document.
+        """
+        document = await self.get_document_by_id(id)
+        if title:
+            document.title = title
+        if doc_created_at:
+            document.doc_created_at = doc_created_at
+        if doc_updated_at:
+            document.doc_updated_at = doc_updated_at
+        if elastic_doc_id:
+            document.elastic_doc_id = elastic_doc_id
+        if elastic_index_name:
+            document.elastic_index_name = elastic_index_name
+        return document
+
+    @standalone_session
+    @Transactional()
+    async def partial_update_document_celery(
+        self,
+        id: int,
+        title: str = None,
+        doc_created_at: datetime = None,
+        doc_updated_at: datetime = None,
+        elastic_doc_id: str = None,
+        elastic_index_name: str = None,
+    ) -> Document:
+        """
+        Partially update a document but with a standalone session.
+        [Parameters]
+            id: int -> Document id.
+            title: str -> Document title.
+            doc_created_at: datetime -> Document created at.
+            doc_updated_at: datetime -> Document updated at.
+            elastic_doc_id: str = None -> Document id in Elasticsearch.
+            elastic_index_name: str = None -> Elasticsearch index name.
+        [Returns]
+            Document -> Document.
+        """
+        document = await self.get_document_by_id(id)
+        if title:
+            document.title = title
+        if doc_created_at:
+            document.doc_created_at = doc_created_at
+        if doc_updated_at:
+            document.doc_updated_at = doc_updated_at
+        if elastic_doc_id:
+            document.elastic_doc_id = elastic_doc_id
+        if elastic_index_name:
+            document.elastic_index_name = elastic_index_name
         return document
 
     @Transactional()

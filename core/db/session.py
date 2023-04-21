@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.sql.expression import Update, Delete, Insert
+from sqlalchemy.pool import NullPool
 
 from core.config import config
 
@@ -33,8 +34,12 @@ def reset_session_context(context: Token) -> None:
 
 
 engines = {
-    "writer": create_async_engine(config.WRITER_DB_URL, pool_recycle=3600),
-    "reader": create_async_engine(config.READER_DB_URL, pool_recycle=3600),
+    "writer": create_async_engine(
+        config.WRITER_DB_URL, pool_recycle=3600, poolclass=NullPool
+    ),
+    "reader": create_async_engine(
+        config.READER_DB_URL, pool_recycle=3600, poolclass=NullPool
+    ),
 }
 
 
