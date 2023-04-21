@@ -64,8 +64,7 @@ class DocumentService:
     async def create_document(
         self,
         title: str,
-        doc_created_at: datetime = None,
-        doc_updated_at: datetime = None,
+        file_url: str,
         elastic_doc_id: int = None,
         elastic_index_name: int = None,
     ) -> Document:
@@ -73,15 +72,12 @@ class DocumentService:
         Create a document and the corresponding indexing status.
         [Parameters]
             title: str -> Document title.
-            doc_created_at: datetime -> Document created at.
-            doc_updated_at: datetime -> Document updated at.
             elastic_doc_id: int = None -> Document id in Elasticsearch.
             elastic_index_name: int = None -> Elasticsearch index name.
         """
         document = Document(
             title=title,
-            doc_created_at=doc_created_at,
-            doc_updated_at=doc_updated_at,
+            file_url=file_url,
             elastic_doc_id=elastic_doc_id,
             elastic_index_name=elastic_index_name,
         )

@@ -94,10 +94,11 @@ async def upload_document(file: UploadFile = File(...)):
     try:
         # TODO: Is this the correct way to get the title?
         title = ".".join(file.filename.split(".")[:-1])
-        uploaded_file_url = GCStorage().upload_file(file, title, "documents/")
-        print(uploaded_file_url)
+        uploaded_file_url = GCStorage().upload_file(file, "documents/")
         document = DocumentResponseSchema.from_orm(
-            await document_service.create_document(title=title)
+            await document_service.create_document(
+                title=title, file_url=uploaded_file_url
+            )
         )
         # TODO: Add with OCR choice.
         # TODO: Add check duplicate.
