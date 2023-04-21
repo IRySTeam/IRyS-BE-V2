@@ -34,7 +34,8 @@ class RepositorySchema(BaseModel):
     owner: RepositoryOwnerSchema = Field(..., description="Repository Owner")
 
 
-class GetJoinedRepositoriesResponseSchema(BaseModel):
+class GetJoinedRepositoriesSchema(BaseModel):
+    does_user_have_any_repos: bool = Field(..., description="Does User Have Any Repos")
     results: List[RepositorySchema] = Field(..., description="Results")
     total_page: int = Field(..., description="Total Page")
     total_items: int = Field(..., description="Total Items")
