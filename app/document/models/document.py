@@ -10,11 +10,10 @@ class Document(Base, TimestampMixin):
     __tablename__ = "documents"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
+    title = Column(Unicode(255), nullable=False)
+    file_url = Column(Unicode(255), nullable=False)
     elastic_doc_id = Column(BigInteger, nullable=True)
     elastic_index_name = Column(Unicode(255), nullable=True)
-    title = Column(Unicode(255), nullable=False)
-    doc_created_at = Column(DateTime, nullable=True)
-    doc_updated_at = Column(DateTime, nullable=True)
 
     index = relationship(
         "DocumentIndex",
