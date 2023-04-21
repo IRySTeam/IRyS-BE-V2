@@ -83,3 +83,9 @@ class ForgotPasswordOTPAlreadySentException(CustomException):
     code = 429
     error_code = "USER__FORGOT_PASSWORD_OTP_ALREADY_SENT"
     message = "Forgot password OTP has already been sent"
+
+
+class NotAllowedException(CustomException):
+    code = 403
+    error_code = "USER__NOT_ALLOWED"
+    message = "You are not allowed to perform this action"

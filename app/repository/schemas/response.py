@@ -1,5 +1,5 @@
+from typing import List, Optional
 from datetime import datetime
-from typing import List
 from pydantic import BaseModel, Field
 
 
@@ -41,3 +41,7 @@ class GetPublicRepositoriesResponseSchema(BaseModel):
     results: List[RepositorySchema] = Field(..., description="Results")
     total_page: int = Field(..., description="Total Page")
     total_items: int = Field(..., description="Total Items")
+
+
+class EditRepositoryResponseSchema(BaseModel):
+    message: str = Field(..., description="Message")

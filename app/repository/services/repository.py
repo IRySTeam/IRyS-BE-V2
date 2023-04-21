@@ -6,9 +6,14 @@ from app.repository.schemas import (
     GetJoinedRepositoriesSchema,
     RepositoryOwnerSchema,
     GetPublicRepositoriesResponseSchema,
+    EditRepositoryResponseSchema,
 )
 from core.db import Transactional
-from core.exceptions import RepositoryDetailsEmptyException
+from core.exceptions import (
+    RepositoryDetailsEmptyException,
+    RepositoryNotFoundException,
+    NotFoundException,
+)
 from core.repository import RepositoryRepo
 
 
@@ -112,3 +117,22 @@ class RepositoryService:
         return GetPublicRepositoriesResponseSchema(
             results=results, total_page=total_page, total_items=total_items
         )
+
+    @Transactional()
+    async def edit_repository(
+        self, user_id: int, repository_id: int, params: dict
+    ) -> None:
+        if not await self.repository_repo.is_exist(repository_id):
+            raise NotFoundException
+        if not (
+            await self.repository_repo.is_user_id_owner_of_repository(
+                user_id, repository_id
+            )
+            or await self.repository_repo.is_user_id_admin_of_repository(
+                user_id, repository_id
+            )
+        ):
+            raise RepositoryNotFoundException
+
+        params = {k: v for k, v in params.items() if v is not None}
+        await self.repository_repo.update_by_id(repository_id, params)
