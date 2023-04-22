@@ -245,6 +245,24 @@ class RepositoryRepo(BaseRepo[Repository]):
 
         return is_owner
 
+    async def get_repository_by_id(self, repository_id: int) -> Repository:
+        query = """
+            SELECT r.*, a2.owner_id, a2.owner_first_name, a2.owner_last_name
+            FROM repositories r
+            INNER JOIN
+            (
+                SELECT u2.id AS owner_id, u2.first_name AS owner_first_name, u2.last_name AS owner_last_name, r2.id AS repository_id
+                FROM users u2
+                INNER JOIN user_repositories ur2 ON u2.id = ur2.user_id
+                INNER JOIN repositories r2 ON ur2.repository_id = r2.id
+                WHERE ur2.role = 'Owner'
+            ) a2 ON r.id = a2.repository_id
+            WHERE r.id = :repository_id
+        """
+        result = await session.execute(text(query), {"repository_id": repository_id})
+        repository = result.fetchone()
+        return repository
+
     async def create_user_repository(
         self, user_id: int, repository_id: int, role: str
     ) -> None:
