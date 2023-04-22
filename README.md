@@ -260,7 +260,7 @@ Below are some useful commands for docker:
 1. Run ```poetry shell``` to open Poetry Shell
 2. Lastly, run the app using this command:
     ```python
-    python3 main.py --env local|dev|prod --debug
+    ENV=local|development|production python3 main.py
     ```
 <!-- USAGE EXAMPLES -->
 ## Usage

@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Optional
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 
@@ -29,10 +30,12 @@ class RepositorySchema(BaseModel):
     name: str = Field(..., description="Name")
     description: str = Field(..., description="Description")
     is_public: bool = Field(..., description="Is Public")
+    updated_at: datetime = Field(..., description="Updated At")
     owner: RepositoryOwnerSchema = Field(..., description="Repository Owner")
 
 
-class GetJoinedRepositoriesResponseSchema(BaseModel):
+class GetJoinedRepositoriesSchema(BaseModel):
+    does_user_have_any_repos: bool = Field(..., description="Does User Have Any Repos")
     results: List[RepositorySchema] = Field(..., description="Results")
     total_page: int = Field(..., description="Total Page")
     total_items: int = Field(..., description="Total Items")
