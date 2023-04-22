@@ -218,3 +218,43 @@ class RepositoryRepo(BaseRepo[Repository]):
         result = await session.execute(text(query), {"user_id": user_id})
         total_items = result.fetchone().total_count
         return total_items > 0
+
+    async def get_repository_by_id(self, repository_id: int) -> Repository:
+        query = """
+            SELECT r.*, a2.owner_id, a2.owner_first_name, a2.owner_last_name
+            FROM repositories r
+            INNER JOIN
+            (
+                SELECT u2.id AS owner_id, u2.first_name AS owner_first_name, u2.last_name AS owner_last_name, r2.id AS repository_id
+                FROM users u2
+                INNER JOIN user_repositories ur2 ON u2.id = ur2.user_id
+                INNER JOIN repositories r2 ON ur2.repository_id = r2.id
+                WHERE ur2.role = 'Owner'
+            ) a2 ON r.id = a2.repository_id
+            WHERE r.id = :repository_id
+        """
+        result = await session.execute(text(query), {"repository_id": repository_id})
+        repository = result.fetchone()
+        return repository
+
+    async def is_user_id_collaborator_of_repository(
+        self, user_id: int, repository_id: int
+    ):
+        sql = text(
+            """
+            SELECT 1
+            FROM user_repositories ur
+            WHERE ur.user_id = :user_id
+            AND ur.repository_id = :repository_id
+        """
+        )
+        params = {"user_id": user_id, "repository_id": repository_id}
+
+        # Execute SQL query and fetch result
+        result = await session.execute(sql, params)
+        row = result.fetchone()
+
+        # Check if user is a collaborator of the repository
+        is_collaborator = True if row else False
+
+        return is_collaborator
