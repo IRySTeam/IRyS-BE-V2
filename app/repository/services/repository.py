@@ -3,7 +3,7 @@ from typing import List
 from app.repository.schemas import (
     CreateRepositoryResponseSchema,
     RepositorySchema,
-    GetJoinedRepositoriesResponseSchema,
+    GetJoinedRepositoriesSchema,
     RepositoryOwnerSchema,
     GetPublicRepositoriesResponseSchema,
     RepositoryCollaboratorSchema,
@@ -53,7 +53,7 @@ class RepositoryService:
         sort_by: str,
         page_no: int,
         page_size: int,
-    ) -> GetJoinedRepositoriesResponseSchema:
+    ) -> GetJoinedRepositoriesSchema:
         (
             repositories,
             total_page,
