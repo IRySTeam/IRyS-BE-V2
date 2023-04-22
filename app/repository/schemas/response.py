@@ -3,6 +3,10 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
+class MessageResponseSchema(BaseModel):
+    message: str = Field(..., description="Message")
+
+
 class CreateRepositoryResponseSchema(BaseModel):
     name: str = Field(..., description="Name")
     description: str = Field(..., description="Description")
@@ -43,5 +47,12 @@ class GetPublicRepositoriesResponseSchema(BaseModel):
     total_items: int = Field(..., description="Total Items")
 
 
-class EditRepositoryResponseSchema(BaseModel):
-    message: str = Field(..., description="Message")
+class RepositoryCollaboratorSchema(BaseModel):
+    id: int = Field(..., description="User ID")
+    first_name: str = Field(..., description="First Name")
+    last_name: str = Field(..., description="Last Name")
+    email: str = Field(..., description="Email")
+    role: str = Field(..., description="Role")
+
+    class Config:
+        orm_mode = True

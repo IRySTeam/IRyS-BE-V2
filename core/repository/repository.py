@@ -23,8 +23,6 @@ class RepositoryRepo(BaseRepo[Repository]):
         )
         await session.execute(stmt)
 
-        return new_repo
-
     async def get_joined_repositories(
         self,
         user_id: int,
@@ -166,6 +164,45 @@ class RepositoryRepo(BaseRepo[Repository]):
 
         return repositories, total_pages, total_items
 
+    async def get_repository_collaborators(self, repository_id: int) -> List[User]:
+        query = """
+        SELECT u.*, ur.role
+        FROM users u
+        INNER JOIN user_repositories ur ON ur.user_id = u.id
+        WHERE ur.repository_id = :repository_id
+        """
+        results = await session.execute(text(query), {"repository_id": repository_id})
+        return results.fetchall()
+
+    async def get_collaborator_by_id(self, user_id: int, repository_id: int):
+        sql = text(
+            """
+            SELECT u.*, ur.role
+            FROM users u
+            INNER JOIN user_repositories ur ON ur.user_id = u.id
+            WHERE ur.repository_id = :repository_id
+            AND u.id = :user_id
+        """
+        )
+        params = {"repository_id": repository_id, "user_id": user_id}
+
+        # Execute SQL query and fetch result
+        result = await session.execute(sql, params)
+        return result.fetchone()
+
+    async def is_user_id_collaborator_of_repository(
+        self, user_id: int, repository_id: int
+    ) -> bool:
+        query = """
+        SELECT COUNT(*) as total_count
+        FROM user_repositories ur
+        WHERE ur.user_id = :user_id AND ur.repository_id = :repository_id
+        """
+        results = await session.execute(
+            text(query), {"user_id": user_id, "repository_id": repository_id}
+        )
+        return results.fetchone().total_count > 0
+
     async def is_user_id_owner_of_repository(self, user_id: int, repository_id: int):
         sql = text(
             """
@@ -207,6 +244,58 @@ class RepositoryRepo(BaseRepo[Repository]):
         is_owner = True if row else False
 
         return is_owner
+
+    async def create_user_repository(
+        self, user_id: int, repository_id: int, role: str
+    ) -> None:
+        sql = text(
+            """
+            INSERT INTO user_repositories (user_id, repository_id, role)
+            VALUES (:user_id, :repository_id, :role)
+        """
+        )
+        params = {
+            "user_id": user_id,
+            "repository_id": repository_id,
+            "role": role,
+        }
+
+        # Execute SQL query
+        await session.execute(sql, params)
+
+    async def delete_user_repository(self, user_id: int, repository_id: int) -> None:
+        sql = text(
+            """
+            DELETE FROM user_repositories
+            WHERE user_id = :user_id AND repository_id = :repository_id
+        """
+        )
+        params = {
+            "user_id": user_id,
+            "repository_id": repository_id,
+        }
+
+        # Execute SQL query
+        await session.execute(sql, params)
+
+    async def update_user_repository_role(
+        self, user_id: int, repository_id: int, role: str
+    ) -> None:
+        sql = text(
+            """
+            UPDATE user_repositories
+            SET role = :role
+            WHERE user_id = :user_id AND repository_id = :repository_id
+        """
+        )
+        params = {
+            "user_id": user_id,
+            "repository_id": repository_id,
+            "role": role,
+        }
+
+        # Execute SQL query
+        await session.execute(sql, params)
 
     async def does_user_id_have_any_repository(self, user_id: int) -> bool:
         query = """

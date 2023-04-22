@@ -6,15 +6,21 @@ from app.repository.schemas import (
     GetJoinedRepositoriesSchema,
     RepositoryOwnerSchema,
     GetPublicRepositoriesResponseSchema,
-    EditRepositoryResponseSchema,
+    RepositoryCollaboratorSchema,
 )
+from app.repository.constants import GRANTABLE_ROLES
 from core.db import Transactional
 from core.exceptions import (
     RepositoryDetailsEmptyException,
     RepositoryNotFoundException,
-    NotFoundException,
+    UserNotAllowedException,
+    InvalidRepositoryRoleException,
+    DuplicateCollaboratorException,
+    UserNotFoundException,
+    InvalidRepositoryCollaboratorException,
 )
-from core.repository import RepositoryRepo
+from core.repository import RepositoryRepo, UserRepo
+from core.utils.mailer import Mailer
 
 
 class RepositoryService:
@@ -117,12 +123,25 @@ class RepositoryService:
             results=results, total_page=total_page, total_items=total_items
         )
 
+    async def get_repository_collaborators(
+        self, user_id: int, repository_id: int
+    ) -> List[RepositoryCollaboratorSchema]:
+
+        if not await self.repository_repo.is_user_id_collaborator_of_repository(
+            user_id=user_id, repository_id=repository_id
+        ):
+            raise UserNotAllowedException
+        members = await self.repository_repo.get_repository_collaborators(
+            repository_id=repository_id
+        )
+        return members
+
     @Transactional()
     async def edit_repository(
         self, user_id: int, repository_id: int, params: dict
     ) -> None:
         if not await self.repository_repo.is_exist(repository_id):
-            raise NotFoundException
+            raise RepositoryNotFoundException
         if not (
             await self.repository_repo.is_user_id_owner_of_repository(
                 user_id, repository_id
@@ -131,7 +150,140 @@ class RepositoryService:
                 user_id, repository_id
             )
         ):
-            raise RepositoryNotFoundException
+            raise UserNotAllowedException
 
         params = {k: v for k, v in params.items() if v is not None}
         await self.repository_repo.update_by_id(repository_id, params)
+
+    @Transactional()
+    async def add_repository_collaborator(
+        self, user_id: int, repository_id: int, params: dict
+    ) -> None:
+        user_repo = UserRepo()
+
+        if not await user_repo.is_exist(params["collaborator_id"]):
+            raise UserNotFoundException
+
+        if not await self.repository_repo.is_exist(repository_id):
+            raise RepositoryNotFoundException
+
+        if await self.repository_repo.is_user_id_collaborator_of_repository(
+            params["collaborator_id"], repository_id
+        ):
+            raise DuplicateCollaboratorException
+
+        if params["role"] == "Owner":
+            raise UserNotAllowedException
+        if params["role"] not in GRANTABLE_ROLES:
+            raise InvalidRepositoryRoleException
+
+        is_owner = await self.repository_repo.is_user_id_owner_of_repository(
+            user_id, repository_id
+        )
+        is_admin = await self.repository_repo.is_user_id_admin_of_repository(
+            user_id, repository_id
+        )
+
+        if not (is_owner or is_admin):
+            raise UserNotAllowedException
+        if is_admin:
+            if params["role"] == "Admin":
+                raise UserNotAllowedException
+
+        await self.repository_repo.create_user_repository(
+            repository_id=repository_id,
+            user_id=params["collaborator_id"],
+            role=params["role"],
+        )
+
+        user_repo = UserRepo()
+        user = await user_repo.get_by_id(params["user_id"])
+        repo = await self.repository_repo.get_by_id(repository_id)
+
+        # Send email to user
+        await Mailer.send_repository_collaborator_email(
+            user.email,
+            {
+                "first_name": user.first_name,
+                "repository_name": repo.name,
+                "role": params["role"],
+            },
+        )
+
+    @Transactional()
+    async def remove_repository_collaborator(
+        self, user_id: int, repository_id: int, collaborator_id: int
+    ) -> None:
+        user_repo = UserRepo()
+
+        if not await user_repo.is_exist(collaborator_id):
+            raise UserNotFoundException
+
+        if not await self.repository_repo.is_exist(repository_id):
+            raise RepositoryNotFoundException
+
+        is_owner = await self.repository_repo.is_user_id_owner_of_repository(
+            user_id, repository_id
+        )
+        is_admin = await self.repository_repo.is_user_id_admin_of_repository(
+            user_id, repository_id
+        )
+        collaborator = await self.repository_repo.get_collaborator_by_id(
+            collaborator_id, repository_id
+        )
+
+        if not (is_owner or is_admin):
+            raise UserNotAllowedException
+        if is_admin:
+            if collaborator.role == "Admin":
+                raise UserNotAllowedException
+
+        if not await self.repository_repo.is_user_id_collaborator_of_repository(
+            collaborator_id, repository_id
+        ):
+            raise InvalidRepositoryCollaboratorException
+
+        await self.repository_repo.delete_user_repository(
+            repository_id=repository_id, user_id=collaborator_id
+        )
+
+    @Transactional()
+    async def edit_repository_collaborator(
+        self, user_id: int, repository_id: int, collaborator_id: int, role: str
+    ) -> None:
+        user_repo = UserRepo()
+
+        if not await user_repo.is_exist(collaborator_id):
+            raise UserNotFoundException
+        if not await self.repository_repo.is_exist(repository_id):
+            raise RepositoryNotFoundException
+
+        if role not in GRANTABLE_ROLES:
+            raise InvalidRepositoryRoleException
+
+        is_owner = await self.repository_repo.is_user_id_owner_of_repository(
+            user_id, repository_id
+        )
+        is_admin = await self.repository_repo.is_user_id_admin_of_repository(
+            user_id, repository_id
+        )
+        collaborator = await self.repository_repo.get_collaborator_by_id(
+            collaborator_id, repository_id
+        )
+
+        if not (is_owner or is_admin):
+            raise UserNotAllowedException
+        if is_admin:
+            if collaborator.role == "Admin":
+                raise UserNotAllowedException
+            if role == "Admin":
+                raise UserNotAllowedException
+
+        if not await self.repository_repo.is_user_id_collaborator_of_repository(
+            collaborator_id, repository_id
+        ):
+            raise InvalidRepositoryCollaboratorException
+
+        await self.repository_repo.update_user_repository_role(
+            repository_id=repository_id, user_id=collaborator_id, role=role
+        )
