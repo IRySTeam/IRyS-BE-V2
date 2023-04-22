@@ -53,7 +53,7 @@ class RepositoryService:
         sort_by: str,
         page_no: int,
         page_size: int,
-    ) -> GetJoinedRepositoriesResponseSchema:
+    ) -> GetJoinedRepositoriesSchema:
         (
             repositories,
             total_page,

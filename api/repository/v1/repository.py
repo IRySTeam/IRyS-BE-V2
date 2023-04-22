@@ -46,7 +46,7 @@ async def create_repository(request: Request, body: CreateRepositoryRequestSchem
 
 @repository_router.get(
     "/joined",
-    response_model=GetJoinedRepositoriesResponseSchema,
+    response_model=GetJoinedRepositoriesSchema,
     responses={
         "401": CustomExceptionHelper.get_exception_response(
             UnauthorizedException, "Unauthorized"
