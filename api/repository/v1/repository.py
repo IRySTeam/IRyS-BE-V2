@@ -1,6 +1,10 @@
 from typing import List
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, UploadFile
 
+from app.document.services import DocumentService
+from app.document.schemas import (
+    DocumentSchema,
+)
 from app.repository.schemas import *
 from app.repository.services import RepositoryService
 from core.exceptions import (
@@ -248,4 +252,30 @@ async def remove_repository_collaborator(
     await RepositoryService().remove_repository_collaborator(
         user_id=request.user.id, repository_id=repository_id, params=body.dict()
     )
+    return MessageResponseSchema(message="Successful")
+
+
+@repository_router.get(
+    "/{repository_id}/documents",
+    response_model=List[DocumentSchema],
+    responses={},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def get_repository_documents(request: Request, repository_id: int):
+    return await DocumentService().get_repository_documents(
+        user_id=request.user.id, repository_id=repository_id
+    )
+
+
+@repository_router.post(
+    "/{repository_id}/documents/upload",
+    response_model=MessageResponseSchema,
+    responses={},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def upload_document(request: Request, repository_id: int, file: UploadFile):
+    await DocumentService().upload_document(
+        user_id=request.user.id, repository_id=repository_id, file=file
+    )
+
     return MessageResponseSchema(message="Successful")

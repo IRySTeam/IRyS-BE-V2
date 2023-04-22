@@ -14,12 +14,13 @@ class Document(Base, TimestampMixin):
     file_url = Column(Unicode(255), nullable=False)
     elastic_doc_id = Column(BigInteger, nullable=True)
     elastic_index_name = Column(Unicode(255), nullable=True)
-
     index = relationship(
         "DocumentIndex",
         back_populates="doc",
         uselist=False,
     )
+    repository_id = Column(BigInteger, ForeignKey("repositories.id"))
+    repository = relationship("Repository", back_populates="documents")
 
 
 class DocumentIndex(Base, TimestampMixin):
