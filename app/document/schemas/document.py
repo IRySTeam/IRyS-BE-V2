@@ -25,11 +25,10 @@ class DocumentIndexing(BaseModel):
 
 class DocumentResponseSchema(BaseModel):
     id: int = Field(..., description="Document id")
+    title: str = Field(..., description="Document title")
+    file_url: str = Field(..., description="Document file url")
     elastic_doc_id: int = Field(None, description="Document id in Elasticsearch")
     elastic_index_name: str = Field(None, description="Elasticsearch index name")
-    title: str = Field(..., description="Document title")
-    doc_created_at: datetime = Field(None, description="Document's created at metadata")
-    doc_updated_at: datetime = Field(None, description="Document's updated at metadata")
     index: DocumentIndexing = Field(None, description="Document indexing status")
 
     class Config:

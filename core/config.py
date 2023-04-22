@@ -37,6 +37,13 @@ class Config(BaseSettings):
     ELASTICSEARCH_SCHEME: Optional[str] = "http"
     ELASTICSEARCH_HOST: Optional[str] = "localhost"
     ELASTICSEARCH_PORT: Optional[int] = 9200
+    GCS_BUCKET_NAME: str
+    GOOGLE_PROJECT_ID: str
+    GOOGLE_PRIVATE_KEY_ID: str
+    GOOGLE_PRIVATE_KEY: str
+    GOOGLE_CLIENT_EMAIL: str
+    GOOGLE_CLIENT_EMAIL_ID: str
+    GOOGLE_CLIENT_ID: str
 
 
 class DevelopmentConfig(Config):
@@ -44,11 +51,25 @@ class DevelopmentConfig(Config):
     READER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('DEV_DB_USER')}:{os.getenv('DEV_DB_PASSWORD')}@{os.getenv('DEV_DB_HOST')}/{os.getenv('DEV_DB_NAME')}"
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
+    GCS_BUCKET_NAME: str = os.getenv("DEV_GCS_BUCKET_NAME")
+    GOOGLE_PROJECT_ID: str = os.getenv("DEV_GOOGLE_PROJECT_ID")
+    GOOGLE_PRIVATE_KEY_ID: str = os.getenv("DEV_GOOGLE_PRIVATE_KEY_ID")
+    GOOGLE_PRIVATE_KEY: str = os.getenv("DEV_GOOGLE_PRIVATE_KEY")
+    GOOGLE_CLIENT_EMAIL: str = os.getenv("DEV_GOOGLE_CLIENT_EMAIL")
+    GOOGLE_CLIENT_EMAIL_ID: str = os.getenv("DEV_GOOGLE_CLIENT_EMAIL_ID")
+    GOOGLE_CLIENT_ID: str = os.getenv("DEV_GOOGLE_CLIENT_ID")
 
 
 class LocalConfig(Config):
     WRITER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('DEV_DB_USER')}:{os.getenv('DEV_DB_PASSWORD')}@{os.getenv('DEV_DB_HOST')}/{os.getenv('DEV_DB_NAME')}"
     READER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('DEV_DB_USER')}:{os.getenv('DEV_DB_PASSWORD')}@{os.getenv('DEV_DB_HOST')}/{os.getenv('DEV_DB_NAME')}"
+    GCS_BUCKET_NAME: str = os.getenv("DEV_GCS_BUCKET_NAME")
+    GOOGLE_PROJECT_ID: str = os.getenv("DEV_GOOGLE_PROJECT_ID")
+    GOOGLE_PRIVATE_KEY_ID: str = os.getenv("DEV_GOOGLE_PRIVATE_KEY_ID")
+    GOOGLE_PRIVATE_KEY: str = os.getenv("DEV_GOOGLE_PRIVATE_KEY")
+    GOOGLE_CLIENT_EMAIL: str = os.getenv("DEV_GOOGLE_CLIENT_EMAIL")
+    GOOGLE_CLIENT_EMAIL_ID: str = os.getenv("DEV_GOOGLE_CLIENT_EMAIL_ID")
+    GOOGLE_CLIENT_ID: str = os.getenv("DEV_GOOGLE_CLIENT_ID")
 
 
 class ProductionConfig(Config):
@@ -57,6 +78,13 @@ class ProductionConfig(Config):
     APP_PORT: int = 80
     WRITER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('PROD_DB_USER')}:{os.getenv('PROD_DB_PASSWORD')}@{os.getenv('PROD_DB_HOST')}/{os.getenv('PROD_DB_NAME')}"
     READER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('PROD_DB_USER')}:{os.getenv('PROD_DB_PASSWORD')}@{os.getenv('PROD_DB_HOST')}/{os.getenv('PROD_DB_NAME')}"
+    GCS_BUCKET_NAME: str = os.getenv("PROD_GCS_BUCKET_NAME")
+    GOOGLE_PROJECT_ID: str = os.getenv("PROD_GOOGLE_PROJECT_ID")
+    GOOGLE_PRIVATE_KEY_ID: str = os.getenv("PROD_GOOGLE_PRIVATE_KEY_ID")
+    GOOGLE_PRIVATE_KEY: str = os.getenv("PROD_GOOGLE_PRIVATE_KEY")
+    GOOGLE_CLIENT_EMAIL: str = os.getenv("PROD_GOOGLE_CLIENT_EMAIL")
+    GOOGLE_CLIENT_EMAIL_ID: str = os.getenv("PROD_GOOGLE_CLIENT_EMAIL_ID")
+    GOOGLE_CLIENT_ID: str = os.getenv("PROD_GOOGLE_CLIENT_ID")
 
 
 def get_config():
