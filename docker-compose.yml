@@ -1,13 +1,74 @@
 version: '3.7'
-
 services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.development
     ports:
       - '8000:8000'
     volumes:
       - $PWD:/home
     env_file:
       - .env
+
+  # BERT Server
+  bertserving:
+    container_name: bertserving
+    build:
+      context: ./bertserving
+      dockerfile: Dockerfile
+    env_file:
+      - ./bertserving/.env
+    ports:
+      - "5555:5555"
+      - "5556:5556"
+
+  # Celery
+  redis:
+    image: redis:7-alpine
+    ports:
+      - 6380:6379
+    command: redis-server --save 20 1 --loglevel warning
+    depends_on:
+      - api
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: ./celery_app/Dockerfile
+    command: /start-celeryworker
+    volumes:
+      - .:/app
+    env_file:
+      - ./celery_app/.env
+    depends_on:
+      - api
+      - redis
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: ./celery_app/Dockerfile
+    command: /start-celerybeat
+    volumes:
+      - .:/app
+    env_file:
+      - ./celery_app/.env
+    depends_on:
+      - api
+      - redis
+
+  flower:
+    build:
+      context: .
+      dockerfile: ./celery_app/Dockerfile
+    command: /start-flower
+    volumes:
+      - .:/app
+    env_file:
+      - ./celery_app/.env
+    ports:
+      - 5557:5555
+    depends_on:
+      - api
+      - redis

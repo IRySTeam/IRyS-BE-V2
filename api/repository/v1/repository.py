@@ -1,17 +1,14 @@
 from typing import List
 from fastapi import APIRouter, Depends, Query, Request
 
-from app.repository.schemas import (
-    CreateRepositoryRequestSchema,
-    CreateRepositoryResponseSchema,
-    GetJoinedRepositoriesSchema,
-    GetPublicRepositoriesResponseSchema,
-)
+from app.repository.schemas import *
 from app.repository.services import RepositoryService
 from core.exceptions import (
     UnauthorizedException,
     EmailNotVerifiedException,
     RepositoryDetailsEmptyException,
+    RepositoryNotFoundException,
+    NotAllowedException,
 )
 from core.fastapi.dependencies import (
     PermissionDependency,
@@ -97,3 +94,33 @@ async def get_public_repositories(
     return await RepositoryService().get_public_repositories(
         name=name, page_no=page_no, page_size=page_size
     )
+
+
+@repository_router.post(
+    "/{repository_id}/edit",
+    response_model=EditRepositoryResponseSchema,
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            NotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def edit_repository(
+    request: Request,
+    repository_id: int,
+    body: EditRepositoryRequestSchema,
+):
+    await RepositoryService().edit_repository(
+        user_id=request.user.id, repository_id=repository_id, params=body.dict()
+    )
+    return EditRepositoryResponseSchema(message="Successful")
