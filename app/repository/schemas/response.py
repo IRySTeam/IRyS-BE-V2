@@ -1,5 +1,5 @@
+from typing import List, Optional
 from datetime import datetime
-from typing import List
 from pydantic import BaseModel, Field
 
 
@@ -45,3 +45,7 @@ class GetPublicRepositoriesResponseSchema(BaseModel):
 
 class ReindexAllResponseSchema(BaseModel):
     success: bool = Field(..., description="Reindexing all documents status")
+
+
+class EditRepositoryResponseSchema(BaseModel):
+    message: str = Field(..., description="Message")
