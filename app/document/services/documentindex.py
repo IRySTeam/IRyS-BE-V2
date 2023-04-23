@@ -1,6 +1,8 @@
 from sqlalchemy import update
 
 from core.db import session, Transactional, standalone_session
+from core.repository import DocumentIndexRepo
+from core.exceptions import NotFoundException
 from app.document.enums.document import IndexingStatusEnum
 from app.document.models import DocumentIndex
 
@@ -11,8 +13,23 @@ class DocumentIndexService:
     interacting with the database.
     """
 
+    document_index_repo = DocumentIndexRepo()
+
     def __init__(self):
         ...
+
+    async def get_by_doc_id(self, doc_id: int) -> DocumentIndex:
+        """
+        Get indexing status of a document identified by doc_id.
+        [Parameters]
+            doc_id: int -> Document id.
+        [Returns]
+            DocumentIndex -> DocumentIndex.
+        """
+        data = await self.document_index_repo.get_by_doc_id(doc_id)
+        if not data:
+            raise NotFoundException("Document index with specified doc_id not found")
+        return data
 
     @Transactional()
     async def update_indexing_status(
@@ -20,6 +37,7 @@ class DocumentIndexService:
         doc_id: int,
         status: IndexingStatusEnum,
         reason: str = None,
+        current_task_id: str = None,
     ) -> None:
         """
         Update the indexing status of a document.
@@ -27,16 +45,17 @@ class DocumentIndexService:
             doc_id: int -> Document id.
             status: IndexingStatusEnum -> Indexing status.
             reason: str -> Reason for the indexing status.
+            current_task_id: str -> Celery task id.
         """
-        update_stmt = (
-            update(DocumentIndex)
-            .where(DocumentIndex.doc_id == doc_id)
-            .values(
-                status=status,
-                reason=reason,
-            )
+        await self.get_by_doc_id(doc_id)
+        await self.document_index_repo.update_by_doc_id(
+            doc_id=doc_id,
+            params={
+                "status": status,
+                "reason": reason,
+                "current_task_id": current_task_id,
+            },
         )
-        await session.execute(update_stmt)
 
     @standalone_session
     @Transactional()
@@ -45,6 +64,7 @@ class DocumentIndexService:
         doc_id: int,
         status: IndexingStatusEnum,
         reason: str = None,
+        current_task_id: str = None,
     ) -> None:
         """
         Update the indexing status of a document.
@@ -52,13 +72,14 @@ class DocumentIndexService:
             doc_id: int -> Document id.
             status: IndexingStatusEnum -> Indexing status.
             reason: str -> Reason for the indexing status.
+            current_task_id: str -> Celery task id.
         """
-        update_stmt = (
-            update(DocumentIndex)
-            .where(DocumentIndex.doc_id == doc_id)
-            .values(
-                status=status,
-                reason=reason,
-            )
+        await self.get_by_doc_id(doc_id)
+        await self.document_index_repo.update_by_doc_id(
+            doc_id=doc_id,
+            params={
+                "status": status,
+                "reason": reason,
+                "current_task_id": current_task_id,
+            },
         )
-        await session.execute(update_stmt)

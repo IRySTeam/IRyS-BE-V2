@@ -51,7 +51,9 @@ class LocalConfig(Config):
 
 
 class ProductionConfig(Config):
+    ENV: str = "production"
     DEBUG: str = False
+    APP_PORT: int = 80
     WRITER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('PROD_DB_USER')}:{os.getenv('PROD_DB_PASSWORD')}@{os.getenv('PROD_DB_HOST')}/{os.getenv('PROD_DB_NAME')}"
     READER_DB_URL: str = f"postgresql+asyncpg://{os.getenv('PROD_DB_USER')}:{os.getenv('PROD_DB_PASSWORD')}@{os.getenv('PROD_DB_HOST')}/{os.getenv('PROD_DB_NAME')}"
 
@@ -59,9 +61,9 @@ class ProductionConfig(Config):
 def get_config():
     env = os.getenv("ENV", "local")
     config_type = {
-        "dev": DevelopmentConfig(),
+        "development": DevelopmentConfig(),
         "local": LocalConfig(),
-        "prod": ProductionConfig(),
+        "production": ProductionConfig(),
     }
     return config_type[env]
 

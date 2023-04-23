@@ -3,9 +3,12 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.document.models import Document, DocumentIndex
 from core.db import Transactional, session, standalone_session
 from core.exceptions import NotFoundException
+from core.repository import DocumentRepo, DocumentIndexRepo, RepositoryRepo
+from app.document.models import Document, DocumentIndex
+from app.document.enums.document import IndexingStatusEnum
+from app.elastic import EsClient
 
 
 class DocumentService:
@@ -13,6 +16,10 @@ class DocumentService:
     DocumentService is a class that handles the business logic for document when
     interacting with the database.
     """
+
+    repository_repo = RepositoryRepo()
+    document_repo = DocumentRepo()
+    document_index_repo = DocumentIndexRepo()
 
     def __init__(self):
         ...
@@ -28,12 +35,7 @@ class DocumentService:
         [Returns]
             List[Document] -> List of documents.
         """
-        query = select(Document)
-        if include_index:
-            query = query.options(selectinload(Document.index))
-        result = await session.execute(query)
-        data = result.scalars().all()
-        return data
+        return await self.document_repo.get_all(include_index=include_index)
 
     async def get_document_by_id(
         self, id: int, include_index: bool = False
@@ -46,11 +48,7 @@ class DocumentService:
         [Returns]
             Document -> Document.
         """
-        query = select(Document).where(Document.id == id)
-        if include_index:
-            query = query.options(selectinload(Document.index))
-        result = await session.execute(query)
-        data = result.scalars().first()
+        data = await self.document_repo.get_by_id(id=id, include_index=include_index)
         if not data:
             raise NotFoundException("Document not with specified id not found")
         return data
@@ -59,39 +57,51 @@ class DocumentService:
     async def create_document(
         self,
         title: str,
+        repository_id: int,
+        file_content_str: str,
         doc_created_at: datetime = None,
         doc_updated_at: datetime = None,
         elastic_doc_id: str = None,
         elastic_index_name: str = None,
-    ) -> Document:
+    ) -> int:
         """
         Create a document and the corresponding indexing status.
         [Parameters]
             title: str -> Document title.
+            repository_id: int -> Repository id.
             doc_created_at: datetime -> Document created at.
             doc_updated_at: datetime -> Document updated at.
             elastic_doc_id: str = None -> Document id in Elasticsearch.
             elastic_index_name: str = None -> Elasticsearch index name.
+        [Returns]
+            int -> Document id.
         """
-        document = Document(
-            title=title,
-            doc_created_at=doc_created_at,
-            doc_updated_at=doc_updated_at,
-            elastic_doc_id=elastic_doc_id,
-            elastic_index_name=elastic_index_name,
+        repository = await self.repository_repo.get_by_id(id=repository_id)
+        if not repository:
+            raise NotFoundException("Repository with specified id not found")
+        document = await self.document_repo.save(
+            {
+                "title": title,
+                "repository_id": repository_id,
+                "file_content_str": file_content_str,
+                "doc_created_at": doc_created_at,
+                "doc_updated_at": doc_updated_at,
+                "elastic_doc_id": elastic_doc_id,
+                "elastic_index_name": elastic_index_name,
+            }
         )
-        session.add(document)
-        await session.flush()
-        document_index = DocumentIndex(doc_id=document.id)
-        session.add(document_index)
-        document.index = document_index
-        return document
+
+        await self.document_index_repo.save(
+            {"doc_id": document.inserted_primary_key[0]}
+        )
+        return document.inserted_primary_key[0]
 
     @Transactional()
     async def update_document(
         self,
         id: int,
-        title: str,
+        title: str = None,
+        repository_id: int = None,
         doc_created_at: datetime = None,
         doc_updated_at: datetime = None,
         elastic_doc_id: int = None,
@@ -102,6 +112,7 @@ class DocumentService:
         [Parameters]
             id: int -> Document id.
             title: str -> Document title.
+            repository_id: int -> Repository id.
             doc_created_at: datetime -> Document created at.
             doc_updated_at: datetime -> Document updated at.
             elastic_doc_id: str = None -> Document id in Elasticsearch.
@@ -110,83 +121,58 @@ class DocumentService:
             Document -> Document.
         """
         document = await self.get_document_by_id(id)
-        document.title = title
-        document.doc_created_at = doc_created_at
-        document.doc_updated_at = doc_updated_at
-        document.elastic_doc_id = elastic_doc_id
-        document.elastic_index_name = elastic_index_name
-        return document
-
-    @Transactional()
-    async def partial_update_document(
-        self,
-        id: int,
-        title: str = None,
-        doc_created_at: datetime = None,
-        doc_updated_at: datetime = None,
-        elastic_doc_id: int = None,
-        elastic_index_name: str = None,
-    ) -> Document:
-        """
-        Partially update a document.
-        [Parameters]
-            id: int -> Document id.
-            title: str -> Document title.
-            doc_created_at: datetime -> Document created at.
-            doc_updated_at: datetime -> Document updated at.
-            elastic_doc_id: str = None -> Document id in Elasticsearch.
-            elastic_index_name: str = None -> Elasticsearch index name.
-        [Returns]
-            Document -> Document.
-        """
+        await self.document_repo.update_by_id(
+            id=id,
+            params={
+                "title": title or document.title,
+                "repository_id": repository_id or document.repository_id,
+                "doc_created_at": doc_created_at or document.doc_created_at,
+                "doc_updated_at": doc_updated_at or document.doc_updated_at,
+                "elastic_doc_id": elastic_doc_id or document.elastic_doc_id,
+                "elastic_index_name": elastic_index_name or document.elastic_index_name,
+            },
+        )
         document = await self.get_document_by_id(id)
-        if title:
-            document.title = title
-        if doc_created_at:
-            document.doc_created_at = doc_created_at
-        if doc_updated_at:
-            document.doc_updated_at = doc_updated_at
-        if elastic_doc_id:
-            document.elastic_doc_id = elastic_doc_id
-        if elastic_index_name:
-            document.elastic_index_name = elastic_index_name
         return document
 
     @standalone_session
     @Transactional()
-    async def partial_update_document_celery(
+    async def update_document_celery(
         self,
         id: int,
         title: str = None,
+        repository_id: int = None,
         doc_created_at: datetime = None,
         doc_updated_at: datetime = None,
-        elastic_doc_id: str = None,
+        elastic_doc_id: int = None,
         elastic_index_name: str = None,
-    ) -> Document:
+    ) -> bool:
         """
-        Partially update a document but with a standalone session.
+        Update a document.
         [Parameters]
             id: int -> Document id.
             title: str -> Document title.
+            repository_id: int -> Repository id.
             doc_created_at: datetime -> Document created at.
             doc_updated_at: datetime -> Document updated at.
             elastic_doc_id: str = None -> Document id in Elasticsearch.
             elastic_index_name: str = None -> Elasticsearch index name.
         [Returns]
-            Document -> Document.
+            bool -> True if successful.
         """
         document = await self.get_document_by_id(id)
-        if title:
-            document.title = title
-        if doc_created_at:
-            document.doc_created_at = doc_created_at
-        if doc_updated_at:
-            document.doc_updated_at = doc_updated_at
-        if elastic_doc_id:
-            document.elastic_doc_id = elastic_doc_id
-        if elastic_index_name:
-            document.elastic_index_name = elastic_index_name
-        return document
+        await self.document_repo.update_by_id(
+            id=id,
+            params={
+                "title": title or document.title,
+                "repository_id": repository_id or document.repository_id,
+                "doc_created_at": doc_created_at or document.doc_created_at,
+                "doc_updated_at": doc_updated_at or document.doc_updated_at,
+                "elastic_doc_id": elastic_doc_id or document.elastic_doc_id,
+                "elastic_index_name": elastic_index_name or document.elastic_index_name,
+            },
+        )
+        return True
 
     @Transactional()
     async def delete_document(self, id: int) -> bool:
@@ -198,6 +184,49 @@ class DocumentService:
             bool -> True if successful.
         """
         document = await self.get_document_by_id(id)
-        await session.delete(document)
-        await session.delete(document.index)
+        await self.document_index_repo.delete(document.index)
+        await self.document_repo.delete_by_id(document.index.id)
         return True
+
+    @Transactional()
+    async def reindex(self, document: Document):
+        """
+        Logic for reindexing a document.
+        [Parameters]
+            document: Document -> Document to be reindexed.
+        """
+        # Fuck partial dependency.
+        from celery_app import celery, parsing
+
+        index = document.index
+
+        # Revoke the task if indexing is still in progress.
+        if index.status != IndexingStatusEnum.SUCCESS and not (index.current_task_id):
+            celery.control.revoke(index.current_task_id, terminate=True)
+
+        # Delete corresponding index in elasticsearch if exist, also remove it in db.
+        if (
+            index.status == IndexingStatusEnum.SUCCESS
+            and document.elastic_doc_id
+            and document.elastic_index_name
+        ):
+            EsClient.delete_doc(document.elastic_index_name, document.elastic_doc_id)
+            await self.update_document(
+                id=document.id,
+                elastic_doc_id=None,
+                elastic_index_name=None,
+            )
+        parsing.delay(
+            document_id=document.id,
+            document_title=document.title,
+            file_content_str=document.file_content_str,
+        )
+
+    async def reindex_by_id(self, id: int) -> None:
+        """
+        Reindex a document.
+        [Parameters]
+            id: int -> Document id.
+        """
+        document = await self.get_document_by_id(id, True)
+        await self.reindex(document)

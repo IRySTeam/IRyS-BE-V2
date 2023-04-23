@@ -1,10 +1,11 @@
 from sqlalchemy import Column, Unicode, BigInteger, Enum, DateTime, ForeignKey
-from sqlalchemy.dialects.mysql import LONGTEXT
-from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import TEXT
+from sqlalchemy.orm import relationship, mapped_column
 
 from core.db import Base
 from core.db.mixins import TimestampMixin
 from app.document.enums.document import IndexingStatusEnum
+from app.repository.models import Repository
 
 
 class Document(Base, TimestampMixin):
@@ -13,9 +14,12 @@ class Document(Base, TimestampMixin):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     elastic_doc_id = Column(Unicode(255), nullable=True)
     elastic_index_name = Column(Unicode(255), nullable=True)
+    repository_id = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"))
+    repository = relationship("Repository", back_populates="documents")
     title = Column(Unicode(255), nullable=False)
     doc_created_at = Column(DateTime, nullable=True)
     doc_updated_at = Column(DateTime, nullable=True)
+    file_content_str = Column(TEXT, nullable=True)
 
     index = relationship(
         "DocumentIndex",
@@ -31,7 +35,8 @@ class DocumentIndex(Base, TimestampMixin):
     status = Column(
         Enum(IndexingStatusEnum), nullable=False, default=IndexingStatusEnum.READY
     )
-    reason = Column(LONGTEXT, nullable=True)
+    reason = Column(TEXT, nullable=True)
+    current_task_id = Column(Unicode(255), nullable=True)
 
     doc = relationship(
         "Document",

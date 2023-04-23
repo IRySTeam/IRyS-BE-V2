@@ -20,9 +20,13 @@ from app.elastic import (
 from bert_serving.client import BertClient
 
 
-@celery.task(name="parsing")
+@celery.task(name="parsing", bind=True)
 def parsing(
-    document_id: int, document_title: str, file_content_str: str, with_ocr: bool = True
+    self,
+    document_id: int,
+    document_title: str,
+    file_content_str: str,
+    with_ocr: bool = True,
 ) -> bool:
     """
     Celery task for parsing document. The parsing task will be split into 2 subtasks:
@@ -40,6 +44,7 @@ def parsing(
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
             status=IndexingStatusEnum.PARSING,
+            current_task_id=self.request.id,
         )
         # Parsing content and predict extension.
         file_content = a2b_base64(file_content_str)
@@ -70,13 +75,17 @@ def parsing(
         return True
     except Exception as e:
         async_to_sync(document_index_service.update_indexing_status_celery)(
-            doc_id=document_id, status=IndexingStatusEnum.FAILED, reason=str(e)
+            doc_id=document_id,
+            status=IndexingStatusEnum.FAILED,
+            reason=str(e),
+            current_task_id=None,
         )
         raise e
 
 
-@celery.task(name="extraction")
+@celery.task(name="extraction", bind=True)
 def extraction(
+    self,
     document_id: int,
     document_title: str,
     file_content_str: str,
@@ -100,6 +109,7 @@ def extraction(
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
             status=IndexingStatusEnum.EXTRACTING,
+            current_task_id=self.request.id,
         )
         file_content = a2b_base64(file_content_str)
         document_label = Classifier.classify(texts=file_preprocessed_text)
@@ -118,13 +128,17 @@ def extraction(
         return True
     except Exception as e:
         async_to_sync(document_index_service.update_indexing_status_celery)(
-            doc_id=document_id, status=IndexingStatusEnum.FAILED, reason=str(e)
+            doc_id=document_id,
+            status=IndexingStatusEnum.FAILED,
+            reason=str(e),
+            current_task_id=None,
         )
         raise e
 
 
-@celery.task(name="indexing")
+@celery.task(name="indexing", bind=True)
 def indexing(
+    self,
     document_id: int,
     document_title: str,
     file_content_str: str,
@@ -153,8 +167,11 @@ def indexing(
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
             status=IndexingStatusEnum.INDEXING,
+            current_task_id=self.request.id,
         )
         file_content = a2b_base64(file_content_str)
+        # TODO: Instantiate bert client with longer max len sequence
+        # TODO: Add embedding of longtext type data.
         bc = BertClient(
             ip=config.BERT_SERVER_IP,
             port=config.BERT_SERVER_PORT,
@@ -194,7 +211,7 @@ def indexing(
             elastic_doc_id = res["_id"]
             elastic_index_name = SCIENTIFIC_ELASTICSEARCH_INDEX_NAME
 
-        async_to_sync(document_service.partial_update_document_celery)(
+        async_to_sync(document_service.update_document_celery)(
             id=document_id,
             elastic_doc_id=elastic_doc_id,
             elastic_index_name=elastic_index_name,
@@ -202,10 +219,14 @@ def indexing(
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
             status=IndexingStatusEnum.SUCCESS,
+            current_task_id=None,
         )
         return True
     except Exception as e:
         async_to_sync(document_index_service.update_indexing_status_celery)(
-            doc_id=document_id, status=IndexingStatusEnum.FAILED, reason=str(e)
+            doc_id=document_id,
+            status=IndexingStatusEnum.FAILED,
+            reason=str(e),
+            current_task_id=None,
         )
         raise e

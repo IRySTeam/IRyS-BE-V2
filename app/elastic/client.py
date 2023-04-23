@@ -2,6 +2,7 @@ from typing import Mapping, Optional, Any, List
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ApiError
 from elasticsearch.client import IndicesClient
+from elastic_transport import ObjectApiResponse
 
 from core.config import config
 from core.exceptions.base import FailedDependencyException, NotFoundException
@@ -130,29 +131,34 @@ class ElasticsearchClient:
         except Exception as e:
             raise FailedDependencyException(e)
 
-    def update_index(self, index: str, settings: Mapping[str, Any]):
+    def update_index(
+        self, index: str, settings: Mapping[str, Any]
+    ) -> ObjectApiResponse[Any]:
         """
         Update an index dynamic settings in Elasticsearch.
         [Parameters]
-          index: str -> Name of the index.
-          settings: Mapping[str, Any] -> Index configuration that are changeable.
+            index: str -> Name of the index.
+            settings: Mapping[str, Any] -> Index configuration that are changeable.
         [Returns]
+            ObjectApiResponse[Any]: Response from Elasticsearch
         """
         try:
-            self.indices_client.put_settings(index=index, settings=settings)
+            return self.indices_client.put_settings(index=index, settings=settings)
         except ApiError as e:
             raise classify_error(e)
         except Exception as e:
             raise FailedDependencyException(e)
 
-    def delete_index(self, index: str) -> None:
+    def delete_index(self, index: str) -> ObjectApiResponse[Any]:
         """
         Delete an index in Elasticsearch.
         [Parameters]
-          index: str -> Name of the index.
+            index: str -> Name of the index.
+        [Returns]
+            ObjectApiResponse[Any]: Response from Elasticsearch
         """
         try:
-            self.indices_client.delete(index=index)
+            return self.indices_client.delete(index=index)
         except ApiError as e:
             raise classify_error(e)
         except Exception as e:
@@ -177,13 +183,36 @@ class ElasticsearchClient:
         """
         Index a document in Elasticsearch.
         [Parameters]
-          index: str -> Name of the index.
-          doc: Mapping[str, Any] -> Document to be indexed.
+            index: str -> Name of the index.
+            doc: Mapping[str, Any] -> Document to be indexed.
+        [Returns]
+            ObjectApiResponse[Any]: Response from Elasticsearch
         """
         try:
             return self.client.index(index=index, body=doc)
         except ApiError as e:
             raise classify_error(e)
+        except Exception as e:
+            raise FailedDependencyException(e)
+
+    def delete_doc(self, index_name: str, doc_id: str) -> ObjectApiResponse[Any]:
+        """
+        Delete a document from an Elasticsearch index.
+        [Parameters]
+            index_name: str -> Name of index that will contain the document
+            doc_id: str -> ID of the document to be deleted in the corresponding index
+        [Returns]
+            ObjectApiResponse[Any]: Response from Elasticsearch
+        """
+        try:
+            return self.client.delete(index=index_name, id=doc_id)
+        except ApiError as e:
+            raise classify_error(
+                e,
+                "Document with id: {} not found in index: {}".format(
+                    doc_id, index_name
+                ),
+            )
         except Exception as e:
             raise FailedDependencyException(e)
 

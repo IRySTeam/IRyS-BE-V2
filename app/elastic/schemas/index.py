@@ -1,21 +1,27 @@
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 from pydantic import BaseModel, Field
 from fastapi import Path, Query
+
+from app.elastic.configuration import (
+    GENERAL_ELASTICSEARCH_INDEX_NAME,
+    GENERAL_ELASTICSEARCH_INDEX_MAPPINGS,
+    GENERAL_ELASTICSEARCH_INDEX_SETTINGS,
+)
 
 # ==============================================================================
 # Request Body-related Schemas.
 # ==============================================================================
 class CreateIndexBody(BaseModel):
     index_name: str = Field(..., description="Name of the index")
-    mappings: Mapping[str, Any] = Field(
-        None,
+    mappings: Optional[Mapping[str, Any]] = Field(
+        GENERAL_ELASTICSEARCH_INDEX_MAPPINGS,
         description="Define how a document, and the fields it contains, are stored and indexed. "
         "For more information, refer to "
         "[this](https://www.elastic.co/guide/en/elasticsearch/reference/8.6/mapping.html)",
     )
-    settings: Mapping[str, Any] = Field(
-        None,
+    settings: Optional[Mapping[str, Any]] = Field(
+        GENERAL_ELASTICSEARCH_INDEX_SETTINGS,
         description="Index configuration, there are static (unchangeable) and dynamic (changeable) "
         "settings. For more information, refer to "
         "[this](https://www.elastic.co/guide/en/elasticsearch/reference/8.6/index-modules.html#index-modules-settings)",

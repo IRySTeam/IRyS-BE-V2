@@ -25,7 +25,7 @@ class DocumentIndexing(BaseModel):
 
 class DocumentResponseSchema(BaseModel):
     id: int = Field(..., description="Document id")
-    elastic_doc_id: int = Field(None, description="Document id in Elasticsearch")
+    elastic_doc_id: str = Field(None, description="Document id in Elasticsearch")
     elastic_index_name: str = Field(None, description="Elasticsearch index name")
     title: str = Field(..., description="Document title")
     doc_created_at: datetime = Field(None, description="Document's created at metadata")
@@ -34,6 +34,17 @@ class DocumentResponseSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class UploadDocumentBody(BaseModel):
+    repository_id: int = Field(..., description="Repository id")
+
+    class Config:
+        orm_mode = True
+
+
+class ReindexDocumentResponse(BaseModel):
+    status: bool = Field(..., description="Reindexing status")
 
 
 # ==============================================================================
