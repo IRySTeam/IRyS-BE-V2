@@ -12,6 +12,7 @@ from app.search.enums.search import DomainEnum, FilterOperatorEnum
 from app.search.schemas.elastic import MatchedDocument, SearchResult
 from app.search.schemas.advanced_search import AdvancedFilterConditions
 from app.elastic.client import ElasticsearchClient
+from app.preprocess import PreprocessUtil
 
 class SearchService:
     def __init__(self, algorithm, domain, scoring):
@@ -27,12 +28,7 @@ class SearchService:
         [Output]
           - preprocessed query: str
         """
-        processed_query = query # TODO: Call tokenization(self.raw_query)
-        processed_query = query # TODO: Call stopword_removal(self.processed_query)
-        processed_query = query # TODO: Call stemming(self.processed_query)
-        processed_query = query # TODO: Call lemmatization(self.processed_query)
-        processed_query = query # TODO: Call query_expansion(self.processed_query), Should we separate the query expansion process?
-        return processed_query
+        return " ".join(PreprocessUtil().preprocess(query))
 
     def normalize_search_result(self, data):
         search_result = SearchResult(result=[])
