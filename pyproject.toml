@@ -7,7 +7,7 @@ authors = ["IRySTeam <padocon@naver.com>"]
 [tool.poetry.dependencies]
 python = "^3.10"
 alembic = "^1.8.1"
-SQLAlchemy = {extras = ["asyncio"], version = "^1.4.40"}
+SQLAlchemy = {extras = ["asyncio"], version = "^2.0.9"}
 PyJWT = "^2.4.0"
 uvicorn = "^0.18.3"
 fastapi = "^0.95"
@@ -41,10 +41,19 @@ asgiref = "^3.6.0"
 bert-serving-client = "^1.10.0"
 fastapi-mail = "^1.2.6"
 uvloop = "^0.17.0"
+imbalanced-learn = "^0.10.1"
+pymupdf = "^1.21.1"
+transformers = "^4.28.1"
+torch = {"version" = "^2.0.0+cpu", source = "pytorch-cpu"}
 
 [tool.poetry.dev-dependencies]
 behave = "^1.2.6"
 pre-commit = "^2.19.0"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+secondary = true
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

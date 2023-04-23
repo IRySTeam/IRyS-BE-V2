@@ -165,5 +165,6 @@ cython_debug/
 
 bertserving/cased_*
 bertserving/uncased_*
-app/classification/dump/*
 !app/classification/dump/.gitkeep
+
+commands.txt
