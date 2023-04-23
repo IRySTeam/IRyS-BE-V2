@@ -261,7 +261,10 @@ async def remove_repository_collaborator(
     responses={},
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
-async def get_repository_documents(request: Request, repository_id: int):
+async def get_repository_documents(
+    request: Request,
+    repository_id: int,
+):
     return await DocumentService().get_repository_documents(
         user_id=request.user.id, repository_id=repository_id
     )
