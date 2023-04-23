@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from app.search.enums.search import (
-    SearchAlgorithmEnum, 
+    # SearchAlgorithmEnum, 
     ScoringAlgorithmEnum, 
     DomainEnum
 )
@@ -15,7 +15,7 @@ class SemanticSearchRequest(BaseModel):
 
 class SemanticSearchRequestDepr(BaseModel):
     query: str = Field(..., description="Raw user query input")
-    algorithm: SearchAlgorithmEnum = Field(..., description="The type of searching method that will be performed")
+    # algorithm: SearchAlgorithmEnum = Field(..., description="The type of searching method that will be performed")
     domain: DomainEnum = Field(..., description="Document domain of the search")
     scoring: ScoringAlgorithmEnum = Field(..., description="The scoring algorithm that will be used to evaluate the query and the indexed documents")
     advanced_filter: AdvancedSearchQuery = Field(..., description="Additional entity based filters")
