@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Optional, List
 
 # from app.search.schemas import (
@@ -9,7 +10,7 @@ from typing import Optional, List
 from app.search.constants.search import DOMAIN_INDEXES
 from app.search.enums.search import DomainEnum, FilterOperatorEnum
 from app.search.schemas.elastic import MatchedDocument, SearchResult
-from app.search.schemas.advanced_search import BasicFilterConditions, SemanticFilterConditions
+from app.search.schemas.advanced_search import AdvancedFilterConditions
 from app.elastic.client import ElasticsearchClient
 
 class SearchService:
@@ -56,7 +57,7 @@ class SearchService:
         [Output]
           - ElasticSearchResult
         """
-        data = ElasticsearchClient().search_semantic(query, 'general-0001', 5,  ["title", "preprocessed_text"])
+        data = ElasticsearchClient().search_semantic(query, 'general-0001', 5,  ["title", "preprocessed_text"], "text_vector")
         return self.normalize_search_result(data)
 
     def evaluate_advanced_filter(self, search_result, advanced_filter):
@@ -70,22 +71,23 @@ class SearchService:
         advanced_search_result = search_result 
 
         # Evaluate basic filters
-        if (bool(advanced_filter.basic_match)):
-            for filter in advanced_filter.basic_match:
-                advanced_search_result = self.evaluate_basic_filter(advanced_search_result, filter)
+        if (bool(advanced_filter.match)):
+            for filter in advanced_filter.match:
+                print(filter)
+                advanced_search_result = self.evaluate_filter(advanced_search_result, filter)
 
         # Evaluate semantic filters
-        if (bool(advanced_filter.semantic_match)):
-            for filter in advanced_filter.semantic_match:
-                advanced_search_result = self.evaluate_semantic_filter(advanced_search_result, filter)
+        # if (bool(advanced_filter.semantic_match)):
+        #     for filter in advanced_filter.semantic_match:
+        #         advanced_search_result = self.evaluate_semantic_filter(advanced_search_result, filter)
         return advanced_search_result
     
-    def evaluate_basic_filter(self, search_result: MatchedDocument, filter: BasicFilterConditions):
+    def evaluate_filter(self, search_result: MatchedDocument, filter: AdvancedFilterConditions):
         """
         Performs filtering using basic operators from retrieved documents
         [Parameters]
           search_result: MatchedDocument
-          filter: BasicFilterConditions
+          filter: AdvancedFilterConditions
         [Returns]
           MatchedDocument
         """
@@ -93,13 +95,15 @@ class SearchService:
             case FilterOperatorEnum.IN:
                 search_result.result = [d for d in search_result.result 
                                         if d.document_metadata.get(filter.key) 
+                                            is not None
+                                        and d.document_metadata.get(filter.key) 
                                             in filter.value]
             case FilterOperatorEnum.NIN:
                 search_result.result = [d for d in search_result.result 
                                         if d.document_metadata.get(filter.key) 
-                                            not in filter.value
+                                            is not None
                                         and d.document_metadata.get(filter.key) 
-                                            is not None]
+                                            not in filter.value]
             case FilterOperatorEnum.EXI:
                 search_result.result = [d for d in search_result.result 
                                         if d.document_metadata.get(filter.key) 
@@ -115,9 +119,9 @@ class SearchService:
             case FilterOperatorEnum.NEQ:
                 search_result.result = [d for d in search_result.result 
                                         if d.document_metadata.get(filter.key) 
-                                            != filter.value
+                                            is not None
                                         and d.document_metadata.get(filter.key) 
-                                            is not None]
+                                            != filter.value]
             case FilterOperatorEnum.GT:
 
                 # TODO: Check for sufficient values:
@@ -132,11 +136,25 @@ class SearchService:
                 print('Got a reading of GREATER THAN EQUAL')
             case FilterOperatorEnum.LTE:
                 print('Got a reading of LESS THAN EQUAL')
+            case FilterOperatorEnum.CON:
+                search_result.result = [d for d in search_result.result 
+                                        if d.document_metadata.get(filter.key) 
+                                            is not None
+                                        and filter.value in d.document_metadata.get(filter.key)]
+            case FilterOperatorEnum.NCON:
+                print('Got a reading of NOT CONTAINS')
+            case FilterOperatorEnum.REG:
+                search_result.result = [d for d in search_result.result 
+                                        if d.document_metadata.get(filter.key) 
+                                            is not None
+                                        and re.search(filter.value) is not None]
+            case FilterOperatorEnum.SEM:
+                print('Got a reading of SEMANTIC SEARCH')
             case _:
                 print('No operator match found')
         return search_result
     
-    def evaluate_semantic_filter(self, search_result: MatchedDocument, filter: SemanticFilterConditions):
+    def evaluate_semantic_filter(self, search_result: MatchedDocument, filter: AdvancedFilterConditions):
         """
         Performs filtering using semantic search on specific metadata and entities from retrieved documents
         [Parameters]
@@ -149,8 +167,8 @@ class SearchService:
             query=filter.value,
             index='general-0001', 
             size=filter.top_n,
-            source=["title", "preprocessed_text", "document_metadata", "document_entities"]
-            # TODO: Add variable for text_vector based on key
+            source=["title", "preprocessed_text", "document_metadata", "document_entities"],
+            emb_vector="text_vector"
         )
         return search_result
 

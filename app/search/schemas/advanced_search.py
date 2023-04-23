@@ -1,25 +1,25 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 from app.search.enums.search import FilterOperatorEnum
 
-class BasicFilterConditions(BaseModel):
+class AdvancedFilterConditions(BaseModel):
     key: str = Field(..., description="Entity name that will be evaluated")
     operator: FilterOperatorEnum = Field(..., description="Operator that will evaluate key and value relation")
     value: object = Field(..., description="Query to be evaluated")
+    model: Optional[str] = Field(description="Bert client embedding model")
+    scoring_algorithm: Optional[str] = Field(description="Scoring algorithm that Elasticsearch will perform")
+    top_n: Optional[int] = Field(description="Result limit number")
+    score_threshold: Optional[float] = Field(description="Result similarity cutoff score")
 
-class SemanticFilterConditions(BaseModel):
+class AdvancedSearchQuery(BaseModel):
+    match: List[AdvancedFilterConditions] = Field(..., description="List of filter conditions that make up the advanced search query")
+
+class BasicFilterConditionsDepr(BaseModel):
     key: str = Field(..., description="Entity name that will be evaluated")
-    model: str = Field(..., description="Bert client embedding model")
-    scoring_algorithm: str = Field(..., description="Scoring algorithm that Elasticsearch will perform")
-    top_n: float = Field(..., description="Result limit number")
-    score_threshold: float = Field(..., description="Result similarity cutoff score")
+    operator: FilterOperatorEnum = Field(..., description="Operator that will evaluate key and value relation")
     value: object = Field(..., description="Query to be evaluated")
 
 class FilterConditionsDepr(BaseModel):
     key: str = Field(..., description="Entity name that will be evaluated")
     operator: FilterOperatorEnum = Field(..., description="Operator that will evaluate key and value relation")
-
-class AdvancedSearchQuery(BaseModel):
-    basic_match: List[BasicFilterConditions] = Field(..., description="List of basic filter conditions that make up the advanced search query")
-    semantic_match: List[SemanticFilterConditions] = Field(..., description="List of semantic filter conditions that make up the advanced search query")
