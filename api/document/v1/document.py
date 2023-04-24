@@ -1,28 +1,24 @@
 from binascii import b2a_base64
 from typing import List
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Form
 
-from app.exception import BaseHttpErrorSchema
-from core.exceptions.base import CustomException
-from core.utils import CustomExceptionHelper
-from core.exceptions import (
-    BadRequestException,
-    UnauthorizedException,
-    ForbiddenException,
-    FailedDependencyException,
-    NotFoundException,
-)
-from celery_app import parsing, celery
-from app.elastic import EsClient
-from app.document.enums.document import IndexingStatusEnum
+from fastapi import APIRouter, Depends, File, Form, UploadFile
+
 from app.document.models import Document
-from app.document.services import document_service, document_index_service
 from app.document.schemas import (
+    DocumentPathParams,
     DocumentResponseSchema,
     IncludeIndexQueryParams,
-    DocumentPathParams,
     ReindexDocumentResponse,
 )
+from app.document.services import document_service
+from celery_app import parsing
+from core.exceptions import (
+    BadRequestException,
+    ForbiddenException,
+    NotFoundException,
+    UnauthorizedException,
+)
+from core.utils import CustomExceptionHelper
 
 document_router = APIRouter(
     responses={
