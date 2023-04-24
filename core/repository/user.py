@@ -1,7 +1,8 @@
-from sqlalchemy import select, and_
-from core.repository import BaseRepo
+from sqlalchemy import select
+
 from app.user.models import User
 from core.db.session import session
+from core.repository import BaseRepo
 
 
 class UserRepo(BaseRepo[User]):

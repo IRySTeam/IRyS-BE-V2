@@ -1,9 +1,9 @@
 import mimetypes
+from typing import Any, Dict, List
+
 import magic
 from tika import parser
-
 from transformers import pipeline
-from typing import List, Dict, Any
 
 from app.extraction.ner_result import NERResult
 

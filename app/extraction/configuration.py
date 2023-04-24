@@ -1,10 +1,10 @@
-from app.extraction.domains.scientific import (
-    SCIENTIFIC_ENTITIES,
-    SCIENTIFIC_INFORMATION,
-)
 from app.extraction.domains.recruitment import (
     RECRUITMENT_ENTITIES,
     RECRUITMENT_INFORMATION,
+)
+from app.extraction.domains.scientific import (
+    SCIENTIFIC_ENTITIES,
+    SCIENTIFIC_INFORMATION,
 )
 
 TYPE_OPERATORS = {
