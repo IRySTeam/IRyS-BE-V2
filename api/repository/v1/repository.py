@@ -129,6 +129,28 @@ async def edit_repository(
 
 
 @repository_router.get(
+    "/{repository_id}",
+    response_model=RepositoryDetailsResponseSchema,
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def get_repository_details(request: Request, repository_id: int):
+    return await RepositoryService().get_repository_details(
+        user_id=request.user.id, repository_id=repository_id
+    )
+
+
+@repository_router.get(
     "/{repository_id}/members",
     response_model=List[RepositoryCollaboratorSchema],
     responses={
@@ -237,15 +259,3 @@ async def remove_repository_collaborator(
         user_id=request.user.id, repository_id=repository_id, params=body.dict()
     )
     return MessageResponseSchema(message="Successful")
-
-
-@repository_router.get(
-    "/{repository_id}",
-    response_model=RepositorySchema,
-    responses={},
-    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
-)
-async def get_repository_details(request: Request, repository_id: int):
-    return await RepositoryService().get_repository_details(
-        user_id=request.user.id, repository_id=repository_id
-    )

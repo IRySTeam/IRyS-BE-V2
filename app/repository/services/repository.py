@@ -7,6 +7,7 @@ from app.repository.schemas import (
     RepositoryOwnerSchema,
     GetPublicRepositoriesResponseSchema,
     RepositoryCollaboratorSchema,
+    RepositoryDetailsResponseSchema,
 )
 from app.repository.constants import GRANTABLE_ROLES
 from core.db import Transactional
@@ -68,7 +69,6 @@ class RepositoryService:
         )
         results = []
         for repo in repositories:
-            print(repo)
             results.append(
                 RepositorySchema(
                     id=repo.id,
@@ -154,6 +154,39 @@ class RepositoryService:
 
         params = {k: v for k, v in params.items() if v is not None}
         await self.repository_repo.update_by_id(repository_id, params)
+
+    async def get_repository_details(
+        self, user_id: int, repository_id: int
+    ) -> RepositorySchema:
+        repository = await self.repository_repo.get_repository_by_id(repository_id)
+        if not repository:
+            raise RepositoryNotFoundException
+
+        if not repository.is_public:
+            if not await self.repository_repo.is_user_id_collaborator_of_repository(
+                user_id, repository_id
+            ):
+                raise RepositoryNotFoundException
+
+        current_user_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id, repository_id
+            )
+        )
+
+        return RepositoryDetailsResponseSchema(
+            id=repository.id,
+            name=repository.name,
+            description=repository.description,
+            is_public=repository.is_public,
+            updated_at=repository.updated_at,
+            current_user_role=current_user_role,
+            owner=RepositoryOwnerSchema(
+                id=repository.owner_id,
+                first_name=repository.owner_first_name,
+                last_name=repository.owner_last_name,
+            ),
+        )
 
     @Transactional()
     async def add_repository_collaborator(
@@ -286,30 +319,4 @@ class RepositoryService:
 
         await self.repository_repo.update_user_repository_role(
             repository_id=repository_id, user_id=collaborator_id, role=role
-        )
-
-    async def get_repository_details(
-        self, user_id: int, repository_id: int
-    ) -> RepositorySchema:
-        repository = await self.repository_repo.get_repository_by_id(repository_id)
-        if not repository:
-            raise RepositoryNotFoundException
-
-        if not repository.is_public:
-            if not await self.repository_repo.is_user_id_collaborator_of_repository(
-                user_id, repository_id
-            ):
-                raise RepositoryNotFoundException
-
-        return RepositorySchema(
-            id=repository.id,
-            name=repository.name,
-            description=repository.description,
-            is_public=repository.is_public,
-            updated_at=repository.updated_at,
-            owner=RepositoryOwnerSchema(
-                id=repository.owner_id,
-                first_name=repository.owner_first_name,
-                last_name=repository.owner_last_name,
-            ),
         )

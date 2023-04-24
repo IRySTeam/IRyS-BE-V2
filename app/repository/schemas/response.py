@@ -1,5 +1,5 @@
+from typing import List, Optional
 from datetime import datetime
-from typing import List
 from pydantic import BaseModel, Field
 
 
@@ -32,6 +32,16 @@ class RepositorySchema(BaseModel):
     is_public: bool = Field(..., description="Is Public")
     updated_at: datetime = Field(..., description="Updated At")
     owner: RepositoryOwnerSchema = Field(..., description="Repository Owner")
+
+
+class RepositoryDetailsResponseSchema(BaseModel):
+    id: int = Field(..., description="ID")
+    name: str = Field(..., description="Name")
+    description: str = Field(..., description="Description")
+    is_public: bool = Field(..., description="Is Public")
+    updated_at: datetime = Field(..., description="Updated At")
+    owner: RepositoryOwnerSchema = Field(..., description="Repository Owner")
+    current_user_role: Optional[str] = Field(None, description="Current User Role")
 
 
 class GetJoinedRepositoriesSchema(BaseModel):
