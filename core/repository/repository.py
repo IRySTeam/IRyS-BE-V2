@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 from sqlalchemy import select, and_
 from sqlalchemy.sql import text
 
@@ -314,3 +314,18 @@ class RepositoryRepo(BaseRepo[Repository]):
 
         # Execute SQL query
         await session.execute(sql, params)
+
+    async def get_user_role_by_user_id_and_repository_id(
+        self, user_id: int, repository_id: int
+    ) -> Optional[str]:
+        query = """
+        SELECT ur.role
+        FROM user_repositories ur
+        WHERE ur.user_id = :user_id AND ur.repository_id = :repository_id
+        """
+        result = await session.execute(
+            text(query), {"user_id": user_id, "repository_id": repository_id}
+        )
+        if result.rowcount == 0:
+            return None
+        return result.fetchone().role

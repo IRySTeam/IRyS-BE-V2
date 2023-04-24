@@ -130,7 +130,7 @@ async def edit_repository(
 
 @repository_router.get(
     "/{repository_id}",
-    response_model=RepositorySchema,
+    response_model=RepositoryDetailsResponseSchema,
     responses={},
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )

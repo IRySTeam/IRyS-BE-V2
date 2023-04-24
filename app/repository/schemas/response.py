@@ -34,6 +34,16 @@ class RepositorySchema(BaseModel):
     owner: RepositoryOwnerSchema = Field(..., description="Repository Owner")
 
 
+class RepositoryDetailsResponseSchema(BaseModel):
+    id: int = Field(..., description="ID")
+    name: str = Field(..., description="Name")
+    description: str = Field(..., description="Description")
+    is_public: bool = Field(..., description="Is Public")
+    updated_at: datetime = Field(..., description="Updated At")
+    owner: RepositoryOwnerSchema = Field(..., description="Repository Owner")
+    current_user_role: Optional[str] = Field(None, description="Current User Role")
+
+
 class GetJoinedRepositoriesSchema(BaseModel):
     does_user_have_any_repos: bool = Field(..., description="Does User Have Any Repos")
     results: List[RepositorySchema] = Field(..., description="Results")

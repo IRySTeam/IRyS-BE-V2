@@ -7,6 +7,7 @@ from app.repository.schemas import (
     RepositoryOwnerSchema,
     GetPublicRepositoriesResponseSchema,
     RepositoryCollaboratorSchema,
+    RepositoryDetailsResponseSchema,
 )
 from app.repository.constants import GRANTABLE_ROLES
 from core.db import Transactional
@@ -68,7 +69,6 @@ class RepositoryService:
         )
         results = []
         for repo in repositories:
-            print(repo)
             results.append(
                 RepositorySchema(
                     id=repo.id,
@@ -168,12 +168,19 @@ class RepositoryService:
             ):
                 raise RepositoryNotFoundException
 
-        return RepositorySchema(
+        current_user_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id, repository_id
+            )
+        )
+
+        return RepositoryDetailsResponseSchema(
             id=repository.id,
             name=repository.name,
             description=repository.description,
             is_public=repository.is_public,
             updated_at=repository.updated_at,
+            current_user_role=current_user_role,
             owner=RepositoryOwnerSchema(
                 id=repository.owner_id,
                 first_name=repository.owner_first_name,
