@@ -5,8 +5,7 @@ class MatchedDocument(BaseModel):
     id: str = Field(..., description="UUID of the matched document")
     score: float = Field(..., description="Numeric score the matched document was given by the scoring algorithm based on the search query")
     title: str = Field(..., description="The title of the document")
-    document_metadata: dict[str, str] = Field(..., description="Key value pair mappings of recognized NER extracted entities")
-    document_entity: dict[str, str] = Field(..., description="Key value pair mappings of recognized document metadata entities")
+    document_metadata: dict[str, str] = Field(..., description="Key value pair mappings of recognized extracted entities")
     
 class SearchResult(BaseModel):
     result: List[MatchedDocument] = Field(..., description="Collection of matched documents from ElasticSearch")
