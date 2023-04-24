@@ -21,4 +21,4 @@ ss = SearchService(None, None, None)
     description="Fetches relevant documents based on search query and advanced filter"
 )
 async def search(request: SemanticSearchRequest):
-    return ss.run_search(request.query, request.advanced_filter)
+    return ss.run_search(request.query, request.domain, request.advanced_filter)

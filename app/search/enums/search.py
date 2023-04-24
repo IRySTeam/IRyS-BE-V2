@@ -6,9 +6,9 @@ class ScoringAlgorithmEnum(str, Enum):
     OKAPI_BM = 'OKAPI_BM'
 
 class DomainEnum(str, Enum):
-    GENERAL = 'GENERAL'
-    RECRUITMENT = 'RECRUITMENT'
-    SCIENTIFIC = 'SCIENTIFIC'
+    GENERAL = 'general'
+    RECRUITMENT = 'recruitment'
+    SCIENTIFIC = 'scientific'
 
 class FilterOperatorEnum(str, Enum):
     IN = 'IN'

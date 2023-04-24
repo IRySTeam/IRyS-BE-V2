@@ -11,6 +11,7 @@ from app.search.schemas.advanced_search import AdvancedSearchQuery
 
 class SemanticSearchRequest(BaseModel):
     query: str = Field(..., description="Raw user query input")
+    domain: DomainEnum = Field(..., description="Document domain of the search")
     advanced_filter: AdvancedSearchQuery = Field(..., description="Additional entity based filters")
 
 class SemanticSearchRequestDepr(BaseModel):
