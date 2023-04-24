@@ -1,9 +1,9 @@
-from typing import List
-from sqlalchemy import update, select
-from core.repository import BaseRepo
-from core.repository.enum import SynchronizeSessionEnum
+from sqlalchemy import select, update
+
 from app.document.models import DocumentIndex
 from core.db.session import session
+from core.repository import BaseRepo
+from core.repository.enum import SynchronizeSessionEnum
 
 
 class DocumentIndexRepo(BaseRepo[DocumentIndex]):

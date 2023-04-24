@@ -1,14 +1,12 @@
-from typing import List
 from datetime import datetime
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from typing import List
 
-from core.db import Transactional, session, standalone_session
-from core.exceptions import NotFoundException
-from core.repository import DocumentRepo, DocumentIndexRepo, RepositoryRepo
-from app.document.models import Document, DocumentIndex
 from app.document.enums.document import IndexingStatusEnum
+from app.document.models import Document
 from app.elastic import EsClient
+from core.db import Transactional, standalone_session
+from core.exceptions import NotFoundException
+from core.repository import DocumentIndexRepo, DocumentRepo, RepositoryRepo
 
 
 class DocumentService:

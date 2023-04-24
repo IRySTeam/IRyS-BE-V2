@@ -1,14 +1,15 @@
 from typing import Optional
+
 from elasticsearch.exceptions import ApiError
 
 from core.exceptions import (
-    CustomException,
     BadRequestException,
-    UnauthorizedException,
+    ConflictException,
+    CustomException,
+    FailedDependencyException,
     ForbiddenException,
     NotFoundException,
-    ConflictException,
-    FailedDependencyException,
+    UnauthorizedException,
 )
 
 

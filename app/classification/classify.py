@@ -1,11 +1,11 @@
 import os
 import pickle
 from enum import Enum
-from typing import List, Dict
-from sklearn.svm import SVC
-from sklearn.preprocessing import LabelEncoder
-from sklearn.feature_extraction.text import TfidfVectorizer
+from typing import Dict, List
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import LabelEncoder
+from sklearn.svm import SVC
 
 path = os.path.join(os.getcwd(), "app", "classification", "dump")
 labelencode_name = "labelencoder_fitted.pkl"

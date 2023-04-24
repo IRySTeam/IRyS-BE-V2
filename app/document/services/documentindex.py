@@ -1,10 +1,8 @@
-from sqlalchemy import update
-
-from core.db import session, Transactional, standalone_session
-from core.repository import DocumentIndexRepo
-from core.exceptions import NotFoundException
 from app.document.enums.document import IndexingStatusEnum
 from app.document.models import DocumentIndex
+from core.db import Transactional, standalone_session
+from core.exceptions import NotFoundException
+from core.repository import DocumentIndexRepo
 
 
 class DocumentIndexService:

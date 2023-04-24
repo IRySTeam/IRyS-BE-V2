@@ -1,11 +1,12 @@
 from typing import List
-from fastapi import APIRouter, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.exception import BaseHttpErrorSchema
-from app.extraction import TYPE_OPERATORS, EXTRACTED_INFORMATION
+from app.extraction import EXTRACTED_INFORMATION, TYPE_OPERATORS
 from app.extraction.schemas import (
-    ExtractedInformationResponse,
     ExtractedInformationPathParams,
+    ExtractedInformationResponse,
 )
 
 extraction_router = APIRouter()

@@ -1,7 +1,7 @@
 from app.extraction.schemas.extraction import (
+    DomainEntitiesResponse,
     DomainInformationResponse,
     ExtractedInformationPathParams,
-    DomainEntitiesResponse,
     ExtractedInformationResponse,
 )
 

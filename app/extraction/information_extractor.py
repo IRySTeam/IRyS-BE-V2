@@ -1,7 +1,9 @@
-from typing import Dict, Any
+from typing import Any, Dict
 
+from app.extraction.domains.scientific.scientific_extractor import (
+    ScientificExtractor,
+)
 from app.extraction.general_extractor import GeneralExtractor
-from app.extraction.domains.scientific.scientific_extractor import ScientificExtractor
 
 
 class InformationExtractor:

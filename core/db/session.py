@@ -1,5 +1,6 @@
-import uvloop
 import asyncio
+
+import uvloop
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
@@ -8,13 +9,13 @@ from typing import Union
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
-    create_async_engine,
     async_scoped_session,
+    create_async_engine,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.sql.expression import Update, Delete, Insert
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
+from sqlalchemy.sql.expression import Delete, Insert, Update
 
 from core.config import config
 

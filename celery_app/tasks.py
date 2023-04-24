@@ -1,23 +1,24 @@
-import magic
 import mimetypes
 from binascii import a2b_base64
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
+import magic
 from asgiref.sync import async_to_sync
+from bert_serving.client import BertClient
 from tika import parser
 
-from core.config import config
-from celery_app.main import celery
+from app.classification import Classifier
 from app.document.enums.document import IndexingStatusEnum
 from app.document.services import document_index_service, document_service
-from app.preprocess import OCRUtil, PreprocessUtil
-from app.classification import Classifier
 from app.elastic import (
-    EsClient,
     GENERAL_ELASTICSEARCH_INDEX_NAME,
     RECRUITMENT_ELASTICSEARCH_INDEX_NAME,
     SCIENTIFIC_ELASTICSEARCH_INDEX_NAME,
+    EsClient,
 )
-from bert_serving.client import BertClient
+from app.preprocess import OCRUtil, PreprocessUtil
+from celery_app.main import celery
+from core.config import config
 
 
 @celery.task(name="parsing", bind=True)

@@ -1,11 +1,10 @@
-from sqlalchemy import Column, Unicode, BigInteger, Enum, DateTime, ForeignKey
+from sqlalchemy import BigInteger, Column, DateTime, Enum, ForeignKey, Unicode
 from sqlalchemy.dialects.postgresql import TEXT
-from sqlalchemy.orm import relationship, mapped_column
+from sqlalchemy.orm import mapped_column, relationship
 
+from app.document.enums.document import IndexingStatusEnum
 from core.db import Base
 from core.db.mixins import TimestampMixin
-from app.document.enums.document import IndexingStatusEnum
-from app.repository.models import Repository
 
 
 class Document(Base, TimestampMixin):

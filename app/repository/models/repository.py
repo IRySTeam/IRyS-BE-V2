@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import Column, Unicode, BigInteger, Boolean, func
+from sqlalchemy import BigInteger, Boolean, Column, Unicode
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.user.models import user_repositories

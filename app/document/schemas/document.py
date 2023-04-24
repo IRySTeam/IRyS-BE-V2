@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
+
+from fastapi import Path, Query
 from pydantic import BaseModel, Field
-from fastapi import Query, Path
 
 from app.document.enums.document import IndexingStatusEnum
 

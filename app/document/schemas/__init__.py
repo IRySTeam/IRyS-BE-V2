@@ -1,9 +1,9 @@
 from app.document.schemas.document import (
-    DocumentResponseSchema,
     DocumentPathParams,
+    DocumentResponseSchema,
     IncludeIndexQueryParams,
-    UploadDocumentBody,
     ReindexDocumentResponse,
+    UploadDocumentBody,
 )
 
 __all__ = [

@@ -1,9 +1,11 @@
 from typing import List
+
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from core.repository import BaseRepo
+
 from app.document.models import Document
 from core.db.session import session
+from core.repository import BaseRepo
 
 
 class DocumentRepo(BaseRepo[Document]):

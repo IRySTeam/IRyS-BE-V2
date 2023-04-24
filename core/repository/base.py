@@ -1,6 +1,6 @@
-from typing import TypeVar, Type, Optional, Generic
+from typing import Generic, Optional, Type, TypeVar
 
-from sqlalchemy import select, update, delete, insert
+from sqlalchemy import delete, insert, select, update
 
 from core.db.session import Base, session
 from core.repository.enum import SynchronizeSessionEnum

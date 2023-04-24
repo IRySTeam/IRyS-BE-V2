@@ -26,11 +26,12 @@ fileConfig(config.config_file_name)
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 
-# For auto generate schemas
-from core.config import config
-from app.user.models import *
 from app.document.models import *
 from app.repository.models import *
+from app.user.models import *
+
+# For auto generate schemas
+from core.config import config
 
 target_metadata = Base.metadata
 

@@ -1,18 +1,19 @@
 import os
+import pickle
 import string
-import pandas as pd
+from collections import defaultdict
+
 import numpy as np
-from nltk.tokenize import word_tokenize
+import pandas as pd
 from nltk import pos_tag
 from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-from sklearn.preprocessing import LabelEncoder
-from collections import defaultdict
 from nltk.corpus import wordnet as wn
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
+from sklearn import model_selection, svm
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn import model_selection, naive_bayes, svm
 from sklearn.metrics import accuracy_score
-import pickle
+from sklearn.preprocessing import LabelEncoder
 
 # Set Random seed
 np.random.seed(500)
