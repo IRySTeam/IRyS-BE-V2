@@ -1,22 +1,24 @@
-from typing import Mapping, Optional, Any, List
-from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import ApiError
-from elasticsearch.client import IndicesClient
-from elastic_transport import ObjectApiResponse
+from typing import Any, List, Mapping, Optional
 
-from core.config import config
-from core.exceptions.base import FailedDependencyException, NotFoundException
-from app.elastic.helpers import classify_error
+from bert_serving.client import BertClient
+from elastic_transport import ObjectApiResponse
+from elasticsearch import Elasticsearch
+from elasticsearch.client import IndicesClient
+from elasticsearch.exceptions import ApiError
+
 from app.elastic.configuration import (
-    GENERAL_ELASTICSEARCH_INDEX_SETTINGS,
     GENERAL_ELASTICSEARCH_INDEX_MAPPINGS,
+    GENERAL_ELASTICSEARCH_INDEX_SETTINGS,
 )
+from app.elastic.helpers import classify_error
 from app.elastic.schemas import (
-    ElasticInfo,
+    ElasticCreateIndexResponse,
     ElasticIndexCat,
     ElasticIndexDetail,
-    ElasticCreateIndexResponse,
+    ElasticInfo,
 )
+from core.config import config
+from core.exceptions.base import FailedDependencyException
 
 
 class ElasticsearchClient:
@@ -216,7 +218,7 @@ class ElasticsearchClient:
         except Exception as e:
             raise FailedDependencyException(e)
 
-    def search_semantic(self, query: str, index_name: str):
+    def search_semantic(self, query: str, index: str, size: int, source: List[str]):
         """
         Retrieve documents from an Elasticsearch index based on an input query
         [Parameters]
@@ -224,18 +226,25 @@ class ElasticsearchClient:
           index_name: str -> Name of index that will be the base of the search
         """
         try:
-            query_vector = self.client.encode([query])[0]
+            bc = BertClient(output_fmt="list", timeout=5000)
+            query_vector = bc.encode([query])[0]
+
             script_query = {
                 "script_score": {
                     "query": {"match_all": {}},
                     "script": {
-                        "source": "cosineSimilarity(params.query_vector, 'text_vector') + 1.0",
+                        "source": 'doc["text_vector"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, "text_vector") + 1.0',
                         "params": {"query_vector": query_vector},
                     },
                 }
             }
-            response = self.client.search(index=index_name, query=script_query)
-            return response
+
+            return self.client.search(
+                index=index, size=size, query=script_query, source={"includes": source}
+            )
+
+        except TimeoutError as e:
+            raise e
         except ApiError as e:
             raise classify_error(e)
         except Exception as e:
