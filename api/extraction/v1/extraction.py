@@ -22,7 +22,7 @@ async def get_domains():
 
 @extraction_router.get(
     "/information/{domain}",
-    response_model=ExtractedInformationResponse,
+    response_model=List[ExtractedInformationResponse],
     description="Get extracted information list of a domain",
     responses={
         400: {
@@ -38,9 +38,7 @@ async def get_information(path: ExtractedInformationPathParams = Depends()):
             detail="Domain does not exist",
         )
     information = EXTRACTED_INFORMATION[path.domain]
-    for entity in information["entities"]:
-        entity["operators"] = TYPE_OPERATORS[entity["type"]]
-    for info in information["information"]:
+    for info in information:
         info["operators"] = TYPE_OPERATORS[info["type"]]
 
     return information
