@@ -1,13 +1,9 @@
 from app.extraction.schemas.extraction import (
-    DomainInformationResponse,
-    ExtractedInformationPathParams,
-    DomainEntitiesResponse,
     ExtractedInformationResponse,
+    ExtractedInformationPathParams,
 )
 
 __all__ = [
-    "DomainInformationResponse",
-    "ExtractedInformationPathParams",
-    "DomainEntitiesResponse",
     "ExtractedInformationResponse",
+    "ExtractedInformationPathParams",
 ]

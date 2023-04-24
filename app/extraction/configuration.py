@@ -74,16 +74,9 @@ GENERAL_INFORMATION = [
 ]
 
 EXTRACTED_INFORMATION = {
-    "general": {
-        "entities": ENTITIES["general"],
-        "information": GENERAL_INFORMATION,
-    },
-    "scientific": {
-        "entities": ENTITIES["scientific"],
-        "information": GENERAL_INFORMATION + SCIENTIFIC_INFORMATION,
-    },
-    "recruitment": {
-        "entities": ENTITIES["recruitment"],
-        "information": GENERAL_INFORMATION + RECRUITMENT_INFORMATION,
-    },
+    "general": ENTITIES["general"] + GENERAL_INFORMATION,
+    "scientific": ENTITIES["scientific"] + GENERAL_INFORMATION + SCIENTIFIC_INFORMATION,
+    "recruitment": ENTITIES["recruitment"]
+    + GENERAL_INFORMATION
+    + RECRUITMENT_INFORMATION,
 }
