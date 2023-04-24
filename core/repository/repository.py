@@ -315,6 +315,16 @@ class RepositoryRepo(BaseRepo[Repository]):
         # Execute SQL query
         await session.execute(sql, params)
 
+    async def does_user_id_have_any_repository(self, user_id: int) -> bool:
+        query = """
+        SELECT ur.role
+        FROM user_repositories ur
+        WHERE ur.user_id = :user_id AND ur.repository_id = :repository_id
+        """
+        result = await session.execute(text(query), {"user_id": user_id})
+        total_items = result.fetchone().total_count
+        return total_items > 0
+
     async def get_user_role_by_user_id_and_repository_id(
         self, user_id: int, repository_id: int
     ) -> Optional[str]:
