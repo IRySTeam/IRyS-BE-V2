@@ -3,9 +3,15 @@ from typing import List
 
 from app.document.enums.document import IndexingStatusEnum
 from app.document.models import Document
+from app.document.schemas import DocumentSchema
 from app.elastic import EsClient
 from core.db import Transactional, standalone_session
-from core.exceptions import NotFoundException
+from core.exceptions import (
+    InvalidRepositoryRoleException,
+    NotFoundException,
+    RepositoryNotFoundException,
+    UserNotAllowedException,
+)
 from core.repository import DocumentIndexRepo, DocumentRepo, RepositoryRepo
 
 
@@ -258,7 +264,7 @@ class DocumentService:
             if not user_role.upper() in RepositoryRepo:
                 raise InvalidRepositoryRoleException
 
-        documents = await self.document_repo.get_documents_by_repository_id(
+        documents = await self.document_repo.find_documents_by_repository_id(
             repository_id, include_index=True
         )
         return documents

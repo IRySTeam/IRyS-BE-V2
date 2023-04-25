@@ -25,3 +25,12 @@ class DocumentRepo(BaseRepo[Document]):
             query = query.options(selectinload(self.model.index))
         result = await session.execute(query)
         return result.scalars().first()
+
+    async def find_documents_by_repository_id(
+        self, repository_id: int, include_index: bool = False
+    ):
+        query = select(Document).where(Document.repository_id == repository_id)
+        if include_index:
+            query = query.options(selectinload(Document.index))
+        result = await session.execute(query)
+        return result.scalars().all()
