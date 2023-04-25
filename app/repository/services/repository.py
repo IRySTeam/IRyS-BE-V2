@@ -242,7 +242,7 @@ class RepositoryService:
         )
 
         user_repo = UserRepo()
-        user = await user_repo.get_by_id(params["user_id"])
+        user = await user_repo.get_by_id(params["collaborator_id"])
         repo = await self.repository_repo.get_by_id(repository_id)
 
         # Send email to user

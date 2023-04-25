@@ -23,3 +23,7 @@ class AddRepositoryCollaboratorRequestSchema(BaseModel):
 class EditRepositoryCollaboratorRequestSchema(BaseModel):
     collaborator_id: int = Field(..., description="User ID")
     role: str = Field(..., description="Role")
+
+
+class RemoveRepositoryCollaboratorRequestSchema(BaseModel):
+    collaborator_id: int = Field(..., description="User ID")
