@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, Query, Request
 
 from app.repository.schemas import *
 from app.repository.services import RepositoryService
+from app.user.schemas import SearchUserResponseSchema
+from app.user.services import UserService
 from core.exceptions import (
     UnauthorizedException,
     EmailNotVerifiedException,
@@ -259,3 +261,24 @@ async def remove_repository_collaborator(
         user_id=request.user.id, repository_id=repository_id, params=body.dict()
     )
     return MessageResponseSchema(message="Successful")
+
+
+@repository_router.get(
+    "/{repository_id}/members/add/search",
+    response_model=SearchUserResponseSchema,
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def search_user(
+    repository_id: int,
+    query: str = Query("", description="Search query (name or email)"),
+    page_no: int = Query(1, description="Page number"),
+    page_size: int = Query(10, description="Page size"),
+):
+    return await UserService().search_user_for_repository_collaborator(
+        query=query, repository_id=repository_id, page_no=page_no, page_size=page_size
+    )

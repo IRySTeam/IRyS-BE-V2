@@ -260,26 +260,3 @@ async def change_password(request: Request, body: ChangePasswordRequestSchema):
 )
 async def resend_forgot_password_otp(request: Request):
     return await UserService().resend_forgot_password_otp(user_id=request.user.id)
-
-
-@user_router.get(
-    "/search",
-    response_model=SearchUserResponseSchema,
-    responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "404": CustomExceptionHelper.get_exception_response(
-            UserNotFoundException, "User not found"
-        ),
-    },
-    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
-)
-async def search_user(
-    query: str = Query("", description="Search query (name or email)"),
-    page_no: int = Query(1, description="Page number"),
-    page_size: int = Query(10, description="Page size"),
-):
-    return await UserService().search_user(
-        query=query, page_no=page_no, page_size=page_size
-    )

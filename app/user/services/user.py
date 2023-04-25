@@ -1,18 +1,7 @@
 from datetime import datetime, timedelta
 
 from app.user.models import User
-from app.user.schemas import (
-    LoginResponseSchema,
-    RegisterResponseSchema,
-    VerifyOTPResponseSchema,
-    ResendOTPResponseSchema,
-    VerifyEmailResponseSchema,
-    SendForgotPasswordOTPResponseSchema,
-    VerifyForgotPasswordOTPResponseSchema,
-    ChangePasswordResponseSchema,
-    ResendForgotPasswordOTPResponseSchema,
-    SearchUserResponseSchema,
-)
+from app.user.schemas import *
 from core.db import Transactional
 from core.exceptions import (
     PasswordDoesNotMatchException,
@@ -459,15 +448,32 @@ class UserService:
 
         return ChangePasswordResponseSchema(message="Success")
 
-    async def search_user(
-        self, query: str, page_no: int, page_size: int
+    async def search_user_for_repository_collaborator(
+        self, query: str, repository_id: int, page_no: int, page_size: int
     ) -> SearchUserResponseSchema:
-        users, total_pages, total_items = await self.user_repo.find_by_name_or_email(
-            query=query, page_no=page_no, page_size=page_size
+        (
+            users,
+            total_pages,
+            total_items,
+        ) = await self.user_repo.find_by_name_or_email_and_repository_id(
+            query=query,
+            repository_id=repository_id,
+            page_no=page_no,
+            page_size=page_size,
         )
+        results = []
+        for user in users:
+            results.append(
+                UserResponseSchema(
+                    id=user.id,
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    email=user.email,
+                )
+            )
 
         return SearchUserResponseSchema(
-            results=users,
+            results=results,
             total_pages=total_pages,
             total_items=total_items,
         )

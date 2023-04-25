@@ -73,12 +73,9 @@ class ResendForgotPasswordOTPResponseSchema(BaseModel):
 
 class UserResponseSchema(BaseModel):
     id: int = Field(..., description="ID")
-    email: str = Field(..., description="Email")
     first_name: str = Field(..., description="First Name")
     last_name: str = Field(..., description="Last Name")
-
-    class Config:
-        orm_mode = True
+    email: str = Field(..., description="Email")
 
 
 class SearchUserResponseSchema(BaseModel):
