@@ -18,6 +18,16 @@ TYPE_OPERATORS = {
         "in",
         "not_in",
     ],
+    "semantic text": [
+        "contains",
+        "not_contains",
+        "starts_with",
+        "ends_with",
+        "equals",
+        "regex",
+        "in",
+        "not_in",
+    ],
     "list": [
         "contains",
         "not_contains",

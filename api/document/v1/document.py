@@ -1,4 +1,3 @@
-from binascii import b2a_base64
 from typing import List
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
@@ -11,7 +10,7 @@ from app.document.schemas import (
     ReindexDocumentResponse,
 )
 from app.document.services import document_service
-from celery_app import parsing
+from app.extraction import InformationExtractor
 from core.exceptions import (
     BadRequestException,
     ForbiddenException,
@@ -77,7 +76,7 @@ async def get_document(
 @document_router.post(
     "/upload",
     description="Upload a document and index it in Elasticsearch (Temporary)",
-    response_model=DocumentResponseSchema,
+    # response_model=DocumentResponseSchema,
     responses={
         "400": CustomExceptionHelper.get_exception_response(
             BadRequestException,
@@ -93,22 +92,27 @@ async def upload_document(repository_id: int = Form(...), file: UploadFile = Fil
     document: Document = None
     try:
         file_bytes = file.file.read()
+        scientific_extractor = InformationExtractor(domain="scientific")
+        extract = scientific_extractor.extract(file_bytes)
+        print(extract)
+        return extract
         # TODO: Use information extraction to extract title.
-        title = ".".join(file.filename.split(".")[:-1])
-        file_content_str = b2a_base64(file_bytes).decode("utf-8")
-        doc_id = await document_service.create_document(
-            title=title,
-            repository_id=repository_id,
-            file_content_str=file_content_str,
-        )
-        document = await document_service.get_document_by_id(
-            id=doc_id, include_index=True
-        )
-        parsing.delay(
-            document_id=document.id,
-            document_title=title,
-            file_content_str=file_content_str,
-        )
+        # title = ".".join(file.filename.split(".")[:-1])
+        # file_content_str = b2a_base64(file_bytes).decode("utf-8")
+        # doc_id = await document_service.create_document(
+        #     title=title,
+        #     repository_id=repository_id,
+        #     file_content_str=file_content_str,
+        # )
+        # document = await document_service.get_document_by_id(
+        #     id=doc_id, include_index=True
+        # )
+        # parsing.delay(
+        #     document_id=document.id,
+        #     document_title=title,
+        #     file_content_str=file_content_str,
+        # )
+        return DocumentResponseSchema(id=1)
         return document
     except Exception as e:
         # Delete the document if there is an error.
