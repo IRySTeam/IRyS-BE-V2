@@ -228,3 +228,37 @@ class DocumentService:
         """
         document = await self.get_document_by_id(id, True)
         await self.reindex(document)
+
+    async def get_repository_documents(
+        self,
+        user_id: int,
+        repository_id: int,
+    ) -> List[DocumentSchema]:
+        """
+        Get all documents in a repository.
+        [Parameters]
+            repository_id: int -> Repository id.
+        [Returns]
+            List[Document] -> List of documents.
+        """
+        repo = await self.repository_repo.get_repository_by_id(repository_id)
+
+        if not repo:
+            raise RepositoryNotFoundException
+
+        if not repo.is_public:
+            user_role = (
+                await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                    user_id, repository_id
+                )
+            )
+            if not user_role:
+                raise UserNotAllowedException
+
+            if not user_role.upper() in RepositoryRepo:
+                raise InvalidRepositoryRoleException
+
+        documents = await self.document_repo.get_documents_by_repository_id(
+            repository_id, include_index=True
+        )
+        return documents
