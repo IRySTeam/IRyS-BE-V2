@@ -302,15 +302,29 @@ async def reindex_all(request: Request, repository_id: int):
         "401": CustomExceptionHelper.get_exception_response(
             UnauthorizedException, "Unauthorized"
         ),
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
     },
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def search_user(
+    request: Request,
     repository_id: int,
     query: str = Query("", description="Search query (name or email)"),
     page_no: int = Query(1, description="Page number"),
     page_size: int = Query(10, description="Page size"),
 ):
     return await UserService().search_user_for_repository_collaborator(
-        query=query, repository_id=repository_id, page_no=page_no, page_size=page_size
+        user_id=request.user.id,
+        query=query,
+        repository_id=repository_id,
+        page_no=page_no,
+        page_size=page_size,
     )

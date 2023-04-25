@@ -13,11 +13,13 @@ from core.exceptions import (
     InvalidEmailException,
     InvalidPasswordException,
     PasswordDoesNotMatchException,
+    RepositoryNotFoundException,
     TokenAlreadyUsedException,
+    UserNotAllowedException,
     UserNotFoundException,
     WrongOTPException,
 )
-from core.repository import UserRepo
+from core.repository import RepositoryRepo, UserRepo
 from core.utils.hash_helper import HashHelper
 from core.utils.mailer import Mailer
 from core.utils.string_helper import StringHelper
@@ -26,6 +28,7 @@ from core.utils.token_helper import TokenHelper
 
 class UserService:
     user_repo = UserRepo()
+    repository_repo = RepositoryRepo()
 
     def __init__(self):
         ...
@@ -449,8 +452,21 @@ class UserService:
         return ChangePasswordResponseSchema(message="Success")
 
     async def search_user_for_repository_collaborator(
-        self, query: str, repository_id: int, page_no: int, page_size: int
+        self, user_id: int, query: str, repository_id: int, page_no: int, page_size: int
     ) -> SearchUserResponseSchema:
+        repo = await self.repository_repo.get_by_id(id=repository_id)
+        is_owner = await self.repository_repo.is_user_id_owner_of_repository(
+            user_id, repository_id
+        )
+        is_admin = await self.repository_repo.is_user_id_admin_of_repository(
+            user_id, repository_id
+        )
+
+        if not repo:
+            raise RepositoryNotFoundException
+        if not repo.is_public:
+            if not (is_owner or is_admin):
+                raise UserNotAllowedException
         (
             users,
             total_pages,
