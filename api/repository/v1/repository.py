@@ -21,6 +21,7 @@ from app.user.services import UserService
 from core.exceptions import (
     DuplicateCollaboratorException,
     EmailNotVerifiedException,
+    InvalidRepositoryCollaboratorException,
     InvalidRepositoryRoleException,
     RepositoryDetailsEmptyException,
     RepositoryNotFoundException,
@@ -232,7 +233,26 @@ async def add_repository_collaborator(
 @repository_router.post(
     "/{repository_id}/members/edit",
     response_model=MessageResponseSchema,
-    responses={},
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            InvalidRepositoryRoleException, "Invalid repository role"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            InvalidRepositoryCollaboratorException, "Invalid repository collaborator"
+        ),
+    },
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def edit_repository_collaborator(
@@ -303,10 +323,10 @@ async def reindex_all(request: Request, repository_id: int):
             UnauthorizedException, "Unauthorized"
         ),
         "403": CustomExceptionHelper.get_exception_response(
-            UserNotAllowedException, "Not allowed"
+            EmailNotVerifiedException, "Email not verified"
         ),
         "403": CustomExceptionHelper.get_exception_response(
-            EmailNotVerifiedException, "Email not verified"
+            UserNotAllowedException, "Not allowed"
         ),
         "404": CustomExceptionHelper.get_exception_response(
             RepositoryNotFoundException, "Repository not found"
