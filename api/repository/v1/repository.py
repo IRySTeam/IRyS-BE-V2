@@ -12,6 +12,7 @@ from app.repository.schemas import (
     GetPublicRepositoriesResponseSchema,
     MessageResponseSchema,
     ReindexAllResponseSchema,
+    RemoveRepositoryCollaboratorRequestSchema,
     RepositoryCollaboratorSchema,
     RepositoryDetailsResponseSchema,
 )
@@ -288,10 +289,10 @@ async def edit_repository_collaborator(
 async def remove_repository_collaborator(
     request: Request,
     repository_id: int,
-    body: MessageResponseSchema,
+    body: RemoveRepositoryCollaboratorRequestSchema,
 ):
     await RepositoryService().remove_repository_collaborator(
-        user_id=request.user.id, repository_id=repository_id, params=body.dict()
+        user_id=request.user.id, repository_id=repository_id, **body.dict()
     )
     return MessageResponseSchema(message="Successful")
 
