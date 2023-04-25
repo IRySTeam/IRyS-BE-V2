@@ -1,5 +1,6 @@
-import uvloop
 import asyncio
+
+import uvloop
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
@@ -8,12 +9,13 @@ from typing import Union
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
-    create_async_engine,
     async_scoped_session,
+    create_async_engine,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.sql.expression import Update, Delete, Insert
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
+from sqlalchemy.sql.expression import Delete, Insert, Update
 
 from core.config import config
 
@@ -33,8 +35,12 @@ def reset_session_context(context: Token) -> None:
 
 
 engines = {
-    "writer": create_async_engine(config.WRITER_DB_URL, pool_recycle=3600),
-    "reader": create_async_engine(config.READER_DB_URL, pool_recycle=3600),
+    "writer": create_async_engine(
+        config.WRITER_DB_URL, pool_recycle=3600, poolclass=NullPool
+    ),
+    "reader": create_async_engine(
+        config.READER_DB_URL, pool_recycle=3600, poolclass=NullPool
+    ),
 }
 
 

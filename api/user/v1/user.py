@@ -1,32 +1,31 @@
-from typing import List
+from fastapi import APIRouter, Depends, Request
 
-from fastapi import APIRouter, Depends, Query, Request
 from app.user.schemas import *
 from app.user.services import UserService
 from core.exceptions import (
+    DuplicateEmailException,
+    EmailAlreadyVerifiedException,
+    EmailNotVerifiedException,
+    ExpiredOTPException,
+    ForgotPasswordOTPAlreadySentException,
+    ForgotPasswordOTPNotVerifiedException,
     InvalidEmailException,
     InvalidPasswordException,
-    DuplicateEmailException,
-    UserNotFoundException,
     PasswordDoesNotMatchException,
-    EmailNotVerifiedException,
-    EmailAlreadyVerifiedException,
-    ExpiredOTPException,
-    WrongOTPException,
-    UnauthorizedException,
-    ForgotPasswordOTPNotVerifiedException,
     TokenAlreadyUsedException,
-    ForgotPasswordOTPAlreadySentException,
+    UnauthorizedException,
+    UserNotFoundException,
+    WrongOTPException,
 )
-from core.utils import CustomExceptionHelper
 from core.fastapi.dependencies import (
-    PermissionDependency,
     IsAuthenticated,
     IsEmailNotVerified,
     IsEmailVerified,
     IsForgotPasswordOtpNotVerified,
     IsForgotPasswordOtpVerified,
+    PermissionDependency,
 )
+from core.utils import CustomExceptionHelper
 
 user_router = APIRouter()
 

@@ -1,10 +1,10 @@
-from app.extraction.domains.scientific import (
-    SCIENTIFIC_ENTITIES,
-    SCIENTIFIC_INFORMATION,
-)
 from app.extraction.domains.recruitment import (
     RECRUITMENT_ENTITIES,
     RECRUITMENT_INFORMATION,
+)
+from app.extraction.domains.scientific import (
+    SCIENTIFIC_ENTITIES,
+    SCIENTIFIC_INFORMATION,
 )
 
 TYPE_OPERATORS = {
@@ -74,16 +74,9 @@ GENERAL_INFORMATION = [
 ]
 
 EXTRACTED_INFORMATION = {
-    "general": {
-        "entities": ENTITIES["general"],
-        "information": GENERAL_INFORMATION,
-    },
-    "scientific": {
-        "entities": ENTITIES["scientific"],
-        "information": GENERAL_INFORMATION + SCIENTIFIC_INFORMATION,
-    },
-    "recruitment": {
-        "entities": ENTITIES["recruitment"],
-        "information": GENERAL_INFORMATION + RECRUITMENT_INFORMATION,
-    },
+    "general": ENTITIES["general"] + GENERAL_INFORMATION,
+    "scientific": ENTITIES["scientific"] + GENERAL_INFORMATION + SCIENTIFIC_INFORMATION,
+    "recruitment": ENTITIES["recruitment"]
+    + GENERAL_INFORMATION
+    + RECRUITMENT_INFORMATION,
 }

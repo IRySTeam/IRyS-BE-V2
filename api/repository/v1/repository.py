@@ -1,23 +1,36 @@
 from typing import List
+
 from fastapi import APIRouter, Depends, Query, Request
 
-from app.repository.schemas import *
+from app.repository.schemas import (
+    AddRepositoryCollaboratorRequestSchema,
+    CreateRepositoryRequestSchema,
+    CreateRepositoryResponseSchema,
+    EditRepositoryCollaboratorRequestSchema,
+    EditRepositoryRequestSchema,
+    GetJoinedRepositoriesSchema,
+    GetPublicRepositoriesResponseSchema,
+    MessageResponseSchema,
+    ReindexAllResponseSchema,
+    RepositoryCollaboratorSchema,
+    RepositoryDetailsResponseSchema,
+)
 from app.repository.services import RepositoryService
 from app.user.schemas import SearchUserResponseSchema
 from app.user.services import UserService
 from core.exceptions import (
-    UnauthorizedException,
+    DuplicateCollaboratorException,
     EmailNotVerifiedException,
+    InvalidRepositoryRoleException,
     RepositoryDetailsEmptyException,
     RepositoryNotFoundException,
+    UnauthorizedException,
     UserNotAllowedException,
-    InvalidRepositoryRoleException,
-    DuplicateCollaboratorException,
 )
 from core.fastapi.dependencies import (
-    PermissionDependency,
     IsAuthenticated,
     IsEmailVerified,
+    PermissionDependency,
 )
 from core.utils import CustomExceptionHelper
 
@@ -261,6 +274,25 @@ async def remove_repository_collaborator(
         user_id=request.user.id, repository_id=repository_id, params=body.dict()
     )
     return MessageResponseSchema(message="Successful")
+
+
+@repository_router.get(
+    "/{repository_id}/reindex-all",
+    response_model=ReindexAllResponseSchema,
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+    },
+)
+async def reindex_all(request: Request, repository_id: int):
+    await RepositoryService().reindex_all(repository_id=repository_id)
+    return {
+        "success": True,
+    }
 
 
 @repository_router.get(

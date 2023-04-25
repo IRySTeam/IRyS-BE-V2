@@ -1,10 +1,11 @@
 from typing import List, Tuple
+
 from sqlalchemy import select
 from sqlalchemy.sql import text
 
-from core.repository import BaseRepo
 from app.user.models import User
 from core.db.session import session
+from core.repository import BaseRepo
 
 
 class UserRepo(BaseRepo[User]):

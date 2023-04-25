@@ -17,6 +17,12 @@ class BadRequestException(CustomException):
     message = HTTPStatus.BAD_REQUEST.description
 
 
+class UnauthorizedException(CustomException):
+    code = HTTPStatus.UNAUTHORIZED
+    error_code = HTTPStatus.UNAUTHORIZED
+    message = HTTPStatus.UNAUTHORIZED.description
+
+
 class NotFoundException(CustomException):
     code = HTTPStatus.NOT_FOUND
     error_code = HTTPStatus.NOT_FOUND

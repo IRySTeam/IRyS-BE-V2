@@ -1,19 +1,9 @@
 import os
-import io
-import re
-import fitz
-import nltk
-import string
-import pickle
-import pathlib
-import pandas as pd
+from typing import Any, Dict
 
 from transformers import pipeline
-from typing import List, Union, Dict, Any
-from collections import defaultdict
-from app.extraction.general_extractor import GeneralExtractor
 
-from app.extraction.ner_result import NERResult
+from app.extraction.general_extractor import GeneralExtractor
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 

@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Response, Depends
+from fastapi import APIRouter, Depends, Response
 
-from core.fastapi.dependencies import PermissionDependency, AllowAll
+from core.fastapi.dependencies import AllowAll, PermissionDependency
 
 home_router = APIRouter()
 

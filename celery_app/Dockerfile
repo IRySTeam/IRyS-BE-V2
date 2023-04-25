@@ -27,11 +27,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
 
-# Install poetry and dependencies.
-COPY ./pyproject.toml /pyproject.toml
-RUN pip install "poetry" \
-    && poetry config virtualenvs.create false \
-    && poetry install --only main
+# Requirements are installed here to ensure they will be cached.
+COPY ./requirements.txt /requirements.txt
+RUN pip install -r /requirements.txt
+
+# # Install poetry and dependencies.
+# COPY ./pyproject.toml /pyproject.toml
+# RUN pip install "poetry" \
+#     && poetry config virtualenvs.create false \
+#     && poetry install --only main
 
 # Download nltk data
 RUN python -m nltk.downloader punkt wordnet stopwords averaged_perceptron_tagger
