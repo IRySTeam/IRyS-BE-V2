@@ -1,5 +1,7 @@
 import os
+
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
+
 from core.config import config
 
 

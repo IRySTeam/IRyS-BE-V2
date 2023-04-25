@@ -1,13 +1,15 @@
 from app.document.schemas.document import (
-    DocumentResponseSchema,
     DocumentPathParams,
+    DocumentResponseSchema,
     IncludeIndexQueryParams,
-    DocumentIndexing,
+    ReindexDocumentResponse,
+    UploadDocumentBody,
 )
 
 __all__ = [
     "DocumentResponseSchema",
     "DocumentPathParams",
     "IncludeIndexQueryParams",
-    "DocumentIndexing",
+    "UploadDocumentBody",
+    "ReindexDocumentResponse",
 ]

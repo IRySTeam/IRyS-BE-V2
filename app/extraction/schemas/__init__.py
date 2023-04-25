@@ -1,6 +1,6 @@
 from app.extraction.schemas.extraction import (
-    ExtractedInformationResponse,
     ExtractedInformationPathParams,
+    ExtractedInformationResponse,
 )
 
 __all__ = [

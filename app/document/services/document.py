@@ -1,17 +1,12 @@
-from binascii import b2a_base64
+from datetime import datetime
 from typing import List
-from fastapi import UploadFile
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
-from app.document.models import Document, DocumentIndex
-from app.document.schemas import DocumentResponseSchema, DocumentIndexing
 from app.document.enums.document import IndexingStatusEnum
-from celery_app import parsing
-from core.db import Transactional, session
+from app.document.models import Document
+from app.elastic import EsClient
+from core.db import Transactional, standalone_session
 from core.exceptions import NotFoundException
-from core.repository import DocumentRepo, DocumentIndexRepo
-from core.utils import GCStorage
+from core.repository import DocumentIndexRepo, DocumentRepo, RepositoryRepo
 
 
 class DocumentService:
@@ -20,6 +15,7 @@ class DocumentService:
     interacting with the database.
     """
 
+    repository_repo = RepositoryRepo()
     document_repo = DocumentRepo()
     document_index_repo = DocumentIndexRepo()
 
@@ -37,15 +33,7 @@ class DocumentService:
         [Returns]
             List[Document] -> List of documents.
         """
-        query = select(Document)
-        include_index = False
-        if include_index:
-            query = query.options(selectinload(Document.index))
-        result = await session.execute(query)
-        data = result.scalars().all()
-        # Return the dict representation of the object to avoid pydantic accessing doc.index
-        # to lazy load the indexing status.
-        return [doc.__dict__ for doc in data]
+        return await self.document_repo.get_all(include_index=include_index)
 
     async def get_document_by_id(
         self, id: int, include_index: bool = False
@@ -58,62 +46,185 @@ class DocumentService:
         [Returns]
             Document -> Document.
         """
-        query = select(Document).where(Document.id == id)
-        if include_index:
-            query = query.options(selectinload(Document.index))
-        result = await session.execute(query)
-        data = result.scalars().first()
+        data = await self.document_repo.get_by_id(id=id, include_index=include_index)
         if not data:
             raise NotFoundException("Document not with specified id not found")
-        # Return the dict representation of the object to avoid pydantic accessing doc.index
-        # to lazy load the indexing status.
-        return data.__dict__
+        return data
 
     @Transactional()
     async def create_document(
         self,
-        file: UploadFile,
-    ) -> DocumentResponseSchema:
+        title: str,
+        repository_id: int,
+        file_content_str: str,
+        doc_created_at: datetime = None,
+        doc_updated_at: datetime = None,
+        elastic_doc_id: str = None,
+        elastic_index_name: str = None,
+    ) -> int:
         """
         Create a document and the corresponding indexing status.
         [Parameters]
             title: str -> Document title.
-            elastic_doc_id: int = None -> Document id in Elasticsearch.
-            elastic_index_name: int = None -> Elasticsearch index name.
+            repository_id: int -> Repository id.
+            doc_created_at: datetime -> Document created at.
+            doc_updated_at: datetime -> Document updated at.
+            elastic_doc_id: str = None -> Document id in Elasticsearch.
+            elastic_index_name: str = None -> Elasticsearch index name.
+        [Returns]
+            int -> Document id.
         """
-        # TODO: Is this the correct way to get the title?
-        title = ".".join(file.filename.split(".")[:-1])
-
-        # Upload file to GCS
-        uploaded_file_url = GCStorage().upload_file(file, "documents/")
+        repository = await self.repository_repo.get_by_id(id=repository_id)
+        if not repository:
+            raise NotFoundException("Repository with specified id not found")
         document = await self.document_repo.save(
             {
                 "title": title,
-                "file_url": uploaded_file_url,
-            }
-        )
-        document_index = await self.document_index_repo.save(
-            {
-                "doc_id": document.inserted_primary_key[0],
+                "repository_id": repository_id,
+                "file_content_str": file_content_str,
+                "doc_created_at": doc_created_at,
+                "doc_updated_at": doc_updated_at,
+                "elastic_doc_id": elastic_doc_id,
+                "elastic_index_name": elastic_index_name,
             }
         )
 
-        # TODO: Add with OCR choice.
-        # TODO: Add check duplicate.
+        await self.document_index_repo.save(
+            {"doc_id": document.inserted_primary_key[0]}
+        )
+        return document.inserted_primary_key[0]
 
-        file.file.seek(0)
+    @Transactional()
+    async def update_document(
+        self,
+        id: int,
+        title: str = None,
+        repository_id: int = None,
+        doc_created_at: datetime = None,
+        doc_updated_at: datetime = None,
+        elastic_doc_id: int = None,
+        elastic_index_name: str = None,
+    ) -> Document:
+        """
+        Update a document.
+        [Parameters]
+            id: int -> Document id.
+            title: str -> Document title.
+            repository_id: int -> Repository id.
+            doc_created_at: datetime -> Document created at.
+            doc_updated_at: datetime -> Document updated at.
+            elastic_doc_id: str = None -> Document id in Elasticsearch.
+            elastic_index_name: str = None -> Elasticsearch index name.
+        [Returns]
+            Document -> Document.
+        """
+        document = await self.get_document_by_id(id)
+        await self.document_repo.update_by_id(
+            id=id,
+            params={
+                "title": title or document.title,
+                "repository_id": repository_id or document.repository_id,
+                "doc_created_at": doc_created_at or document.doc_created_at,
+                "doc_updated_at": doc_updated_at or document.doc_updated_at,
+                "elastic_doc_id": elastic_doc_id or document.elastic_doc_id,
+                "elastic_index_name": elastic_index_name or document.elastic_index_name,
+            },
+        )
+        document = await self.get_document_by_id(id)
+        return document
+
+    @standalone_session
+    @Transactional()
+    async def update_document_celery(
+        self,
+        id: int,
+        title: str = None,
+        repository_id: int = None,
+        doc_created_at: datetime = None,
+        doc_updated_at: datetime = None,
+        elastic_doc_id: int = None,
+        elastic_index_name: str = None,
+    ) -> bool:
+        """
+        Update a document.
+        [Parameters]
+            id: int -> Document id.
+            title: str -> Document title.
+            repository_id: int -> Repository id.
+            doc_created_at: datetime -> Document created at.
+            doc_updated_at: datetime -> Document updated at.
+            elastic_doc_id: str = None -> Document id in Elasticsearch.
+            elastic_index_name: str = None -> Elasticsearch index name.
+        [Returns]
+            bool -> True if successful.
+        """
+        document = await self.get_document_by_id(id)
+        await self.document_repo.update_by_id(
+            id=id,
+            params={
+                "title": title or document.title,
+                "repository_id": repository_id or document.repository_id,
+                "doc_created_at": doc_created_at or document.doc_created_at,
+                "doc_updated_at": doc_updated_at or document.doc_updated_at,
+                "elastic_doc_id": elastic_doc_id or document.elastic_doc_id,
+                "elastic_index_name": elastic_index_name or document.elastic_index_name,
+            },
+        )
+        return True
+
+    @Transactional()
+    async def delete_document(self, id: int) -> bool:
+        """
+        Delete a document and the corresponding indexing status.
+        [Parameters]
+            id: int -> Document id.
+        [Returns]
+            bool -> True if successful.
+        """
+        document = await self.get_document_by_id(id)
+        await self.document_index_repo.delete(document.index)
+        await self.document_repo.delete_by_id(document.index.id)
+        return True
+
+    @Transactional()
+    async def reindex(self, document: Document):
+        """
+        Logic for reindexing a document.
+        [Parameters]
+            document: Document -> Document to be reindexed.
+        """
+        # Fuck partial dependency.
+        from celery_app import celery, parsing
+
+        index = document.index
+
+        # Revoke the task if indexing is still in progress.
+        if index.status != IndexingStatusEnum.SUCCESS and not (index.current_task_id):
+            celery.control.revoke(index.current_task_id, terminate=True)
+
+        # Delete corresponding index in elasticsearch if exist, also remove it in db.
+        if (
+            index.status == IndexingStatusEnum.SUCCESS
+            and document.elastic_doc_id
+            and document.elastic_index_name
+        ):
+            EsClient.delete_doc(document.elastic_index_name, document.elastic_doc_id)
+            await self.update_document(
+                id=document.id,
+                elastic_doc_id=None,
+                elastic_index_name=None,
+            )
         parsing.delay(
-            document_id=document.inserted_primary_key[0],
-            document_title=title,
-            file_content_str=b2a_base64(file.file.read()).decode("utf-8"),
+            document_id=document.id,
+            document_title=document.title,
+            file_content_str=document.file_content_str,
         )
-        return DocumentResponseSchema(
-            id=document.inserted_primary_key[0],
-            title=title,
-            file_url=uploaded_file_url,
-            index=DocumentIndexing(
-                id=document_index.inserted_primary_key[0],
-                doc_id=document.inserted_primary_key[0],
-                status=IndexingStatusEnum.READY,
-            ),
-        )
+
+    async def reindex_by_id(self, id: int) -> None:
+        """
+        Reindex a document.
+        [Parameters]
+            id: int -> Document id.
+        """
+        document = await self.get_document_by_id(id, True)
+        await self.reindex(document)

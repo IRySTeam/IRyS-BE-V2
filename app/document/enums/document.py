@@ -6,4 +6,5 @@ class IndexingStatusEnum(BaseEnum):
     PARSING = "PARSING"
     EXTRACTING = "EXTRACTING"
     INDEXING = "INDEXING"
+    SUCCESS = "SUCCESS"
     FAILED = "FAILED"
