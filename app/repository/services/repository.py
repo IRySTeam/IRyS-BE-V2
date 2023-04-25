@@ -1,23 +1,27 @@
 from typing import List
 
+from app.document.models import Document
+from app.document.services import document_service
+from app.repository.constants import GRANTABLE_ROLES
 from app.repository.schemas import (
     CreateRepositoryResponseSchema,
-    RepositorySchema,
     GetJoinedRepositoriesSchema,
-    RepositoryOwnerSchema,
     GetPublicRepositoriesResponseSchema,
     RepositoryCollaboratorSchema,
+    RepositoryDetailsResponseSchema,
+    RepositoryOwnerSchema,
+    RepositorySchema,
 )
-from app.repository.constants import GRANTABLE_ROLES
 from core.db import Transactional
 from core.exceptions import (
+    DuplicateCollaboratorException,
+    InvalidRepositoryCollaboratorException,
+    InvalidRepositoryRoleException,
+    NotFoundException,
     RepositoryDetailsEmptyException,
     RepositoryNotFoundException,
     UserNotAllowedException,
-    InvalidRepositoryRoleException,
-    DuplicateCollaboratorException,
     UserNotFoundException,
-    InvalidRepositoryCollaboratorException,
 )
 from core.repository import RepositoryRepo, UserRepo
 from core.utils.mailer import Mailer
@@ -68,7 +72,6 @@ class RepositoryService:
         )
         results = []
         for repo in repositories:
-            print(repo)
             results.append(
                 RepositorySchema(
                     id=repo.id,
@@ -123,6 +126,15 @@ class RepositoryService:
             results=results, total_page=total_page, total_items=total_items
         )
 
+    async def reindex_all(self, repository_id: int = None):
+        # Find the repository
+        repository = await self.repository_repo.get_by_id(repository_id, True, True)
+        if not repository:
+            raise NotFoundException("Repository with specified id not found")
+        documents: List[Document] = repository.documents
+        for document in documents:
+            await document_service.reindex(document)
+
     async def get_repository_collaborators(
         self, user_id: int, repository_id: int
     ) -> List[RepositoryCollaboratorSchema]:
@@ -168,12 +180,19 @@ class RepositoryService:
             ):
                 raise RepositoryNotFoundException
 
-        return RepositorySchema(
+        current_user_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id, repository_id
+            )
+        )
+
+        return RepositoryDetailsResponseSchema(
             id=repository.id,
             name=repository.name,
             description=repository.description,
             is_public=repository.is_public,
             updated_at=repository.updated_at,
+            current_user_role=current_user_role,
             owner=RepositoryOwnerSchema(
                 id=repository.owner_id,
                 first_name=repository.owner_first_name,

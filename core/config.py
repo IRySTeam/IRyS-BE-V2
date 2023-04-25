@@ -1,8 +1,8 @@
 import os
-
 from typing import Optional
-from pydantic import BaseSettings
+
 from dotenv import load_dotenv
+from pydantic import BaseSettings
 
 load_dotenv()
 
@@ -26,17 +26,13 @@ class Config(BaseSettings):
     MAIL_SERVER = os.getenv("MAIL_SERVER")
     MAIL_PORT = os.getenv("MAIL_PORT")
     ELASTICSEARCH_CLOUD: str = "False"
-    ELASTICSEARCH_CLOUD_ID: Optional[
-        str
-    ] = "fc4cb02e0dfc461cabf401c50b41a44e:dXMtY2VudHJhbDEuZ2NwLmNsb3VkLmVzLmlvOjQ0MyQ0NGMxMDY1NzE5NWE0Y2M2OTVhNTRkNWU1M2MzYmYzMiRiNjMxNTFmM2ZlNjM0OTBhOWFkODNhZTcxNzljNjA3YQ=="
+    ELASTICSEARCH_CLOUD_ID: Optional[str]
     ELASTICSEARCH_USER: str = "elastic"
     ELASTICSEARCH_PASSWORD: str = "3f2GOi7AiHsKjTUXTPF4ISia"
-    ELASTICSEARCH_API_KEY: Optional[
-        str
-    ] = "N0tKMl9JWUJ0TVVqTHl4cnlWU3E6cmtoYVRQX3hSTjJ2OFQwVjRVcVNVZw=="
-    ELASTICSEARCH_SCHEME: Optional[str] = "http"
-    ELASTICSEARCH_HOST: Optional[str] = "localhost"
-    ELASTICSEARCH_PORT: Optional[int] = 9200
+    ELASTICSEARCH_API_KEY: Optional[str]
+    ELASTICSEARCH_SCHEME: Optional[str]
+    ELASTICSEARCH_HOST: Optional[str]
+    ELASTICSEARCH_PORT: Optional[int]
     GCS_BUCKET_NAME: str
     GOOGLE_PROJECT_ID: str
     GOOGLE_PRIVATE_KEY_ID: str
@@ -44,6 +40,9 @@ class Config(BaseSettings):
     GOOGLE_CLIENT_EMAIL: str
     GOOGLE_CLIENT_EMAIL_ID: str
     GOOGLE_CLIENT_ID: str
+    BERT_SERVER_IP: Optional[str]
+    BERT_SERVER_PORT: Optional[int]
+    BERT_SERVER_PORT_OUT: Optional[int]
 
 
 class DevelopmentConfig(Config):

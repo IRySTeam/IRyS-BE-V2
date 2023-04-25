@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -11,12 +11,12 @@ from core.config import config
 from core.exceptions import CustomException
 from core.fastapi.dependencies import Logging
 from core.fastapi.middlewares import (
-    AuthenticationMiddleware,
     AuthBackend,
-    SQLAlchemyMiddleware,
+    AuthenticationMiddleware,
     ResponseLogMiddleware,
+    SQLAlchemyMiddleware,
 )
-from core.helpers.cache import Cache, RedisBackend, CustomKeyMaker
+from core.helpers.cache import Cache, CustomKeyMaker, RedisBackend
 
 
 def init_routers(app_: FastAPI) -> None:

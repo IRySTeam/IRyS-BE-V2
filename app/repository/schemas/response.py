@@ -1,5 +1,6 @@
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -34,6 +35,16 @@ class RepositorySchema(BaseModel):
     owner: RepositoryOwnerSchema = Field(..., description="Repository Owner")
 
 
+class RepositoryDetailsResponseSchema(BaseModel):
+    id: int = Field(..., description="ID")
+    name: str = Field(..., description="Name")
+    description: str = Field(..., description="Description")
+    is_public: bool = Field(..., description="Is Public")
+    updated_at: datetime = Field(..., description="Updated At")
+    owner: RepositoryOwnerSchema = Field(..., description="Repository Owner")
+    current_user_role: Optional[str] = Field(None, description="Current User Role")
+
+
 class GetJoinedRepositoriesSchema(BaseModel):
     does_user_have_any_repos: bool = Field(..., description="Does User Have Any Repos")
     results: List[RepositorySchema] = Field(..., description="Results")
@@ -45,6 +56,14 @@ class GetPublicRepositoriesResponseSchema(BaseModel):
     results: List[RepositorySchema] = Field(..., description="Results")
     total_page: int = Field(..., description="Total Page")
     total_items: int = Field(..., description="Total Items")
+
+
+class ReindexAllResponseSchema(BaseModel):
+    success: bool = Field(..., description="Reindexing all documents status")
+
+
+class EditRepositoryResponseSchema(BaseModel):
+    message: str = Field(..., description="Message")
 
 
 class RepositoryCollaboratorSchema(BaseModel):

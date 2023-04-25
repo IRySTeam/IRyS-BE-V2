@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import Column, Unicode, BigInteger, Boolean, func
+from sqlalchemy import BigInteger, Boolean, Column, Unicode
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.user.models import user_repositories
@@ -14,6 +14,7 @@ class Repository(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name = Column(Unicode(255), nullable=False)
     description = Column(Unicode(255))
+    documents: Mapped[List["Document"]] = relationship(back_populates="repository")
     is_public = Column(Boolean, default=True)
     users: Mapped[List["User"]] = relationship(
         "User", secondary=user_repositories, back_populates="repositories"

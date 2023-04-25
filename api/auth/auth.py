@@ -3,10 +3,8 @@ from fastapi import APIRouter, Response
 from api.auth.request.auth import RefreshTokenRequest, VerifyTokenRequest
 from api.auth.response.auth import RefreshTokenResponse
 from app.auth.services.token import TokenService
+from core.exceptions import InvalidTokenException
 from core.utils import CustomExceptionHelper
-from core.exceptions import (
-    InvalidTokenException,
-)
 
 auth_router = APIRouter()
 

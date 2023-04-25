@@ -1,4 +1,5 @@
 from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -11,7 +12,7 @@ class CreateRepositoryRequestSchema(BaseModel):
 class EditRepositoryRequestSchema(BaseModel):
     name: Optional[str]
     description: Optional[str]
-    is_public: Optional[str]
+    is_public: Optional[bool]
 
 
 class AddRepositoryCollaboratorRequestSchema(BaseModel):
