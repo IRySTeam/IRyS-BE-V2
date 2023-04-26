@@ -14,13 +14,17 @@ from app.repository.schemas import (
     GetPublicRepositoriesResponseSchema,
     MessageResponseSchema,
     ReindexAllResponseSchema,
+    RemoveRepositoryCollaboratorRequestSchema,
     RepositoryCollaboratorSchema,
     RepositoryDetailsResponseSchema,
 )
 from app.repository.services import RepositoryService
+from app.user.schemas import SearchUserResponseSchema
+from app.user.services import UserService
 from core.exceptions import (
     DuplicateCollaboratorException,
     EmailNotVerifiedException,
+    InvalidRepositoryCollaboratorException,
     InvalidRepositoryRoleException,
     RepositoryDetailsEmptyException,
     RepositoryNotFoundException,
@@ -232,7 +236,26 @@ async def add_repository_collaborator(
 @repository_router.post(
     "/{repository_id}/members/edit",
     response_model=MessageResponseSchema,
-    responses={},
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            InvalidRepositoryRoleException, "Invalid repository role"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            InvalidRepositoryCollaboratorException, "Invalid repository collaborator"
+        ),
+    },
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def edit_repository_collaborator(
@@ -268,10 +291,10 @@ async def edit_repository_collaborator(
 async def remove_repository_collaborator(
     request: Request,
     repository_id: int,
-    body: MessageResponseSchema,
+    body: RemoveRepositoryCollaboratorRequestSchema,
 ):
     await RepositoryService().remove_repository_collaborator(
-        user_id=request.user.id, repository_id=repository_id, params=body.dict()
+        user_id=request.user.id, repository_id=repository_id, **body.dict()
     )
     return MessageResponseSchema(message="Successful")
 
@@ -293,6 +316,41 @@ async def reindex_all(request: Request, repository_id: int):
     return {
         "success": True,
     }
+
+
+@repository_router.get(
+    "/{repository_id}/members/add/search",
+    response_model=SearchUserResponseSchema,
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def search_user(
+    request: Request,
+    repository_id: int,
+    query: str = Query("", description="Search query (name or email)"),
+    page_no: int = Query(1, description="Page number"),
+    page_size: int = Query(10, description="Page size"),
+):
+    return await UserService().search_user_for_repository_collaborator(
+        user_id=request.user.id,
+        query=query,
+        repository_id=repository_id,
+        page_no=page_no,
+        page_size=page_size,
+    )
 
 
 @repository_router.get(

@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel, Field
 
 
@@ -68,3 +70,16 @@ class ChangePasswordResponseSchema(BaseModel):
 class ResendForgotPasswordOTPResponseSchema(BaseModel):
     token: str = Field(..., description="Token")
     refresh_token: str = Field(..., description="Refresh Token")
+
+
+class UserResponseSchema(BaseModel):
+    id: int = Field(..., description="ID")
+    first_name: str = Field(..., description="First Name")
+    last_name: str = Field(..., description="Last Name")
+    email: str = Field(..., description="Email")
+
+
+class SearchUserResponseSchema(BaseModel):
+    results: List[UserResponseSchema] = Field(..., description="Results")
+    total_pages: int = Field(..., description="Total Page")
+    total_items: int = Field(..., description="Total Items")
