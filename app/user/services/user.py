@@ -1,17 +1,7 @@
 from datetime import datetime, timedelta
 
 from app.user.models import User
-from app.user.schemas import (
-    ChangePasswordResponseSchema,
-    LoginResponseSchema,
-    RegisterResponseSchema,
-    ResendForgotPasswordOTPResponseSchema,
-    ResendOTPResponseSchema,
-    SendForgotPasswordOTPResponseSchema,
-    VerifyEmailResponseSchema,
-    VerifyForgotPasswordOTPResponseSchema,
-    VerifyOTPResponseSchema,
-)
+from app.user.schemas import *
 from core.db import Transactional
 from core.exceptions import (
     DuplicateEmailException,
@@ -23,11 +13,13 @@ from core.exceptions import (
     InvalidEmailException,
     InvalidPasswordException,
     PasswordDoesNotMatchException,
+    RepositoryNotFoundException,
     TokenAlreadyUsedException,
+    UserNotAllowedException,
     UserNotFoundException,
     WrongOTPException,
 )
-from core.repository import UserRepo
+from core.repository import RepositoryRepo, UserRepo
 from core.utils.hash_helper import HashHelper
 from core.utils.mailer import Mailer
 from core.utils.string_helper import StringHelper
@@ -36,6 +28,7 @@ from core.utils.token_helper import TokenHelper
 
 class UserService:
     user_repo = UserRepo()
+    repository_repo = RepositoryRepo()
 
     def __init__(self):
         ...
@@ -457,3 +450,46 @@ class UserService:
         )
 
         return ChangePasswordResponseSchema(message="Success")
+
+    async def search_user_for_repository_collaborator(
+        self, user_id: int, query: str, repository_id: int, page_no: int, page_size: int
+    ) -> SearchUserResponseSchema:
+        repo = await self.repository_repo.get_by_id(id=repository_id)
+        is_owner = await self.repository_repo.is_user_id_owner_of_repository(
+            user_id, repository_id
+        )
+        is_admin = await self.repository_repo.is_user_id_admin_of_repository(
+            user_id, repository_id
+        )
+
+        if not repo:
+            raise RepositoryNotFoundException
+        if not repo.is_public:
+            if not (is_owner or is_admin):
+                raise UserNotAllowedException
+        (
+            users,
+            total_pages,
+            total_items,
+        ) = await self.user_repo.find_by_name_or_email_and_repository_id(
+            query=query,
+            repository_id=repository_id,
+            page_no=page_no,
+            page_size=page_size,
+        )
+        results = []
+        for user in users:
+            results.append(
+                UserResponseSchema(
+                    id=user.id,
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    email=user.email,
+                )
+            )
+
+        return SearchUserResponseSchema(
+            results=results,
+            total_pages=total_pages,
+            total_items=total_items,
+        )
