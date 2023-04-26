@@ -2,8 +2,9 @@ import mimetypes
 import time
 
 from google.cloud import storage
-from core.config import config
 from google.oauth2.service_account import Credentials
+
+from core.config import config
 
 creds_dict = {
     "type": "service_account",
