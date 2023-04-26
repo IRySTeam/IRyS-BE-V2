@@ -265,6 +265,6 @@ class DocumentService:
                 raise InvalidRepositoryRoleException
 
         documents = await self.document_repo.find_documents_by_repository_id(
-            repository_id, include_index=True
+            repository_id
         )
         return documents
