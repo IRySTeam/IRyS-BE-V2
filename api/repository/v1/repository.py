@@ -1,7 +1,8 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, UploadFile
 
+from app.document.services import DocumentService
 from app.repository.schemas import (
     AddRepositoryCollaboratorRequestSchema,
     CreateRepositoryRequestSchema,
@@ -349,3 +350,19 @@ async def search_user(
         page_no=page_no,
         page_size=page_size,
     )
+
+
+@repository_router.post(
+    "/{repository_id}/documents/upload",
+    response_model=MessageResponseSchema,
+    responses={},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def upload_document(
+    request: Request, repository_id: int, files: List[UploadFile]
+):
+    await DocumentService().upload_document(
+        user_id=request.user.id, repository_id=repository_id, files=files
+    )
+
+    return MessageResponseSchema(message="Successful")
