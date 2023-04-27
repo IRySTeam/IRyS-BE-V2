@@ -133,10 +133,9 @@ class RecruitmentExtractor(GeneralExtractor):
                             0.0,
                         ):
                             max_font_size = common_font_size
-                            maxsizetext = line_text
 
         header_font_size = max(possible_header_sizes)
-        segmented_resume = []
+
         i = 0
         resume_segment = []
         current_text = ""
@@ -155,7 +154,6 @@ class RecruitmentExtractor(GeneralExtractor):
                 match = re.match(RESUME_HEADERS_REGEX, page_lines[i]["text"].lower())
 
             resume_segments[current_label] += resume_segment
-            segmented_resume.append(resume_segment)
 
             if i < len(page_lines):
                 if match:
@@ -168,11 +166,6 @@ class RecruitmentExtractor(GeneralExtractor):
                 resume_segment.append(page_lines[i])
 
             i += 1
-
-        segmented_text = [
-            [segment["text"] for segment in segments] for segments in segmented_resume
-        ]
-        segmented_text = ["\n".join(segment) for segment in segmented_text]
 
         # Extract name and email from profile segment
         name = self.__extract_name(resume_segments["profile"])
@@ -187,22 +180,22 @@ class RecruitmentExtractor(GeneralExtractor):
         recruitment_information["skills"] = skills
 
         # Extract experiences
-        experiences = self.__extract_experiences(resume_segments["experience"])
-        recruitment_information["experiences"] = experiences
+        recruitment_information |= self.__extract_experiences(
+            resume_segments["experience"]
+        )
 
         # Extract education
-        education = self.__extract_educations(resume_segments["education"])
-        recruitment_information["education"] = education
+        recruitment_information |= self.__extract_educations(
+            resume_segments["education"]
+        )
 
         # Extract projects
-        projects = self.__extract_projects(resume_segments["projects"])
-        recruitment_information["projects"] = projects
+        recruitment_information |= self.__extract_projects(resume_segments["projects"])
 
         # Extract certifications
-        certifications = self.__extract_certifications(
+        recruitment_information |= self.__extract_certifications(
             resume_segments["certifications"]
         )
-        recruitment_information["certifications"] = certifications
 
         return recruitment_information
 
@@ -264,7 +257,7 @@ class RecruitmentExtractor(GeneralExtractor):
 
     def __extract_experiences(
         self, experiences_segment: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
         Extract experiences from experiences segment
 
@@ -330,6 +323,9 @@ class RecruitmentExtractor(GeneralExtractor):
 
         # Try to get the order of job title, date, and company in the resume
         experiences = []
+        job_titles_out = []
+        companies_out = []
+        descriptions_out = []
         if len(dates_idxs) > 0:
             if first_job_title_idx != -1:
                 closest_date = min(
@@ -344,8 +340,8 @@ class RecruitmentExtractor(GeneralExtractor):
 
                     date_to_company = 1 - dates_idxs[0]
                 elif first_type == "date":
-                    is_jobtitle_second = job_title_idxs[0] == 2
-                    if is_jobtitle_second:
+                    is_job_title_second = job_title_idxs[0] == 2
+                    if is_job_title_second:
                         date_to_company = 3 - dates_idxs[0]
                     else:  # Company is second
                         date_to_company = 2 - dates_idxs[0]
@@ -381,23 +377,35 @@ class RecruitmentExtractor(GeneralExtractor):
                         ]
                     )
 
+                    job_title = experiences_segment[job_title_idxs[idx]]["text"]
+                    company = experiences_segment[company_idxs[idx]]["text"]
+
                     experiences.append(
                         {
-                            "jobtitle": experiences_segment[job_title_idxs[idx]][
-                                "text"
-                            ],
-                            "company": experiences_segment[company_idxs[idx]]["text"],
+                            "job_title": job_title,
+                            "company": company,
                             "start_date": dates[idx][0],
                             "end_date": dates[idx][1],
                             "description": description,
                         }
                     )
 
-        return experiences
+                    job_titles_out.append(job_title)
+                    companies_out.append(company)
+                    descriptions_out.append(description)
+
+        output = {
+            "experiences": experiences,
+            "experiences_job_titles": job_titles_out,
+            "experiences_companies": companies_out,
+            "experiences_descriptions": descriptions_out,
+        }
+
+        return output
 
     def __extract_educations(
         self, educations_segment: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
         Extract educations from educations segment
 
@@ -446,6 +454,9 @@ class RecruitmentExtractor(GeneralExtractor):
             current_length += len(line["text"]) + 1
 
         educations = []
+        institutions_out = []
+        degrees_out = []
+        descriptions_out = []
 
         if len(dates_idxs) > 0:
             if first_institution_idx != -1:
@@ -453,14 +464,14 @@ class RecruitmentExtractor(GeneralExtractor):
                     dates_idxs, key=lambda x: abs(x - first_institution_idx)
                 )
                 date_to_institution = first_institution_idx - closest_date
-                inst_idxs = [idx + date_to_institution for idx in dates_idxs]
+                institutions_idxs = [idx + date_to_institution for idx in dates_idxs]
 
                 if first_type == "unknown":
                     first_type = "degree"
 
                     degree_to_date = 1 - dates_idxs[0]
                 elif first_type == "date":
-                    second_jobtitle = inst_idxs[0] == 2
+                    second_jobtitle = institutions_idxs[0] == 2
                     if second_jobtitle:
                         degree_to_date = 3 - dates_idxs[0]
                     else:
@@ -484,7 +495,7 @@ class RecruitmentExtractor(GeneralExtractor):
                     )
                     current_education = educations_segment[start_idx:end_idx]
                     non_desc_edu_idxs = [
-                        inst_idxs[idx] - start_idx,
+                        institutions_idxs[idx] - start_idx,
                         degree_idxs[idx] - start_idx,
                         dates_idxs[idx] - start_idx,
                     ]
@@ -496,21 +507,35 @@ class RecruitmentExtractor(GeneralExtractor):
                         ]
                     )
 
+                    institution = educations_segment[institutions_idxs[idx]]["text"]
+                    degree = educations_segment[degree_idxs[idx]]["text"]
+
                     educations.append(
                         {
-                            "inst": educations_segment[inst_idxs[idx]]["text"],
-                            "degree": educations_segment[degree_idxs[idx]]["text"],
+                            "institution": institution,
+                            "degree": degree,
                             "start_date": dates[idx][0],
                             "end_date": dates[idx][1],
                             "description": description,
                         }
                     )
 
-        return educations
+                    institutions_out.append(institution)
+                    degrees_out.append(degree)
+                    descriptions_out.append(description)
+
+        output = {
+            "education": educations,
+            "education_institutions": institutions_out,
+            "education_degrees": degrees_out,
+            "education_descriptions": descriptions_out,
+        }
+
+        return output
 
     def __extract_projects(
         self, projects_segment: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
         Extract projects from projects segment
 
@@ -521,6 +546,8 @@ class RecruitmentExtractor(GeneralExtractor):
         """
 
         projects = []
+        titles_out = []
+        descriptions_out = []
 
         if len(projects_segment) > 0:
             # Assume the first line of a project entry is the title
@@ -531,7 +558,7 @@ class RecruitmentExtractor(GeneralExtractor):
             current_project_title = ""
             current_project_description = ""
 
-            for idx, line in enumerate(projects_segment[1:]):
+            for line in projects_segment[1:]:
                 # Check if line is a project title
                 if (
                     line["size"] == project_title_font_size
@@ -541,6 +568,8 @@ class RecruitmentExtractor(GeneralExtractor):
                         current_project["title"] = current_project_title
                         current_project["description"] = current_project_description
                         projects.append(current_project)
+                        titles_out.append(current_project_title)
+                        descriptions_out.append(current_project_description)
                         current_project = {}
                         current_project_title = ""
                         current_project_description = ""
@@ -552,12 +581,20 @@ class RecruitmentExtractor(GeneralExtractor):
                 current_project["title"] = current_project_title
                 current_project["description"] = current_project_description
                 projects.append(current_project)
+                titles_out.append(current_project_title)
+                descriptions_out.append(current_project_description)
 
-        return projects
+        output = {
+            "projects": projects,
+            "projects_titles": titles_out,
+            "projects_descriptions": descriptions_out,
+        }
+
+        return output
 
     def __extract_certifications(
         self, certifications_segment: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
         Extract certifications from certifications segment
 
@@ -568,6 +605,8 @@ class RecruitmentExtractor(GeneralExtractor):
         """
 
         certifications = []
+        titles_out = []
+        descriptions_out = []
 
         if len(certifications_segment) > 0:
             # Assume the first line of a project entry is the title
@@ -578,7 +617,7 @@ class RecruitmentExtractor(GeneralExtractor):
             current_certification_title = ""
             current_certification_description = ""
 
-            for idx, line in enumerate(certifications_segment[1:]):
+            for line in certifications_segment[1:]:
                 # Check if line is a project title
                 if (
                     line["size"] == project_title_font_size
@@ -590,6 +629,8 @@ class RecruitmentExtractor(GeneralExtractor):
                             "description"
                         ] = current_certification_description
                         certifications.append(current_certifications)
+                        titles_out.append(current_certification_title)
+                        descriptions_out.append(current_certification_description)
                         current_certifications = {}
                         current_certification_title = ""
                         current_certification_description = ""
@@ -603,8 +644,16 @@ class RecruitmentExtractor(GeneralExtractor):
                     "description"
                 ] = current_certification_description
                 certifications.append(current_certifications)
+                titles_out.append(current_certification_title)
+                descriptions_out.append(current_certification_description)
 
-        return certifications
+        output = {
+            "certifications": certifications,
+            "certifications_titles": titles_out,
+            "certifications_descriptions": descriptions_out,
+        }
+
+        return output
 
     # def __span_overlap(self, span1: Tuple[int, int], span2: Tuple[int, int]) -> bool:
     #     """
