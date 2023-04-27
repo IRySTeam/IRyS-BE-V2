@@ -1,6 +1,4 @@
-import io
 import os
-import pathlib
 import pickle
 import re
 import string
@@ -12,6 +10,7 @@ import nltk
 import pandas as pd
 from transformers import pipeline
 
+from app.extraction.domains.scientific.configuration import SCIENTIFIC_ENTITIES
 from app.extraction.general_extractor import GeneralExtractor
 from app.extraction.ner_result import NERResult
 
@@ -54,6 +53,7 @@ class ScientificExtractor(GeneralExtractor):
         self.pipeline = pipeline(
             "ner", model="topmas/IRyS-NER-Paper", aggregation_strategy="first"
         )
+        self.entity_list = SCIENTIFIC_ENTITIES
 
     def preprocess(self, text: str) -> Union[str, List[str]]:
         """
@@ -92,11 +92,11 @@ class ScientificExtractor(GeneralExtractor):
 
         # TODO: Handle other extension if possible
         if result["extension"] == ".pdf":
-            metadata = self.extract_scientific_metadata(file)
+            metadata = self.extract_scientific_information(file)
             result = result | metadata
         return result
 
-    def extract_entities(self, text: str) -> List[Dict[str, Any]]:
+    def extract_entities(self, text: str) -> NERResult:
         """
         Extract entities from text
 
@@ -123,7 +123,7 @@ class ScientificExtractor(GeneralExtractor):
 
         return NERResult(full_text, result)
 
-    def extract_scientific_metadata(self, file: bytes) -> Dict[str, Any]:
+    def extract_scientific_information(self, file: bytes) -> Dict[str, Any]:
         """
         Extract scientific metadata from a paper file
 
@@ -133,7 +133,7 @@ class ScientificExtractor(GeneralExtractor):
             Dict -> Dictionary containing extracted metadata
         """
 
-        metadata = {
+        scientific_information = {
             "title": [],
             "abstract": [],
             "keywords": [],
@@ -142,18 +142,10 @@ class ScientificExtractor(GeneralExtractor):
             "references": [],
         }
 
-        # TODO: Remove type checking if the input is guaranteed to be bytes
-        memf = io.BytesIO()
-        if hasattr(file, "read"):
-            memf.write(file.read())
-            memf.seek(0)
-            doc = fitz.open(stream=memf, filetype="pdf")
-        elif isinstance(file, bytes):
+        if isinstance(file, bytes):
             doc = fitz.open(stream=file, filetype="pdf")
-        elif isinstance(file, str) or isinstance(file, pathlib.Path):
-            doc = fitz.open(str(file), filetype="pdf")
         else:
-            raise TypeError("path must be string or io object")
+            raise TypeError("file must be bytes")
 
         # Extract pages from document without images
         pages = []
@@ -245,7 +237,7 @@ class ScientificExtractor(GeneralExtractor):
             if idx < breakpoint_line or line["bbox"][3] < document_height / 4:
                 # If the line is the largest font size, add to title
                 if line["font_size"] == max_font_size:
-                    metadata["title"].append(line["text"])
+                    scientific_information["title"].append(line["text"])
                     line["label"] = "title"
                 else:
                     # If the line contains affiliation keywords, add to affiliations
@@ -253,37 +245,39 @@ class ScientificExtractor(GeneralExtractor):
                         keyword in line["text"].lower()
                         for keyword in self.affiliation_keywords
                     ):
-                        metadata["affiliations"].append(line["text"])
+                        scientific_information["affiliations"].append(line["text"])
                         line["label"] = "affiliation"
             # If located in the line that contains "Abstract" and after it
             if abstract_line != 99999 and idx >= abstract_line:
                 # If line is before the keywords line and introduction line, add to abstract
                 if idx < keywords_line and idx < introduction_line:
-                    metadata["abstract"].append(line["text"])
+                    scientific_information["abstract"].append(line["text"])
                     line["label"] = "abstract"
 
             # If line is in the keywords section
             if keywords_line != 99999 and idx >= keywords_line:
                 # If line is before the introduction line, add to keywords
                 if introduction_line != 99999 and idx < introduction_line:
-                    metadata["keywords"].append(line["text"])
+                    scientific_information["keywords"].append(line["text"])
                     line["label"] = "keywords"
                 # If there is no introduction line, assume keywords takes 2 lines
                 # TODO: is there a better heuristic for this? or just assume introduction line is always there?
                 elif introduction_line == 99999 and idx < keywords_line + 2:
-                    metadata["keywords"].append(line["text"])
+                    scientific_information["keywords"].append(line["text"])
                     line["label"] = "keywords"
 
         # Extract authors
-        metadata["authors"] = self.__classify_authors(page_lines, breakpoint_line)
+        scientific_information["authors"] = self.__classify_authors(
+            page_lines, breakpoint_line
+        )
 
         # Extract references
-        metadata["references"] = self.__extract_references(
+        scientific_information["references"] = self.__extract_references(
             pages, reference_pages_numbers
         )
 
         # Post process
-        return self.__post_process(metadata)
+        return self.__post_process(scientific_information)
 
     def __classify_authors(
         self, paper_header: List[dict], breakpoint_line: int

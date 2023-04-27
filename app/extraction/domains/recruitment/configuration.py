@@ -34,28 +34,32 @@ RECRUITMENT_ENTITIES = [
 ]
 
 RECRUITMENT_INFORMATION = [
-    # {
-    #     "name": "title",
-    #     "type": "text",
-    # },
-    # {
-    #     "name": "authors",
-    #     "type": "list",
-    # },
-    # {
-    #     "name": "affiliations",
-    #     "type": "list",
-    # },
-    # {
-    #     "name": "abstract",
-    #     "type": "text",
-    # },
-    # {
-    #     "name": "keywords",
-    #     "type": "list",
-    # },
-    # {
-    #     "name": "references",
-    #     "type": "list",
-    # },
+    {
+        "name": "name",
+        "type": "text",
+    },
+    {
+        "name": "email",
+        "type": "text",
+    },
+    {
+        "name": "experiences",
+        "type": "list",
+    },
+    {
+        "name": "education",
+        "type": "list",
+    },
+    {
+        "name": "skills",
+        "type": "list",
+    },
+    {
+        "name": "projects",
+        "type": "list",
+    },
+    {
+        "name": "certifications",
+        "type": "list",
+    },
 ]
