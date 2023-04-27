@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, UploadFile
 
 from app.document.schemas import DocumentResponseSchema
 from app.document.services import DocumentService
@@ -379,3 +379,19 @@ async def get_repository_documents(
     return await DocumentService().get_repository_documents(
         user_id=request.user.id, repository_id=repository_id
     )
+
+
+@repository_router.post(
+    "/{repository_id}/documents/upload",
+    response_model=MessageResponseSchema,
+    responses={},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def upload_document(
+    request: Request, repository_id: int, files: List[UploadFile]
+):
+    await DocumentService().upload_document(
+        user_id=request.user.id, repository_id=repository_id, files=files
+    )
+
+    return MessageResponseSchema(message="Successful")

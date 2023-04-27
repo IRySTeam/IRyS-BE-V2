@@ -22,6 +22,7 @@ class Document(Base, TimestampMixin):
     is_public = Column(Boolean, default=True)
     repository_id = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"))
     repository = relationship("Repository", back_populates="documents")
+    file_content_str = Column(TEXT, nullable=True)
     collaborators: Mapped[List["User"]] = relationship(
         "User", secondary=user_documents, back_populates="documents"
     )
