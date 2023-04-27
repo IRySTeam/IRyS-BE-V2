@@ -9,14 +9,15 @@ from app.extraction.domains.scientific import (
 
 TYPE_OPERATORS = {
     "text": [
-        "contains",
-        "not_contains",
-        "starts_with",
-        "ends_with",
         "equals",
-        "regex",
+        "not_equals",
+        "exists",
+        "not_exists",
         "in",
         "not_in",
+        "regex",
+        "contains",
+        "not_contains",
     ],
     "list": [
         "contains",
@@ -29,7 +30,9 @@ TYPE_OPERATORS = {
         "equals",
         "not_equals",
         "greater_than",
+        "greater_than_eq",
         "less_than",
+        "less_than_eq",
         "in",
         "not_in",
     ],
