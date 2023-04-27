@@ -1,10 +1,14 @@
-from app.extraction.domains.recruitment import (
+from app.extraction.domains.recruitment.configuration import (
     RECRUITMENT_ENTITIES,
     RECRUITMENT_INFORMATION,
 )
-from app.extraction.domains.scientific import (
+from app.extraction.domains.scientific.configuration import (
     SCIENTIFIC_ENTITIES,
     SCIENTIFIC_INFORMATION,
+)
+from app.extraction.general_configuration import (
+    GENERAL_ENTITIES,
+    GENERAL_INFORMATION,
 )
 
 TYPE_OPERATORS = {
@@ -39,42 +43,10 @@ TYPE_OPERATORS = {
 }
 
 ENTITIES = {
-    "general": [
-        {
-            "name": "LOC",
-            "type": "text",
-        },
-        {
-            "name": "MISC",
-            "type": "text",
-        },
-        {
-            "name": "ORG",
-            "type": "text",
-        },
-        {
-            "name": "PER",
-            "type": "text",
-        },
-    ],
+    "general": GENERAL_ENTITIES,
     "scientific": SCIENTIFIC_ENTITIES,
     "recruitment": RECRUITMENT_ENTITIES,
 }
-
-GENERAL_INFORMATION = [
-    {
-        "name": "mimetype",
-        "type": "text",
-    },
-    {
-        "name": "extension",
-        "type": "text",
-    },
-    {
-        "name": "size",
-        "type": "number",
-    },
-]
 
 EXTRACTED_INFORMATION = {
     "general": ENTITIES["general"] + GENERAL_INFORMATION,

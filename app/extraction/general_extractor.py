@@ -1,10 +1,11 @@
 import mimetypes
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import magic
 from tika import parser
 from transformers import pipeline
 
+from app.extraction.general_configuration import GENERAL_ENTITIES
 from app.extraction.ner_result import NERResult
 
 
@@ -25,6 +26,7 @@ class GeneralExtractor:
         self.pipeline = pipeline(
             "ner", model="dslim/bert-base-NER", aggregation_strategy="first"
         )
+        self.entity_list = GENERAL_ENTITIES
 
     def preprocess(self, text: str) -> str:
         """
@@ -56,14 +58,26 @@ class GeneralExtractor:
 
         entities = self.extract_entities(file_text)
 
-        return {
+        flattened_entities = {
+            entity["name"]: [
+                entity_res["word"]
+                for entity_res in entities.results
+                if entity_res["entity_group"] == entity["name"]
+            ]
+            for entity in self.entity_list
+        }
+
+        result = {
             "mimetype": mimetype,
             "extension": extension,
             "size": size,
             "entities": entities,
         }
+        result.update(flattened_entities)
 
-    def extract_entities(self, text: str) -> List[Dict[str, Any]]:
+        return result
+
+    def extract_entities(self, text: str) -> NERResult:
         """
         Extract entities from text
 

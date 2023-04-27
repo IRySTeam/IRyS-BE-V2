@@ -5,6 +5,9 @@ from typing import Any, Dict, List
 import fitz
 from transformers import pipeline
 
+from app.extraction.domains.recruitment.configuration import (
+    RECRUITMENT_ENTITIES,
+)
 from app.extraction.domains.recruitment.constants import (
     DATE_RANGE_REGEX,
     EMAIL_REGEX,
@@ -30,6 +33,7 @@ class RecruitmentExtractor(GeneralExtractor):
         self.pipeline = pipeline(
             "ner", model="topmas/IRyS-NER-Recruitment", aggregation_strategy="first"
         )
+        self.entity_list = RECRUITMENT_ENTITIES
 
     def preprocess(self, text: str) -> str:
         """
@@ -53,7 +57,6 @@ class RecruitmentExtractor(GeneralExtractor):
 
         result = super().extract(file)
 
-        # TODO: Extract information specific to recruitment domain
         # TODO: Handle other extension if possible
         if result["extension"] == ".pdf":
             recruitment_information = self.extract_recruitment_information(file)
