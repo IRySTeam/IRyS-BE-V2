@@ -2,6 +2,8 @@ from typing import List
 
 from fastapi import APIRouter, Depends, Query, Request
 
+from app.document.schemas import DocumentResponseSchema
+from app.document.services import DocumentService
 from app.repository.schemas import (
     AddRepositoryCollaboratorRequestSchema,
     CreateRepositoryRequestSchema,
@@ -348,4 +350,32 @@ async def search_user(
         repository_id=repository_id,
         page_no=page_no,
         page_size=page_size,
+    )
+
+
+@repository_router.get(
+    "/{repository_id}/documents",
+    response_model=List[DocumentResponseSchema],
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def get_repository_documents(
+    request: Request,
+    repository_id: int,
+):
+    return await DocumentService().get_repository_documents(
+        user_id=request.user.id, repository_id=repository_id
     )
