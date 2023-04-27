@@ -96,7 +96,7 @@ class ScientificExtractor(GeneralExtractor):
             result = result | metadata
         return result
 
-    def extract_entities(self, text: str) -> List[Dict[str, Any]]:
+    def extract_entities(self, text: str) -> NERResult:
         """
         Extract entities from text
 

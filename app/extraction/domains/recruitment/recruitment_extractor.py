@@ -18,6 +18,7 @@ from app.extraction.domains.recruitment.constants import (
     SKILLS_REGEX,
 )
 from app.extraction.general_extractor import GeneralExtractor
+from app.extraction.ner_result import NERResult
 
 
 class RecruitmentExtractor(GeneralExtractor):
@@ -31,7 +32,7 @@ class RecruitmentExtractor(GeneralExtractor):
         """
 
         self.pipeline = pipeline(
-            "ner", model="topmas/IRyS-NER-Recruitment", aggregation_strategy="first"
+            "ner", model="topmas/IRyS-NER-Recruitment", aggregation_strategy="simple"
         )
         self.entity_list = RECRUITMENT_ENTITIES
 
@@ -43,7 +44,7 @@ class RecruitmentExtractor(GeneralExtractor):
             text: str -> Text to preprocess
         """
 
-        return text.replace("\n", " ")
+        return text.split("[SEGMENT]")
 
     def extract(self, file: bytes) -> Dict[str, Any]:
         """
@@ -55,16 +56,88 @@ class RecruitmentExtractor(GeneralExtractor):
             Dict -> Dictionary containing extracted information
         """
 
-        result = super().extract(file)
+        result = super().extract_general_information(file)
+
+        # Get resume segments and text
+        resume_segments_and_text = self.__get_resume_segments_and_text(file)
+
+        # Join text for every segment
+        segmented_text = [
+            [segment["text"] for segment in segments]
+            for segments in resume_segments_and_text["segments_list"]
+        ]
+        segmented_text = ["\n".join(segment) for segment in segmented_text]
+        resume_text = "[SEGMENT]".join(segmented_text)
+
+        # Extract entities
+        entities = self.__extract_entities(resume_text)
+
+        flattened_entities = super().flatten_entities(entities)
+
+        result.update({"entities": entities})
+        result.update(flattened_entities)
 
         # TODO: Handle other extension if possible
         if result["extension"] == ".pdf":
-            recruitment_information = self.extract_recruitment_information(file)
+            recruitment_information = self.__extract_recruitment_information(
+                resume_segments_and_text
+            )
             result = result | recruitment_information
 
         return result
 
-    def extract_recruitment_information(self, file: bytes) -> Dict[str, Any]:
+    def extract_entities(self, text: str) -> NERResult:
+        """
+        Extract entities from text
+
+        [Arguments]
+            text: str -> Text to extract entities from
+        [Returns]
+            NERResult -> Named entity recognition result
+        """
+
+        preprocessed = self.preprocess(text)
+        ner_results = [self.pipeline(sent) for sent in preprocessed]
+
+        full_text = "".join(preprocessed)
+
+        result = []
+        cur_len = 0
+        for idx, sent in enumerate(preprocessed):
+            sent_len = len(sent)
+            for ner in ner_results[idx]:
+                ner["start"] += cur_len
+                ner["end"] += cur_len
+                ner["score"] = ner["score"].item()
+            cur_len += sent_len
+            result += ner_results[idx]
+
+        # Post process entities, combinw adjacent entities with the same label
+        for i in range(len(result) - 2, -1, -1):
+            # Combinw adjacent entities with the same label and the first entity end = second entitiy start
+            if (
+                result[i]["entity_group"] == result[i + 1]["entity_group"]
+                and result[i]["end"] == result[i + 1]["start"]
+            ):
+                result[i]["score"] = max(result[i]["score"], result[i + 1]["score"])
+                result[i]["end"] = result[i + 1]["end"]
+                result[i]["word"] += result[i + 1]["word"]
+                result.pop(i + 1)
+
+        return NERResult(full_text, result)
+
+    def __extract_recruitment_information(
+        self, resume_segments_and_text: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Extract recruitment information from resume file
+
+        [Arguments]
+            file: bytes -> File bytes to extract information from
+        [Returns]
+            Dict -> Dictionary containing extracted information
+        """
+
         recruitment_information = {
             "name": "",
             "email": "",
@@ -74,6 +147,51 @@ class RecruitmentExtractor(GeneralExtractor):
             "projects": [],
             "certifications": [],
         }
+
+        resume_segments = resume_segments_and_text["segments"]
+        resume_text = resume_segments_and_text["text"]
+
+        # Extract name and email from profile segment
+        name = self.__extract_name(resume_segments["profile"])
+        recruitment_information["name"] = name
+
+        # Extract email
+        email = self.__extract_email(resume_text)
+        recruitment_information["email"] = email
+
+        # Extract skills from skills segment
+        skills = self.__extract_skills(resume_segments["skills"])
+        recruitment_information["skills"] = skills
+
+        # Extract experiences
+        recruitment_information |= self.__extract_experiences(
+            resume_segments["experience"]
+        )
+
+        # Extract education
+        recruitment_information |= self.__extract_educations(
+            resume_segments["education"]
+        )
+
+        # Extract projects
+        recruitment_information |= self.__extract_projects(resume_segments["projects"])
+
+        # Extract certifications
+        recruitment_information |= self.__extract_certifications(
+            resume_segments["certifications"]
+        )
+
+        return recruitment_information
+
+    def __get_resume_segments_and_text(self, file: bytes) -> Dict[str, Any]:
+        """
+        Get resume segments and text from resume file
+
+        [Arguments]
+            file: bytes -> File bytes to extract information from
+        [Returns]
+            Dict -> Dictionary of resume segments and text
+        """
 
         if isinstance(file, bytes):
             doc = fitz.open(stream=file, filetype="pdf")
@@ -144,6 +262,7 @@ class RecruitmentExtractor(GeneralExtractor):
         current_text = ""
         current_label = "profile"
         resume_segments = defaultdict(list)
+        resume_segments_list = []
         while i < len(page_lines):
             # Match line text with resume header regex and font size
             match = re.match(RESUME_HEADERS_REGEX, page_lines[i]["text"].lower())
@@ -157,6 +276,7 @@ class RecruitmentExtractor(GeneralExtractor):
                 match = re.match(RESUME_HEADERS_REGEX, page_lines[i]["text"].lower())
 
             resume_segments[current_label] += resume_segment
+            resume_segments_list.append(resume_segment)
 
             if i < len(page_lines):
                 if match:
@@ -170,37 +290,11 @@ class RecruitmentExtractor(GeneralExtractor):
 
             i += 1
 
-        # Extract name and email from profile segment
-        name = self.__extract_name(resume_segments["profile"])
-        recruitment_information["name"] = name
-
-        # Extract email
-        email = self.__extract_email(resume_text)
-        recruitment_information["email"] = email
-
-        # Extract skills from skills segment
-        skills = self.__extract_skills(resume_segments["skills"])
-        recruitment_information["skills"] = skills
-
-        # Extract experiences
-        recruitment_information |= self.__extract_experiences(
-            resume_segments["experience"]
-        )
-
-        # Extract education
-        recruitment_information |= self.__extract_educations(
-            resume_segments["education"]
-        )
-
-        # Extract projects
-        recruitment_information |= self.__extract_projects(resume_segments["projects"])
-
-        # Extract certifications
-        recruitment_information |= self.__extract_certifications(
-            resume_segments["certifications"]
-        )
-
-        return recruitment_information
+        return {
+            "segments": resume_segments,
+            "segments_list": resume_segments_list,
+            "text": resume_text,
+        }
 
     def __extract_name(self, profile_segment: List[Dict[str, Any]]) -> str:
         """
@@ -270,17 +364,6 @@ class RecruitmentExtractor(GeneralExtractor):
             List[Dict[str, Any]] -> List of experiences
         """
 
-        # TODO: Add job titles from NER if needed
-        # job_from_ent = []
-        # for jobent in role_ent:
-        #     # check the span to avoid duplicates
-        #     # print(f"{jobent=}")
-        #     if not any(span_overlap(job["span"], (jobent["start"], jobent["end"])) for job in jobtitles):
-        #         job_from_ent.append({
-        #             "string": jobent["word"],
-        #             "span": (jobent["start"], jobent["end"])
-        #         })
-
         job_titles = []
         dates = []
         dates_idxs = []
@@ -320,9 +403,6 @@ class RecruitmentExtractor(GeneralExtractor):
                 first_type = type
 
             current_length += len(line["text"]) + 1
-
-        # job_titles += job_from_ent
-        # job_titles = sorted(job_titles, key=lambda x: x["span"][0])
 
         # Try to get the order of job title, date, and company in the resume
         experiences = []
@@ -657,16 +737,3 @@ class RecruitmentExtractor(GeneralExtractor):
         }
 
         return output
-
-    # def __span_overlap(self, span1: Tuple[int, int], span2: Tuple[int, int]) -> bool:
-    #     """
-    #     Check if two spans overlap
-
-    #     [Arguments]
-    #         span1: tuple[int] -> First span
-    #         span2: tuple[int] -> Second span
-    #     [Returns]
-    #         bool -> True if spans overlap, False otherwise
-    #     """
-
-    #     return span1[0] <= span2[0] <= span1[1] or span2[0] <= span1[0] <= span2[1]
