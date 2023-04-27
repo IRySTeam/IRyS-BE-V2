@@ -16,6 +16,9 @@ from app.elastic import (
     SCIENTIFIC_ELASTICSEARCH_INDEX_NAME,
     EsClient,
 )
+from app.extraction import InformationExtractor
+from app.extraction.domains.recruitment import RECRUITMENT_INFORMATION
+from app.extraction.domains.scientific import SCIENTIFIC_INFORMATION
 from app.preprocess import OCRUtil, PreprocessUtil
 from celery_app.main import celery
 from core.config import config
@@ -27,7 +30,6 @@ def parsing(
     document_id: int,
     document_title: str,
     file_content_str: str,
-    with_ocr: bool = True,
 ) -> bool:
     """
     Celery task for parsing document. The parsing task will be split into 2 subtasks:
@@ -37,11 +39,11 @@ def parsing(
         document_id: int -> Document id.
         document_title: str -> Document title.
         file_content_str: str -> Decoded file content in base64.
-        with_ocr: bool -> Whether to OCR the document or not.
     [Returns]
         bool -> True if parsing is successful.
     """
     try:
+        # Update indexing status.
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
             status=IndexingStatusEnum.PARSING,
@@ -64,7 +66,7 @@ def parsing(
         if file_extension == ".pdf" and with_ocr:
             file_text = OCRUtil.ocr(file_content)
 
-        # Preprocess text.
+        # Preprocess text and do extraction.
         preprocessed_file_text = PreprocessUtil.preprocess(file_text)
         extraction.delay(
             document_id=document_id,
@@ -75,6 +77,7 @@ def parsing(
         )
         return True
     except Exception as e:
+        # Update indexing status to failed.
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
             status=IndexingStatusEnum.FAILED,
@@ -100,6 +103,7 @@ def extraction(
         2. Extracting high-level information from document such as metadata, entities, etc.
     [Parameters]
         document_id: int -> Document id.
+        document_title: str -> Document title.
         file_content_str: str -> Decoded file content in base64.
         file_raw_text: str -> Raw text from document.
         file_preprocessed_text: List[str] -> Preprocessed text from document.
@@ -107,15 +111,40 @@ def extraction(
         bool -> True if extraction is successful
     """
     try:
+        # Update indexing status to extracting.
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
             status=IndexingStatusEnum.EXTRACTING,
             current_task_id=self.request.id,
         )
+
+        # Classify document type and extract information from document.
         file_content = a2b_base64(file_content_str)
-        document_label = Classifier.classify(texts=file_preprocessed_text)
+        extractor = InformationExtractor(domain="general")
+        general_document_metadata = extractor.extract(file_content)
         document_metadata = {}
-        document_entities = {}
+        document_label = Classifier.classify(texts=file_preprocessed_text)
+        if document_label == Classifier.LabelEnum.RESUME.value:
+            extractor = InformationExtractor(domain="recruitment")
+            document_metadata = extractor.extract(file_content)
+        elif document_label == Classifier.LabelEnum.PAPER.value:
+            extractor = InformationExtractor(domain="scientific")
+            document_metadata = extractor.extract(file_content)
+
+        # Update document metadata on database.
+        mimetype = document_metadata.get("mimetype", None)
+        extension = document_metadata.get("extension", None)
+        size = document_metadata.get("size", None)
+        document_title = document_metadata.get("title", None) or document_title
+
+        # Update document in database according to extracted metadata and do indexing.
+        async_to_sync(document_service.update_document_celery)(
+            id=document_id,
+            title=document_title,
+            mimetype=mimetype,
+            extension=extension,
+            size=size,
+        )
         indexing.delay(
             document_id=document_id,
             document_title=document_title,
@@ -124,10 +153,11 @@ def extraction(
             file_preprocessed_text=file_preprocessed_text,
             document_label=document_label,
             document_metadata=document_metadata,
-            document_entities=document_entities,
+            general_document_metadata=general_document_metadata,
         )
         return True
     except Exception as e:
+        # Turn indexing status to failed if extraction failed.
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
             status=IndexingStatusEnum.FAILED,
@@ -147,7 +177,7 @@ def indexing(
     file_preprocessed_text: List[str],
     document_label: str,
     document_metadata: Dict[str, Any] = {},
-    document_entities: Dict[str, Any] = {},
+    general_document_metadata: Dict[str, Any] = {},
 ) -> bool:
     """
     Celelry task for indexing document. The indexing task will be split into 2 subtasks:
@@ -160,27 +190,27 @@ def indexing(
         file_preprocessed_text: List[str] -> Preprocessed text from document.
         document_label: str -> Document category.
         document_metadata: Dict[str, Any] -> Metadata extracted from document.
-        document_entities: Dict[str, Any] -> Entities extracted from document.
+        general_document_metadata: Dict[str, Any] -> Metadata with general domain.
     [Returns]
         bool -> True if indexing is successful.
     """
     try:
+        # Update indexing status.
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
             status=IndexingStatusEnum.INDEXING,
             current_task_id=self.request.id,
         )
-        file_content = a2b_base64(file_content_str)
-        # TODO: Instantiate bert client with longer max len sequence
-        # TODO: Add embedding of longtext type data.
+
+        # Prepare document to be indexed.
         bc = BertClient(
             ip=config.BERT_SERVER_IP,
             port=config.BERT_SERVER_PORT,
             port_out=config.BERT_SERVER_PORT_OUT,
             output_fmt="list",
         )
+        # Index the general domain document into Elasticsearch.
         embedding = bc.encode([" ".join(file_preprocessed_text)])
-
         doc = {
             "document_id": document_id,
             "title": document_title,
@@ -188,32 +218,64 @@ def indexing(
             "preprocessed_text": " ".join(file_preprocessed_text),
             "text_vector": embedding[0],
             "document_label": document_label,
-            "document_metadata": document_metadata,
-            "document_entities": document_entities,
+            "document_metadata": general_document_metadata,
         }
+        general_elastic_doc_id = None
         res = EsClient.index_doc(
             index=GENERAL_ELASTICSEARCH_INDEX_NAME,
             doc=doc,
         )
-        elastic_doc_id = res["_id"]
-        elastic_index_name = GENERAL_ELASTICSEARCH_INDEX_NAME
-        if document_label == Classifier.LabelEnum.RESUME.value:
-            res = EsClient.index_doc(
-                index=RECRUITMENT_ELASTICSEARCH_INDEX_NAME,
-                doc=doc,
-            )
-            elastic_doc_id = res["_id"]
-            elastic_index_name = RECRUITMENT_ELASTICSEARCH_INDEX_NAME
-        elif document_label == Classifier.LabelEnum.PAPER.value:
-            res = EsClient.index_doc(
-                index=SCIENTIFIC_ELASTICSEARCH_INDEX_NAME,
-                doc=doc,
-            )
-            elastic_doc_id = res["_id"]
-            elastic_index_name = SCIENTIFIC_ELASTICSEARCH_INDEX_NAME
+        general_elastic_doc_id = res["_id"]
 
+        # Index document into Elasticsearch according to document type.
+        elastic_doc_id = None
+        elastic_index_name = None
+        if document_label != Classifier.LabelEnum.OTHER.value:
+            metadata_info = (
+                SCIENTIFIC_INFORMATION
+                if document_label == Classifier.LabelEnum.PAPER.value
+                else RECRUITMENT_INFORMATION
+            )
+            for name, type in metadata_info:
+                # Type of metadata checking, if type contains "semantic" then we need to generate vector for the metadata.
+                if type == "semantic text":
+                    metadata_value: str = document_metadata.get(
+                        "document_metadata", {}
+                    ).get(name, "")
+                    preprocessed_metadata = PreprocessUtil.preprocess(metadata_value)
+                elif type == "semantic list":
+                    metadata_value: List[str] = document_metadata.get(
+                        "document_metadata", {}
+                    ).get(name, [])
+                    preprocessed_metadata = PreprocessUtil.preprocess(
+                        " ".join(metadata_value)
+                    )
+
+                # Generate vector for metadata.
+                if preprocessed_metadata in locals():
+                    metadata_embedding = bc.encode([" ".join(preprocessed_metadata)])
+                    doc["document_metadata"][name] = {
+                        "text": metadata_value,
+                        "text_vector": metadata_embedding[0],
+                    }
+
+            res = EsClient.index_doc(
+                index=SCIENTIFIC_ELASTICSEARCH_INDEX_NAME
+                if document_label == Classifier.LabelEnum.PAPER.value
+                else RECRUITMENT_ELASTICSEARCH_INDEX_NAME,
+                doc=doc,
+            )
+            elastic_doc_id = res["_id"]
+            elastic_index_name = (
+                SCIENTIFIC_ELASTICSEARCH_INDEX_NAME
+                if document_label == Classifier.LabelEnum.PAPER.value
+                else RECRUITMENT_ELASTICSEARCH_INDEX_NAME
+            )
+
+        # Update document elasticsearch related metadata and indexing status on database.
         async_to_sync(document_service.update_document_celery)(
             id=document_id,
+            general_elastic_doc_id=general_elastic_doc_id,
             elastic_doc_id=elastic_doc_id,
             elastic_index_name=elastic_index_name,
         )
@@ -224,10 +286,23 @@ def indexing(
         )
         return True
     except Exception as e:
+        # Turn indexing status to failed if indexing failed.
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
             status=IndexingStatusEnum.FAILED,
             reason=str(e),
             current_task_id=None,
         )
+
+        # Delete document from Elasticsearch if indexing failed.
+        if general_elastic_doc_id:
+            EsClient.delete_doc(
+                index=GENERAL_ELASTICSEARCH_INDEX_NAME,
+                doc_id=general_elastic_doc_id,
+            )
+        if elastic_doc_id and elastic_index_name:
+            EsClient.delete_doc(
+                index=elastic_index_name,
+                doc_id=elastic_doc_id,
+            )
         raise e

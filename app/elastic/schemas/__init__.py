@@ -9,6 +9,7 @@ from app.elastic.schemas.index import (
     ElasticIndexUpdateResponse,
     GetAllIndexQueryParams,
     IndexNamePathParams,
+    IndexType,
     UpdateIndexBody,
 )
 
@@ -25,4 +26,5 @@ __all__ = [
     "ElasticIndexUpdateResponse",
     "ElasticIndexDeleteResponse",
     "ElasticDocumentIndexedResponse",
+    "IndexType",
 ]

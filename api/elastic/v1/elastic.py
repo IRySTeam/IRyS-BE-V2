@@ -3,6 +3,14 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Body, Depends
 
 from app.elastic import EsClient
+from app.elastic.configuration import (
+    GENERAL_ELASTICSEARCH_INDEX_MAPPINGS,
+    GENERAL_ELASTICSEARCH_INDEX_SETTINGS,
+    RECRUITMENT_ELASTICSEARCH_INDEX_MAPPINGS,
+    RECRUITMENT_ELASTICSEARCH_INDEX_SETTINGS,
+    SCIENTIFIC_ELASTICSEARCH_INDEX_MAPPINGS,
+    SCIENTIFIC_ELASTICSEARCH_INDEX_SETTINGS,
+)
 from app.elastic.schemas import (
     CreateIndexBody,
     ElasticCreateIndexResponse,
@@ -14,6 +22,7 @@ from app.elastic.schemas import (
     ElasticInfo,
     GetAllIndexQueryParams,
     IndexNamePathParams,
+    IndexType,
     UpdateIndexBody,
 )
 from core.exceptions import (
@@ -89,10 +98,23 @@ async def get_elastic_index(path: IndexNamePathParams = Depends()):
     },
 )
 async def create_elastic_index(body: CreateIndexBody):
+    settings = body.settings
+    mappings = body.mappings
+
+    if body.index_type == IndexType.GENERAL.value:
+        settings = GENERAL_ELASTICSEARCH_INDEX_SETTINGS
+        mappings = GENERAL_ELASTICSEARCH_INDEX_MAPPINGS
+    elif body.index_type == IndexType.SCIENTIFIC.value:
+        settings = SCIENTIFIC_ELASTICSEARCH_INDEX_SETTINGS
+        mappings = SCIENTIFIC_ELASTICSEARCH_INDEX_MAPPINGS
+    elif body.index_type == IndexType.RECRUITMENT.value:
+        settings = RECRUITMENT_ELASTICSEARCH_INDEX_SETTINGS
+        mappings = RECRUITMENT_ELASTICSEARCH_INDEX_MAPPINGS
+
     return EsClient.create_index(
         index_name=body.index_name,
-        mapping=body.mappings,
-        settings=body.settings,
+        mappings=mappings,
+        settings=settings,
     )
 
 

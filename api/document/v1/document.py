@@ -1,6 +1,7 @@
+from binascii import b2a_base64
 from typing import List
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 
 from app.document.models import Document
 from app.document.schemas import (
@@ -10,23 +11,30 @@ from app.document.schemas import (
     ReindexDocumentResponse,
 )
 from app.document.services import document_service
-from app.extraction import InformationExtractor
+from celery_app import parsing
 from core.exceptions import (
     BadRequestException,
-    ForbiddenException,
     NotFoundException,
     UnauthorizedException,
+)
+from core.exceptions.user import (
+    EmailNotVerifiedException,
+    UserNotAllowedException,
+)
+from core.fastapi.dependencies.permission import (
+    IsAuthenticated,
+    IsEmailVerified,
+    PermissionDependency,
 )
 from core.utils import CustomExceptionHelper
 
 document_router = APIRouter(
     responses={
         "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException,
-            "Unauthorized access to application resources",
+            UnauthorizedException, "Unauthorized"
         ),
         "403": CustomExceptionHelper.get_exception_response(
-            ForbiddenException, ForbiddenException.message
+            EmailNotVerifiedException, "Email not verified"
         ),
     }
 )
@@ -92,27 +100,21 @@ async def upload_document(repository_id: int = Form(...), file: UploadFile = Fil
     document: Document = None
     try:
         file_bytes = file.file.read()
-        scientific_extractor = InformationExtractor(domain="scientific")
-        extract = scientific_extractor.extract(file_bytes)
-        print(extract)
-        return extract
-        # TODO: Use information extraction to extract title.
-        # title = ".".join(file.filename.split(".")[:-1])
-        # file_content_str = b2a_base64(file_bytes).decode("utf-8")
-        # doc_id = await document_service.create_document(
-        #     title=title,
-        #     repository_id=repository_id,
-        #     file_content_str=file_content_str,
-        # )
-        # document = await document_service.get_document_by_id(
-        #     id=doc_id, include_index=True
-        # )
-        # parsing.delay(
-        #     document_id=document.id,
-        #     document_title=title,
-        #     file_content_str=file_content_str,
-        # )
-        return DocumentResponseSchema(id=1)
+        title = ".".join(file.filename.split(".")[:-1])
+        file_content_str = b2a_base64(file_bytes).decode("utf-8")
+        doc_id = await document_service.create_document(
+            title=title,
+            repository_id=repository_id,
+            file_content_str=file_content_str,
+        )
+        document = await document_service.get_document_by_id(
+            id=doc_id, include_index=True
+        )
+        parsing.delay(
+            document_id=document.id,
+            document_title=title,
+            file_content_str=file_content_str,
+        )
         return document
     except Exception as e:
         # Delete the document if there is an error.
@@ -126,18 +128,18 @@ async def upload_document(repository_id: int = Form(...), file: UploadFile = Fil
     response_model=ReindexDocumentResponse,
     description="Reindex a document in Elasticsearch",
     responses={
-        "400": CustomExceptionHelper.get_exception_response(
-            BadRequestException,
-            "Bad request, please check request body, params, headers, or query",
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
         ),
         "404": CustomExceptionHelper.get_exception_response(
             NotFoundException,
             "Document with specified ID does not found",
         ),
     },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
-async def reindex_document(path: DocumentPathParams = Depends()):
-    await document_service.reindex_by_id(path.doc_id)
+async def reindex_document(request: Request, path: DocumentPathParams = Depends()):
+    await document_service.reindex_by_id(doc_id=path.doc_id, user_id=request.user.id)
     return {
         "success": True,
     }

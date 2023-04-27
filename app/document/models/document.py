@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, DateTime, Enum, ForeignKey, Unicode
+from sqlalchemy import BigInteger, Column, Enum, ForeignKey, Unicode
 from sqlalchemy.dialects.postgresql import TEXT
 from sqlalchemy.orm import mapped_column, relationship
 
@@ -11,13 +11,14 @@ class Document(Base, TimestampMixin):
     __tablename__ = "documents"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
+    general_elastic_doc_id = Column(Unicode(255), nullable=True)
     elastic_doc_id = Column(Unicode(255), nullable=True)
     elastic_index_name = Column(Unicode(255), nullable=True)
     repository_id = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"))
     repository = relationship("Repository", back_populates="documents")
     title = Column(Unicode(255), nullable=False)
-    doc_created_at = Column(DateTime, nullable=True)
-    doc_updated_at = Column(DateTime, nullable=True)
+    mimetype = Column(Unicode(255), nullable=True)
+    extension = Column(Unicode(255), nullable=True)
     file_content_str = Column(TEXT, nullable=True)
 
     index = relationship(

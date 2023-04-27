@@ -6,10 +6,6 @@ from elasticsearch import Elasticsearch
 from elasticsearch.client import IndicesClient
 from elasticsearch.exceptions import ApiError
 
-from app.elastic.configuration import (
-    GENERAL_ELASTICSEARCH_INDEX_MAPPINGS,
-    GENERAL_ELASTICSEARCH_INDEX_SETTINGS,
-)
 from app.elastic.helpers import classify_error
 from app.elastic.schemas import (
     ElasticCreateIndexResponse,
@@ -106,14 +102,14 @@ class ElasticsearchClient:
     def create_index(
         self,
         index_name: str,
-        mapping: Optional[Mapping[str, Any]] = None,
+        mappings: Optional[Mapping[str, Any]] = None,
         settings: Optional[Mapping[str, Any]] = None,
     ) -> ElasticCreateIndexResponse:
         """
         Create an index in Elasticsearch.
         [Parameters]
           index_name: str -> Name of the index.
-          mapping: Optional[Mapping[str, Any]] -> Define how a document, and the fields it contains,
+          mappings: Optional[Mapping[str, Any]] -> Define how a document, and the fields it contains,
             are stored and indexed.
           settings: Optional[Mapping[str, Any]] -> Index configuration, there are static (unchangeable)
             and dynamic (changeable) settings.
@@ -121,12 +117,8 @@ class ElasticsearchClient:
           ElasticCreateIndexResponse: Response of creating an index.
         """
         try:
-            if mapping is None or mapping == {}:
-                mapping = GENERAL_ELASTICSEARCH_INDEX_MAPPINGS
-            if settings is None or settings == {}:
-                settings = GENERAL_ELASTICSEARCH_INDEX_SETTINGS
             return self.indices_client.create(
-                index=index_name, mappings=mapping, settings=settings
+                index=index_name, mappings=mappings, settings=settings
             )
         except ApiError as e:
             raise classify_error(e)

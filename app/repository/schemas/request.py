@@ -1,6 +1,18 @@
+from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 
+from fastapi import Path, Query
 from pydantic import BaseModel, Field
+
+
+class IndexingStatus(str, Enum):
+    READY = "READY"
+    PARSING = "PARSING"
+    EXTRACTING = "EXTRACTING"
+    INDEXING = "INDEXING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
 
 
 class CreateRepositoryRequestSchema(BaseModel):
@@ -27,3 +39,15 @@ class EditRepositoryCollaboratorRequestSchema(BaseModel):
 
 class RemoveRepositoryCollaboratorRequestSchema(BaseModel):
     collaborator_id: int = Field(..., description="User ID")
+
+
+@dataclass
+class MonitorAllDocumentPathParams:
+    repository_id: int = Path(..., description="Document id")
+
+
+@dataclass
+class MonitorAllDocumentQueryParams:
+    status: IndexingStatus = Query(IndexingStatus.FAILED, description="Type")
+    page_no: int = Query(1, description="Page Number")
+    page_size: int = Query(10, description="Page Size")

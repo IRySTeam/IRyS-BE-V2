@@ -37,6 +37,16 @@ class DocumentResponseSchema(BaseModel):
         orm_mode = True
 
 
+class MonitorDocumentResponseSchema(BaseModel):
+    id: int = Field(..., description="Document id")
+    title: str = Field(..., description="Document title")
+    updated_at: datetime = Field(None, description="Document's updated at")
+    index: DocumentIndexing = Field(None, description="Document indexing status")
+
+    class Config:
+        orm_mode = True
+
+
 class UploadDocumentBody(BaseModel):
     repository_id: int = Field(..., description="Repository id")
 

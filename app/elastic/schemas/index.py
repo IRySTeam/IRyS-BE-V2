@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Mapping, Optional
 
 from fastapi import Path, Query
@@ -9,12 +10,27 @@ from app.elastic.configuration import (
     GENERAL_ELASTICSEARCH_INDEX_SETTINGS,
 )
 
-
 # ==============================================================================
 # Request Body-related Schemas.
 # ==============================================================================
+
+
+class IndexType(str, Enum):
+    NONE = "none"
+    GENERAL = "general"
+    RECRUITMENT = "recruitment"
+    SCIENTIFIC = "scientific"
+
+
 class CreateIndexBody(BaseModel):
     index_name: str = Field(..., description="Name of the index")
+    index_type: IndexType = Field(
+        IndexType.GENERAL,
+        description="Type of the index, available values are none, general, recruitment, and "
+        "scientific, if none is selected, the index will be created with the given mappings and "
+        "settings, otherwise, the index will be created with the corresponding settings and "
+        "mappings defined by the application",
+    )
     mappings: Optional[Mapping[str, Any]] = Field(
         GENERAL_ELASTICSEARCH_INDEX_MAPPINGS,
         description="Define how a document, and the fields it contains, are stored and indexed. "
@@ -27,6 +43,9 @@ class CreateIndexBody(BaseModel):
         "settings. For more information, refer to "
         "[this](https://www.elastic.co/guide/en/elasticsearch/reference/8.6/index-modules.html#index-modules-settings)",
     )
+
+    class Config:
+        use_enum_values = True
 
 
 class UpdateIndexBody(BaseModel):

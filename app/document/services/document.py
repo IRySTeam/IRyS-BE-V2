@@ -4,8 +4,13 @@ from typing import List
 from app.document.enums.document import IndexingStatusEnum
 from app.document.models import Document
 from app.elastic import EsClient
+from app.elastic.configuration import GENERAL_ELASTICSEARCH_INDEX_NAME
 from core.db import Transactional, standalone_session
-from core.exceptions import NotFoundException
+from core.exceptions import (
+    NotFoundException,
+    RepositoryNotFoundException,
+    UserNotAllowedException,
+)
 from core.repository import DocumentIndexRepo, DocumentRepo, RepositoryRepo
 
 
@@ -100,10 +105,12 @@ class DocumentService:
         id: int,
         title: str = None,
         repository_id: int = None,
-        doc_created_at: datetime = None,
-        doc_updated_at: datetime = None,
+        general_elastic_doc_id=None,
         elastic_doc_id: int = None,
         elastic_index_name: str = None,
+        mimetype: str = None,
+        extension: str = None,
+        size: int = None,
     ) -> Document:
         """
         Update a document.
@@ -111,23 +118,28 @@ class DocumentService:
             id: int -> Document id.
             title: str -> Document title.
             repository_id: int -> Repository id.
-            doc_created_at: datetime -> Document created at.
-            doc_updated_at: datetime -> Document updated at.
             elastic_doc_id: str = None -> Document id in Elasticsearch.
             elastic_index_name: str = None -> Elasticsearch index name.
+            mimetype: str = None -> Document mimetype.
+            extension: str = None -> Document extension.
+            size: int = None -> Document size.
         [Returns]
             Document -> Document.
         """
         document = await self.get_document_by_id(id)
+        # Construct params
         await self.document_repo.update_by_id(
             id=id,
             params={
                 "title": title or document.title,
                 "repository_id": repository_id or document.repository_id,
-                "doc_created_at": doc_created_at or document.doc_created_at,
-                "doc_updated_at": doc_updated_at or document.doc_updated_at,
+                "general_elastic_doc_id": general_elastic_doc_id
+                or document.general_elastic_doc_id,
                 "elastic_doc_id": elastic_doc_id or document.elastic_doc_id,
                 "elastic_index_name": elastic_index_name or document.elastic_index_name,
+                "mimetype": mimetype or document.mimetype,
+                "extension": extension or document.extension,
+                "size": size or document.size,
             },
         )
         document = await self.get_document_by_id(id)
@@ -140,10 +152,12 @@ class DocumentService:
         id: int,
         title: str = None,
         repository_id: int = None,
-        doc_created_at: datetime = None,
-        doc_updated_at: datetime = None,
+        general_elastic_doc_id=None,
         elastic_doc_id: int = None,
         elastic_index_name: str = None,
+        mimetype: str = None,
+        extension: str = None,
+        size: int = None,
     ) -> bool:
         """
         Update a document.
@@ -151,10 +165,11 @@ class DocumentService:
             id: int -> Document id.
             title: str -> Document title.
             repository_id: int -> Repository id.
-            doc_created_at: datetime -> Document created at.
-            doc_updated_at: datetime -> Document updated at.
             elastic_doc_id: str = None -> Document id in Elasticsearch.
             elastic_index_name: str = None -> Elasticsearch index name.
+            mimetype: str = None -> Document mimetype.
+            extension: str = None -> Document extension.
+            size: int = None -> Document size.
         [Returns]
             bool -> True if successful.
         """
@@ -164,10 +179,13 @@ class DocumentService:
             params={
                 "title": title or document.title,
                 "repository_id": repository_id or document.repository_id,
-                "doc_created_at": doc_created_at or document.doc_created_at,
-                "doc_updated_at": doc_updated_at or document.doc_updated_at,
+                "general_elastic_doc_id": general_elastic_doc_id
+                or document.general_elastic_doc_id,
                 "elastic_doc_id": elastic_doc_id or document.elastic_doc_id,
                 "elastic_index_name": elastic_index_name or document.elastic_index_name,
+                "mimetype": mimetype or document.mimetype,
+                "extension": extension or document.extension,
+                "size": size or document.size,
             },
         )
         return True
@@ -203,28 +221,94 @@ class DocumentService:
             celery.control.revoke(index.current_task_id, terminate=True)
 
         # Delete corresponding index in elasticsearch if exist, also remove it in db.
-        if (
-            index.status == IndexingStatusEnum.SUCCESS
-            and document.elastic_doc_id
-            and document.elastic_index_name
-        ):
-            EsClient.delete_doc(document.elastic_index_name, document.elastic_doc_id)
-            await self.update_document(
+        if index.status == IndexingStatusEnum.SUCCESS:
+            if document.general_elastic_doc_id:
+                EsClient.delete_doc(
+                    GENERAL_ELASTICSEARCH_INDEX_NAME, document.general_elastic_doc_id
+                )
+                document.general_elastic_doc_id = None
+
+            if document.elastic_doc_id and document.elastic_index_name:
+                EsClient.delete_doc(
+                    document.elastic_index_name, document.elastic_doc_id
+                )
+                document.elastic_doc_id = None
+                document.elastic_index_name = None
+
+            await self.document_repo.update_by_id(
                 id=document.id,
-                elastic_doc_id=None,
-                elastic_index_name=None,
+                params={
+                    "general_elastic_doc_id": document.general_elastic_doc_id,
+                    "elastic_doc_id": document.elastic_doc_id,
+                    "elastic_index_name": document.elastic_index_name,
+                },
             )
+
         parsing.delay(
             document_id=document.id,
             document_title=document.title,
             file_content_str=document.file_content_str,
         )
 
-    async def reindex_by_id(self, id: int) -> None:
+    async def reindex_by_id(self, doc_id: int, user_id: int) -> None:
         """
         Reindex a document.
         [Parameters]
-            id: int -> Document id.
+            doc_id: int -> Id of the corresponding document.
+            user_id: int -> The user who request the reindexing.
         """
-        document = await self.get_document_by_id(id, True)
+        document = await self.get_document_by_id(doc_id, True)
+        repository_id = document.repository_id
+
+        # User permission check.
+        if not await self.repository_repo.is_exist(repository_id):
+            raise RepositoryNotFoundException
+        if not (
+            await self.repository_repo.is_user_id_owner_of_repository(
+                user_id, repository_id
+            )
+            or await self.repository_repo.is_user_id_admin_of_repository(
+                user_id, repository_id
+            )
+        ):
+            raise UserNotAllowedException
         await self.reindex(document)
+
+    async def monitor_all_document(
+        self,
+        user_id: int,
+        repository_id: int,
+        status: str = None,
+        page_size: int = 10,
+        page_no: int = 1,
+    ) -> List[Document]:
+        """
+        Monitor all documents in a repository.
+        [Parameters]
+            user_id: int -> User that wants to monitor the documents.
+            repository_id: int -> Repository id.
+            status: str = None -> Indexing status.
+            page_size: int = 10 -> Page size.
+            page_no: int = 1 -> Page number.
+        [Returns]
+            List[Document] -> List of documents with indexing status.
+        """
+        if not await self.repository_repo.is_exist(repository_id):
+            raise RepositoryNotFoundException
+        if not (
+            await self.repository_repo.is_user_id_owner_of_repository(
+                user_id, repository_id
+            )
+            or await self.repository_repo.is_user_id_admin_of_repository(
+                user_id, repository_id
+            )
+        ):
+            raise UserNotAllowedException
+
+        documents = await self.document_repo.monitor_all_documents(
+            status=status,
+            repository_id=repository_id,
+            page_no=page_no,
+            page_size=page_size,
+        )
+        return documents

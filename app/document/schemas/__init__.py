@@ -2,6 +2,7 @@ from app.document.schemas.document import (
     DocumentPathParams,
     DocumentResponseSchema,
     IncludeIndexQueryParams,
+    MonitorDocumentResponseSchema,
     ReindexDocumentResponse,
     UploadDocumentBody,
 )
@@ -12,4 +13,5 @@ __all__ = [
     "IncludeIndexQueryParams",
     "UploadDocumentBody",
     "ReindexDocumentResponse",
+    "MonitorDocumentResponseSchema",
 ]
