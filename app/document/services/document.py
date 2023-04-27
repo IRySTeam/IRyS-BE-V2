@@ -268,3 +268,12 @@ class DocumentService:
             repository_id
         )
         return documents
+
+    async def edit_document(
+        self, user_id: int, repo_id: int, document_id: int, params: dict
+    ):
+        if not self.document_repo.is_exist(document_id):
+            raise DocumentNotFoundException
+
+        params = {k: v for k, v in params.items() if v is not None}
+        await self.document_repo.update_by_id(document_id, params)
