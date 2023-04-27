@@ -4,13 +4,15 @@ from typing import List
 
 from fastapi import UploadFile
 
-from app.document.enums.document import IndexingStatusEnum
+from app.document.enums import DocumentRole, IndexingStatusEnum
 from app.document.models import Document
 from app.document.schemas import DocumentSchema
 from app.elastic import EsClient
 from app.repository.enums import RepositoryRole
 from core.db import Transactional, session, standalone_session
 from core.exceptions import (
+    DocumentNotFoundException,
+    InvalidDocumentRoleException,
     InvalidRepositoryRoleException,
     NotFoundException,
     RepositoryNotFoundException,
@@ -274,15 +276,6 @@ class DocumentService:
         )
         return documents
 
-    async def edit_document(
-        self, user_id: int, repo_id: int, document_id: int, params: dict
-    ):
-        if not self.document_repo.is_exist(document_id):
-            raise DocumentNotFoundException
-
-        params = {k: v for k, v in params.items() if v is not None}
-        await self.document_repo.update_by_id(document_id, params)
-
     @Transactional()
     async def upload_document(
         self,
@@ -349,3 +342,39 @@ class DocumentService:
                 document_title=title,
                 file_content_str=b2a_base64(file.file.read()).decode("utf-8"),
             )
+
+    async def edit_document(
+        self, user_id: int, repo_id: int, document_id: int, params: dict
+    ):
+        if not self.document_repo.is_exist(document_id):
+            raise DocumentNotFoundException
+
+        repo_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id=user_id, repository_id=repo_id
+            )
+        )
+
+        if not repo_role:
+            raise UserNotAllowedException
+        if user_role.upper() in RepositoryRole.__members__:
+            user_role = RepositoryRole[user_role.upper()]
+
+            if user_role <= RepositoryRole.ADMIN:
+                doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+                    collaborator_id=user_id, document_id=document_id
+                )
+                if not doc_role:
+                    raise UserNotAllowedException
+
+                if doc_role.upper() in DocumentRole.__members__:
+                    doc_role = DocumentRole[doc_role.upper()]
+                    if doc_role < DocumentRole.EDITOR:
+                        raise UserNotAllowedException
+                else:
+                    raise InvalidDocumentRoleException
+        else:
+            raise InvalidRepositoryRoleException
+
+        params = {k: v for k, v in params.items() if v is not None}
+        await self.document_repo.update_by_id(document_id, params)

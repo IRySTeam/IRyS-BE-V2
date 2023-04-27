@@ -2,7 +2,10 @@ from typing import List
 
 from fastapi import APIRouter, Depends, Query, Request, UploadFile
 
-from app.document.schemas import DocumentResponseSchema
+from app.document.schemas import (
+    DocumentResponseSchema,
+    EditDocumentRequestSchema,
+)
 from app.document.services import DocumentService
 from app.repository.schemas import (
     AddRepositoryCollaboratorRequestSchema,
@@ -392,6 +395,28 @@ async def upload_document(
 ):
     await DocumentService().upload_document(
         user_id=request.user.id, repository_id=repository_id, files=files
+    )
+
+    return MessageResponseSchema(message="Successful")
+
+
+@repository_router.post(
+    "/{repository_id}/documents/{document_id}/edit",
+    response_model=MessageResponseSchema,
+    responses={},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def edit_document(
+    request: Request,
+    repository_id: int,
+    document_id: int,
+    body: EditDocumentRequestSchema,
+):
+    await DocumentService().edit_document(
+        user_id=request.user.id,
+        repo_id=repository_id,
+        document_id=document_id,
+        params=body.dict(),
     )
 
     return MessageResponseSchema(message="Successful")
