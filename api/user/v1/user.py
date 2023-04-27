@@ -168,6 +168,9 @@ async def send_forgot_password_otp(body: SendForgotPasswordOTPRequestSchema):
     "/forgot-password/verify-otp",
     response_model=VerifyForgotPasswordOTPResponseSchema,
     responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
         "404": CustomExceptionHelper.get_exception_response(
             UserNotFoundException, "User not found"
         ),
@@ -201,6 +204,9 @@ async def verify_forgot_password_otp(
     "/change-password",
     response_model=ChangePasswordResponseSchema,
     responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
         "404": CustomExceptionHelper.get_exception_response(
             UserNotFoundException, "User not found"
         ),
@@ -233,6 +239,9 @@ async def change_password(request: Request, body: ChangePasswordRequestSchema):
     "/forgot-password/resend-otp",
     response_model=ResendForgotPasswordOTPResponseSchema,
     responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
         "404": CustomExceptionHelper.get_exception_response(
             UserNotFoundException, "User not found"
         ),
