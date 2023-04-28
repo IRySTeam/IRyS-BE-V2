@@ -86,22 +86,75 @@ RECRUITMENT_ELASTICSEARCH_INDEX_INFORMATION = {
     "SKILL": {"type": "text"},
     "name": {"type": "text"},
     "email": {"type": "text"},
-    "experiences": {"type": "text"},
-    "education": {"type": "text"},
     "skills": {"type": "text"},
-    "projects": {"type": "text"},
-    "certifications": {"type": "text"},
+    "experiences": {
+        "type": "object",
+        "properties": {
+            "job_title": {"type": "text"},
+            "company": {"type": "text"},
+            "start_date": {"type": "text"},
+            "end_date": {"type": "text"},
+            "description": {"type": "text"},
+        },
+    },
+    "education": {
+        "type": "object",
+        "properties": {
+            "institution": {"type": "text"},
+            "degree": {"type": "text"},
+            "start_date": {"type": "text"},
+            "end_date": {"type": "text"},
+            "description": {"type": "text"},
+        },
+    },
+    "projects": {
+        "type": "object",
+        "properties": {
+            "title": {"type": "text"},
+            "description": {"type": "text"},
+        },
+    },
+    "certifications": {
+        "type": "object",
+        "properties": {
+            "title": {"type": "text"},
+            "description": {"type": "text"},
+        },
+    },
     "experiences_job_titles": {"type": "text"},
     "experiences_companies": {"type": "text"},
-    "experiences_descriptions": {"type": "text"},
-    "experiences_institutions": {"type": "text"},
-    "experiences_degrees": {"type": "text"},
+    "experiences_descriptions": {
+        "type": "object",
+        "properties": {
+            "text": {"type": "text"},
+            "text_vector": {"type": "dense_vector", "dims": 768},
+        },
+    },
     "education_insitutions": {"type": "text"},
     "education_degrees": {"type": "text"},
+    "education_descriptions": {
+        "type": "object",
+        "properties": {
+            "text": {"type": "text"},
+            "text_vector": {"type": "dense_vector", "dims": 768},
+        },
+    },
     "projects_titles": {"type": "text"},
-    "projects_descriptions": {"type": "text"},
+    "projects_descriptions": {
+        "type": "object",
+        "properties": {
+            "text": {"type": "text"},
+            "text_vector": {"type": "dense_vector", "dims": 768},
+        },
+    },
     "certifications_titles": {"type": "text"},
-    "certifications_descriptions": {"type": "text"},
+    "certifications_descriptions": {
+        "type": "object",
+        "properties": {
+            "text": {"type": "text"},
+            "text_vector": {"type": "dense_vector", "dims": 768},
+        },
+    },
 }
 
 RECRUITMENT_ELASTICSEARCH_INDEX_MAPPINGS = deepcopy(BASE_ELASTICSEARCH_INDEX_MAPPINGS)

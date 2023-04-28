@@ -63,6 +63,8 @@ def parsing(
         text_percentage = OCRUtil.get_text_percentage(file_content)
         if text_percentage < OCRUtil.TEXT_PERCENTAGE_THRESHOLD:
             with_ocr = False
+        print(f"Text percentage: {text_percentage}")
+        print(f"With OCR: {with_ocr}")
         if file_extension == ".pdf" and with_ocr:
             file_text = OCRUtil.ocr(file_content)
 
@@ -228,6 +230,7 @@ def indexing(
         general_elastic_doc_id = res["_id"]
 
         # Index document into Elasticsearch according to document type.
+        doc["document_metadata"] = document_metadata
         elastic_doc_id = None
         elastic_index_name = None
         if document_label != Classifier.LabelEnum.OTHER.value:
@@ -236,23 +239,22 @@ def indexing(
                 if document_label == Classifier.LabelEnum.PAPER.value
                 else RECRUITMENT_INFORMATION
             )
-            for name, type in metadata_info:
+            for dict in metadata_info:
+                name = dict["name"]
+                type = dict["type"]
                 # Type of metadata checking, if type contains "semantic" then we need to generate vector for the metadata.
+                preprocessed_metadata = None
                 if type == "semantic text":
-                    metadata_value: str = document_metadata.get(
-                        "document_metadata", {}
-                    ).get(name, "")
+                    metadata_value: str = document_metadata.get(name, "")
                     preprocessed_metadata = PreprocessUtil.preprocess(metadata_value)
                 elif type == "semantic list":
-                    metadata_value: List[str] = document_metadata.get(
-                        "document_metadata", {}
-                    ).get(name, [])
+                    metadata_value: List[str] = document_metadata.get(name, [])
                     preprocessed_metadata = PreprocessUtil.preprocess(
                         " ".join(metadata_value)
                     )
 
                 # Generate vector for metadata.
-                if preprocessed_metadata in locals():
+                if preprocessed_metadata:
                     metadata_embedding = bc.encode([" ".join(preprocessed_metadata)])
                     doc["document_metadata"][name] = {
                         "text": metadata_value,
@@ -297,12 +299,12 @@ def indexing(
         # Delete document from Elasticsearch if indexing failed.
         if general_elastic_doc_id:
             EsClient.delete_doc(
-                index=GENERAL_ELASTICSEARCH_INDEX_NAME,
+                index_name=GENERAL_ELASTICSEARCH_INDEX_NAME,
                 doc_id=general_elastic_doc_id,
             )
         if elastic_doc_id and elastic_index_name:
             EsClient.delete_doc(
-                index=elastic_index_name,
+                index_name=elastic_index_name,
                 doc_id=elastic_doc_id,
             )
         raise e

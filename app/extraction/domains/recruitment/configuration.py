@@ -43,23 +43,47 @@ RECRUITMENT_INFORMATION = [
         "type": "text",
     },
     {
-        "name": "experiences",
-        "type": "list",
-    },
-    {
-        "name": "education",
-        "type": "list",
-    },
-    {
         "name": "skills",
         "type": "list",
     },
     {
-        "name": "projects",
+        "name": "experiences_job_titles",
         "type": "list",
     },
     {
-        "name": "certifications",
+        "name": "experiences_companies",
         "type": "list",
+    },
+    {
+        "name": "experiences_descriptions",
+        "type": "semantic list",
+    },
+    {
+        "name": "education_institutions",
+        "type": "list",
+    },
+    {
+        "name": "education_degrees",
+        "type": "list",
+    },
+    {
+        "name": "education_descriptions",
+        "type": "semantic list",
+    },
+    {
+        "name": "projects_titles",
+        "type": "list",
+    },
+    {
+        "name": "projects_descriptions",
+        "type": "semantic list",
+    },
+    {
+        "name": "certifications_titles",
+        "type": "list",
+    },
+    {
+        "name": "certifications_descriptions",
+        "type": "semantic list",
     },
 ]

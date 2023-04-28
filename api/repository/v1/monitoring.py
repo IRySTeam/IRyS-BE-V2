@@ -54,7 +54,7 @@ async def monitor_repository_documents(
     )
 
 
-@monitoring_router.get(
+@monitoring_router.post(
     "/{repository_id}/reindex-all",
     response_model=ReindexAllResponseSchema,
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],

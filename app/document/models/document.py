@@ -11,14 +11,16 @@ class Document(Base, TimestampMixin):
     __tablename__ = "documents"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
+    file_url = Column(Unicode(255), nullable=False)
+    title = Column(Unicode(255), nullable=False)
     general_elastic_doc_id = Column(Unicode(255), nullable=True)
     elastic_doc_id = Column(Unicode(255), nullable=True)
     elastic_index_name = Column(Unicode(255), nullable=True)
     repository_id = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"))
     repository = relationship("Repository", back_populates="documents")
-    title = Column(Unicode(255), nullable=False)
     mimetype = Column(Unicode(255), nullable=True)
     extension = Column(Unicode(255), nullable=True)
+    size = Column(BigInteger, nullable=True)
     file_content_str = Column(TEXT, nullable=True)
 
     index = relationship(

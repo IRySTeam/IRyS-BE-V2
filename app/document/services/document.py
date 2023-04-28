@@ -2,10 +2,12 @@ from typing import List
 
 from app.document.enums.document import IndexingStatusEnum
 from app.document.models import Document
+from app.document.schemas import DocumentSchema
 from app.elastic import EsClient
 from app.elastic.configuration import GENERAL_ELASTICSEARCH_INDEX_NAME
 from core.db import Transactional, standalone_session
 from core.exceptions import (
+    InvalidRepositoryRoleException,
     NotFoundException,
     RepositoryNotFoundException,
     UserNotAllowedException,
@@ -61,16 +63,27 @@ class DocumentService:
         title: str,
         repository_id: int,
         file_content_str: str,
+        file_url: str = "dummy",
+        general_elastic_doc_id: str = None,
         elastic_doc_id: str = None,
         elastic_index_name: str = None,
+        mimetype: str = None,
+        extension: str = None,
+        size: int = None,
     ) -> int:
         """
         Create a document and the corresponding indexing status.
         [Parameters]
             title: str -> Document title.
             repository_id: int -> Repository id.
+            file_content_str: str -> Document content.
+            file_url: str = "dummy" -> Document url.
+            general_elastic_doc_id: str = None -> General document id in Elasticsearch.
             elastic_doc_id: str = None -> Document id in Elasticsearch.
             elastic_index_name: str = None -> Elasticsearch index name.
+            mimetype: str = None -> Document mimetype.
+            extension: str = None -> Document extension.
+            size: int = None -> Document size.
         [Returns]
             int -> Document id.
         """
@@ -82,8 +95,13 @@ class DocumentService:
                 "title": title,
                 "repository_id": repository_id,
                 "file_content_str": file_content_str,
+                "file_url": file_url,
+                "general_elastic_doc_id": general_elastic_doc_id,
                 "elastic_doc_id": elastic_doc_id,
                 "elastic_index_name": elastic_index_name,
+                "mimetype": mimetype,
+                "extension": extension,
+                "size": size,
             }
         )
 
@@ -97,6 +115,7 @@ class DocumentService:
         self,
         id: int,
         title: str = None,
+        file_url: str = None,
         repository_id: int = None,
         general_elastic_doc_id=None,
         elastic_doc_id: int = None,
@@ -110,6 +129,7 @@ class DocumentService:
         [Parameters]
             id: int -> Document id.
             title: str -> Document title.
+            file_url: str = None -> Document url.
             repository_id: int -> Repository id.
             elastic_doc_id: str = None -> Document id in Elasticsearch.
             elastic_index_name: str = None -> Elasticsearch index name.
@@ -125,6 +145,7 @@ class DocumentService:
             id=id,
             params={
                 "title": title or document.title,
+                "file_url": file_url or document.file_url,
                 "repository_id": repository_id or document.repository_id,
                 "general_elastic_doc_id": general_elastic_doc_id
                 or document.general_elastic_doc_id,
@@ -144,6 +165,7 @@ class DocumentService:
         self,
         id: int,
         title: str = None,
+        file_url: str = None,
         repository_id: int = None,
         general_elastic_doc_id=None,
         elastic_doc_id: int = None,
@@ -157,6 +179,7 @@ class DocumentService:
         [Parameters]
             id: int -> Document id.
             title: str -> Document title.
+            file_url: str = None -> Document url.
             repository_id: int -> Repository id.
             elastic_doc_id: str = None -> Document id in Elasticsearch.
             elastic_index_name: str = None -> Elasticsearch index name.
@@ -171,6 +194,7 @@ class DocumentService:
             id=id,
             params={
                 "title": title or document.title,
+                "file_url": file_url or document.file_url,
                 "repository_id": repository_id or document.repository_id,
                 "general_elastic_doc_id": general_elastic_doc_id
                 or document.general_elastic_doc_id,
@@ -303,5 +327,39 @@ class DocumentService:
             repository_id=repository_id,
             page_no=page_no,
             page_size=page_size,
+        )
+        return documents
+
+    async def get_repository_documents(
+        self,
+        user_id: int,
+        repository_id: int,
+    ) -> List[DocumentSchema]:
+        """
+        Get all documents in a repository.
+        [Parameters]
+            repository_id: int -> Repository id.
+        [Returns]
+            List[Document] -> List of documents.
+        """
+        repo = await self.repository_repo.get_repository_by_id(repository_id)
+
+        if not repo:
+            raise RepositoryNotFoundException
+
+        if not repo.is_public:
+            user_role = (
+                await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                    user_id, repository_id
+                )
+            )
+            if not user_role:
+                raise UserNotAllowedException
+
+            if not user_role.upper() in RepositoryRepo:
+                raise InvalidRepositoryRoleException
+
+        documents = await self.document_repo.find_documents_by_repository_id(
+            repository_id
         )
         return documents
