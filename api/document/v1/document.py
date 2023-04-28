@@ -84,7 +84,7 @@ async def get_document(
 @document_router.post(
     "/upload",
     description="Upload a document and index it in Elasticsearch (Temporary)",
-    # response_model=DocumentResponseSchema,
+    response_model=DocumentResponseSchema,
     responses={
         "400": CustomExceptionHelper.get_exception_response(
             BadRequestException,

@@ -40,6 +40,13 @@ TYPE_OPERATORS = {
         "in",
         "not_in",
     ],
+    "semantic list": [
+        "contains",
+        "not_contains",
+        "equals",
+        "in",
+        "not_in",
+    ],
     "number": [
         "equals",
         "not_equals",

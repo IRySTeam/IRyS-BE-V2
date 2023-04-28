@@ -29,8 +29,8 @@ class DocumentResponseSchema(BaseModel):
     elastic_doc_id: str = Field(None, description="Document id in Elasticsearch")
     elastic_index_name: str = Field(None, description="Elasticsearch index name")
     title: str = Field(..., description="Document title")
-    doc_created_at: datetime = Field(None, description="Document's created at metadata")
-    doc_updated_at: datetime = Field(None, description="Document's updated at metadata")
+    created_at: datetime = Field(None, description="Document's created at metadata")
+    updated_at: datetime = Field(None, description="Document's updated at metadata")
     index: DocumentIndexing = Field(None, description="Document indexing status")
 
     class Config:

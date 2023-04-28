@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List
 
 from app.document.enums.document import IndexingStatusEnum
@@ -62,8 +61,6 @@ class DocumentService:
         title: str,
         repository_id: int,
         file_content_str: str,
-        doc_created_at: datetime = None,
-        doc_updated_at: datetime = None,
         elastic_doc_id: str = None,
         elastic_index_name: str = None,
     ) -> int:
@@ -72,8 +69,6 @@ class DocumentService:
         [Parameters]
             title: str -> Document title.
             repository_id: int -> Repository id.
-            doc_created_at: datetime -> Document created at.
-            doc_updated_at: datetime -> Document updated at.
             elastic_doc_id: str = None -> Document id in Elasticsearch.
             elastic_index_name: str = None -> Elasticsearch index name.
         [Returns]
@@ -87,8 +82,6 @@ class DocumentService:
                 "title": title,
                 "repository_id": repository_id,
                 "file_content_str": file_content_str,
-                "doc_created_at": doc_created_at,
-                "doc_updated_at": doc_updated_at,
                 "elastic_doc_id": elastic_doc_id,
                 "elastic_index_name": elastic_index_name,
             }
