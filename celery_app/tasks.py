@@ -59,12 +59,10 @@ def parsing(
         file_text: str = parser.from_buffer(file_content)["content"]
 
         # TODO: Add check duplicate.
-        with_ocr = True
+        with_ocr = False
         text_percentage = OCRUtil.get_text_percentage(file_content)
         if text_percentage < OCRUtil.TEXT_PERCENTAGE_THRESHOLD:
-            with_ocr = False
-        print(f"Text percentage: {text_percentage}")
-        print(f"With OCR: {with_ocr}")
+            with_ocr = True
         if file_extension == ".pdf" and with_ocr:
             file_text = OCRUtil.ocr(file_content)
 
