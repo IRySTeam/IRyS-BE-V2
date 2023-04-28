@@ -55,7 +55,7 @@ class GeneralExtractor:
 
         file_text: str = parser.from_buffer(file)["content"].strip()
 
-        entities = self.__extract_entities(file_text)
+        entities = self.extract_entities(file_text)
 
         flattened_entities = self.flatten_entities(entities)
 
