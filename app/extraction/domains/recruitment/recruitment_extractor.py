@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 import fitz
 from transformers import pipeline
 
+from app.extraction.converter import Converter
 from app.extraction.domains.recruitment.configuration import (
     RECRUITMENT_ENTITIES,
 )
@@ -35,6 +36,7 @@ class RecruitmentExtractor(GeneralExtractor):
             "ner", model="topmas/IRyS-NER-Recruitment", aggregation_strategy="simple"
         )
         self.entity_list = RECRUITMENT_ENTITIES
+        self.file_converter = Converter()
 
     def preprocess(self, text: str) -> str:
         """
@@ -78,8 +80,11 @@ class RecruitmentExtractor(GeneralExtractor):
         result.update({"entities": entities.to_dict()})
         result.update(flattened_entities)
 
-        # TODO: Handle other extension if possible
-        if result["extension"] == ".pdf":
+        if result["extension"] == ".doc" or result["extension"] == ".docx":
+            file = self.file_converter.doc_to_pdf(file, result["extension"])
+
+        # TODO: Handle txt if possible
+        if result["extension"] != ".txt":
             recruitment_information = self.__extract_recruitment_information(
                 resume_segments_and_text
             )
