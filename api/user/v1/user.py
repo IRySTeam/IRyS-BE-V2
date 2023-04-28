@@ -1,32 +1,31 @@
-from typing import List
+from fastapi import APIRouter, Depends, Request
 
-from fastapi import APIRouter, Depends, Query, Request
 from app.user.schemas import *
 from app.user.services import UserService
 from core.exceptions import (
+    DuplicateEmailException,
+    EmailAlreadyVerifiedException,
+    EmailNotVerifiedException,
+    ExpiredOTPException,
+    ForgotPasswordOTPAlreadySentException,
+    ForgotPasswordOTPNotVerifiedException,
     InvalidEmailException,
     InvalidPasswordException,
-    DuplicateEmailException,
-    UserNotFoundException,
     PasswordDoesNotMatchException,
-    EmailNotVerifiedException,
-    EmailAlreadyVerifiedException,
-    ExpiredOTPException,
-    WrongOTPException,
-    UnauthorizedException,
-    ForgotPasswordOTPNotVerifiedException,
     TokenAlreadyUsedException,
-    ForgotPasswordOTPAlreadySentException,
+    UnauthorizedException,
+    UserNotFoundException,
+    WrongOTPException,
 )
-from core.utils import CustomExceptionHelper
 from core.fastapi.dependencies import (
-    PermissionDependency,
     IsAuthenticated,
     IsEmailNotVerified,
     IsEmailVerified,
     IsForgotPasswordOtpNotVerified,
     IsForgotPasswordOtpVerified,
+    PermissionDependency,
 )
+from core.utils import CustomExceptionHelper
 
 user_router = APIRouter()
 
@@ -260,26 +259,3 @@ async def change_password(request: Request, body: ChangePasswordRequestSchema):
 )
 async def resend_forgot_password_otp(request: Request):
     return await UserService().resend_forgot_password_otp(user_id=request.user.id)
-
-
-@user_router.get(
-    "/search",
-    response_model=SearchUserResponseSchema,
-    responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "404": CustomExceptionHelper.get_exception_response(
-            UserNotFoundException, "User not found"
-        ),
-    },
-    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
-)
-async def search_user(
-    query: str = Query("", description="Search query (name or email)"),
-    page_no: int = Query(1, description="Page number"),
-    page_size: int = Query(10, description="Page size"),
-):
-    return await UserService().search_user(
-        query=query, page_no=page_no, page_size=page_size
-    )

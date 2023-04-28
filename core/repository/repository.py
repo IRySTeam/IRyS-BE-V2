@@ -1,16 +1,34 @@
-from typing import Tuple, List, Optional
-from sqlalchemy import select, and_
-from sqlalchemy.sql import text
+from typing import List, Optional, Tuple
 
-from core.repository import BaseRepo
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import select, text
+
+from app.document.models import Document
 from app.repository.models import Repository
+from app.user.models import User, user_repositories
 from core.db.session import session
-from app.user.models import user_repositories, User
+from core.repository import BaseRepo
 
 
 class RepositoryRepo(BaseRepo[Repository]):
     def __init__(self):
         super().__init__(Repository)
+
+    async def get_by_id(
+        self,
+        id: int,
+        include_documents: bool = False,
+        include_documents_index: bool = False,
+    ) -> Repository:
+        query = select(self.model).where(self.model.id == id)
+        if include_documents:
+            query = query.options(selectinload(self.model.documents))
+            if include_documents_index:
+                query = query.options(
+                    selectinload(self.model.documents).selectinload(Document.index)
+                )
+        result = await session.execute(query)
+        return result.scalars().first()
 
     async def save(self, user_id: int, params: dict, role: str) -> None:
         new_repo = Repository(**params)

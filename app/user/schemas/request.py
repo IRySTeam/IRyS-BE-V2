@@ -11,7 +11,7 @@ class RegisterRequestSchema(BaseModel):
 class LoginRequestSchema(BaseModel):
     email: str = Field(..., description="Email")
     password: str = Field(..., description="Password")
-    
+
 
 class VerifyOTPRequestSchema(BaseModel):
     otp: str = Field(..., description="OTP")
@@ -32,5 +32,3 @@ class VerifyForgotPasswordOTPRequestSchema(BaseModel):
 class ChangePasswordRequestSchema(BaseModel):
     new_password: str = Field(..., description="New Password")
     confirm_new_password: str = Field(..., description="Confirm New Password")
-
-
