@@ -17,9 +17,9 @@ from app.elastic.schemas import (
     ElasticIndexDetail,
     ElasticInfo,
 )
+from bert_serving.client import BertClient
 from core.config import config
 from core.exceptions.base import FailedDependencyException
-
 
 class ElasticsearchClient:
     """
@@ -218,7 +218,7 @@ class ElasticsearchClient:
         except Exception as e:
             raise FailedDependencyException(e)
 
-    def search_semantic(self, query: str, index: str, size: int, source: List[str]):
+    def search_semantic(self, query: str, index: str, size: int, source: List[str], emb_vector: str):
         """
         Retrieve documents from an Elasticsearch index based on an input query
         [Parameters]
@@ -226,23 +226,26 @@ class ElasticsearchClient:
           index_name: str -> Name of index that will be the base of the search
         """
         try:
-            bc = BertClient(output_fmt="list", timeout=5000)
+            bc = BertClient(ip='bertserving', output_fmt="list", timeout=5000)
             query_vector = bc.encode([query])[0]
-
+            
             script_query = {
                 "script_score": {
                     "query": {"match_all": {}},
                     "script": {
-                        "source": 'doc["text_vector"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, "text_vector") + 1.0',
-                        "params": {"query_vector": query_vector},
+                        "source": f"doc[\"{emb_vector}\"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, \"{emb_vector}\") + 1.0",
+                        "params": {"query_vector": query_vector}, 
                     },
                 }
             }
 
             return self.client.search(
-                index=index, size=size, query=script_query, source={"includes": source}
+                index=index, 
+                size=size,
+                query=script_query,
+                source={"includes": source}
             )
-
+        
         except TimeoutError as e:
             raise e
         except ApiError as e:
