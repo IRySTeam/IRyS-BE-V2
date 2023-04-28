@@ -1,34 +1,31 @@
-from typing import List
+from fastapi import APIRouter, Depends, Request
 
-from fastapi import APIRouter, Depends, Query, Request
 from app.user.schemas import *
 from app.user.services import UserService
 from core.exceptions import (
+    DuplicateEmailException,
+    EmailAlreadyVerifiedException,
+    EmailNotVerifiedException,
+    ExpiredOTPException,
+    ForgotPasswordOTPAlreadySentException,
+    ForgotPasswordOTPNotVerifiedException,
     InvalidEmailException,
     InvalidPasswordException,
-    DuplicateEmailException,
-    UserNotFoundException,
     PasswordDoesNotMatchException,
-    EmailNotVerifiedException,
-    EmailAlreadyVerifiedException,
-    ExpiredOTPException,
-    WrongOTPException,
-    UnauthorizedException,
-    ForgotPasswordOTPNotVerifiedException,
     TokenAlreadyUsedException,
-    ForgotPasswordOTPAlreadySentException
-)
-from core.utils import (
-    CustomExceptionHelper
+    UnauthorizedException,
+    UserNotFoundException,
+    WrongOTPException,
 )
 from core.fastapi.dependencies import (
-    PermissionDependency,
     IsAuthenticated,
     IsEmailNotVerified,
     IsEmailVerified,
     IsForgotPasswordOtpNotVerified,
-    IsForgotPasswordOtpVerified
+    IsForgotPasswordOtpVerified,
+    PermissionDependency,
 )
+from core.utils import CustomExceptionHelper
 
 user_router = APIRouter()
 
@@ -69,9 +66,16 @@ async def register(body: RegisterRequestSchema):
 @user_router.post(
     "/login",
     response_model=LoginResponseSchema,
-    responses={"404": CustomExceptionHelper.get_exception_response(UserNotFoundException, "User not found"), 
-               "401": CustomExceptionHelper.get_exception_response(PasswordDoesNotMatchException, "Password does not match"), 
-               "403": CustomExceptionHelper.get_exception_response(EmailNotVerifiedException, "Email not verified"),
+    responses={
+        "404": CustomExceptionHelper.get_exception_response(
+            UserNotFoundException, "User not found"
+        ),
+        "401": CustomExceptionHelper.get_exception_response(
+            PasswordDoesNotMatchException, "Password does not match"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
     },
 )
 async def login(body: LoginRequestSchema):
@@ -144,9 +148,16 @@ async def verify_email(body: VerifyEmailRequestSchema):
 @user_router.post(
     "/forgot-password/send-otp",
     response_model=SendForgotPasswordOTPResponseSchema,
-    responses={ "404": CustomExceptionHelper.get_exception_response(UserNotFoundException, "User not found"),
-                "403": CustomExceptionHelper.get_exception_response(EmailNotVerifiedException, "Email not verified"),
-                "429": CustomExceptionHelper.get_exception_response(ForgotPasswordOTPAlreadySentException, "OTP already sent"),
+    responses={
+        "404": CustomExceptionHelper.get_exception_response(
+            UserNotFoundException, "User not found"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "429": CustomExceptionHelper.get_exception_response(
+            ForgotPasswordOTPAlreadySentException, "OTP already sent"
+        ),
     },
 )
 async def send_forgot_password_otp(body: SendForgotPasswordOTPRequestSchema):
@@ -156,37 +167,95 @@ async def send_forgot_password_otp(body: SendForgotPasswordOTPRequestSchema):
 @user_router.post(
     "/forgot-password/verify-otp",
     response_model=VerifyForgotPasswordOTPResponseSchema,
-    responses={"404": CustomExceptionHelper.get_exception_response(UserNotFoundException, "User not found"),
-                "403": CustomExceptionHelper.get_exception_response(EmailNotVerifiedException, "Email not verified"),
-                "400": CustomExceptionHelper.get_exception_response(ExpiredOTPException, "OTP expired"),
-                "400": CustomExceptionHelper.get_exception_response(WrongOTPException, "Wrong OTP"),
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            UserNotFoundException, "User not found"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            ExpiredOTPException, "OTP expired"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            WrongOTPException, "Wrong OTP"
+        ),
     },
-    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified, IsForgotPasswordOtpNotVerified]))],
+    dependencies=[
+        Depends(
+            PermissionDependency(
+                [IsAuthenticated, IsEmailVerified, IsForgotPasswordOtpNotVerified]
+            )
+        )
+    ],
 )
-async def verify_forgot_password_otp(request: Request, body: VerifyForgotPasswordOTPRequestSchema):
-    return await UserService().verify_forgot_password_otp(user_id=request.user.id, **body.dict())
+async def verify_forgot_password_otp(
+    request: Request, body: VerifyForgotPasswordOTPRequestSchema
+):
+    return await UserService().verify_forgot_password_otp(
+        user_id=request.user.id, **body.dict()
+    )
+
 
 @user_router.post(
     "/change-password",
     response_model=ChangePasswordResponseSchema,
-    responses={"404": CustomExceptionHelper.get_exception_response(UserNotFoundException, "User not found"),
-                "403": CustomExceptionHelper.get_exception_response(EmailNotVerifiedException, "Email not verified"),
-                "400": CustomExceptionHelper.get_exception_response(InvalidPasswordException, "Invalid password"),
-                "403": CustomExceptionHelper.get_exception_response(ForgotPasswordOTPNotVerifiedException, "Forgot password OTP not verified"),
-                "409": CustomExceptionHelper.get_exception_response(TokenAlreadyUsedException, "Token already used")
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            UserNotFoundException, "User not found"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
+        "400": CustomExceptionHelper.get_exception_response(
+            InvalidPasswordException, "Invalid password"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            ForgotPasswordOTPNotVerifiedException, "Forgot password OTP not verified"
+        ),
+        "409": CustomExceptionHelper.get_exception_response(
+            TokenAlreadyUsedException, "Token already used"
+        ),
     },
-    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified, IsForgotPasswordOtpVerified]))],
+    dependencies=[
+        Depends(
+            PermissionDependency(
+                [IsAuthenticated, IsEmailVerified, IsForgotPasswordOtpVerified]
+            )
+        )
+    ],
 )
 async def change_password(request: Request, body: ChangePasswordRequestSchema):
     return await UserService().change_password(user_id=request.user.id, **body.dict())
 
+
 @user_router.post(
     "/forgot-password/resend-otp",
     response_model=ResendForgotPasswordOTPResponseSchema,
-    responses={"404": CustomExceptionHelper.get_exception_response(UserNotFoundException, "User not found"),
-                "403": CustomExceptionHelper.get_exception_response(EmailNotVerifiedException, "Email not verified"),
+    responses={
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, "Unauthorized"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            UserNotFoundException, "User not found"
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            EmailNotVerifiedException, "Email not verified"
+        ),
     },
-    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified, IsForgotPasswordOtpNotVerified]))],
+    dependencies=[
+        Depends(
+            PermissionDependency(
+                [IsAuthenticated, IsEmailVerified, IsForgotPasswordOtpNotVerified]
+            )
+        )
+    ],
 )
 async def resend_forgot_password_otp(request: Request):
     return await UserService().resend_forgot_password_otp(user_id=request.user.id)

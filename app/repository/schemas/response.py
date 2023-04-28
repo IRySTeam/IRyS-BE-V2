@@ -1,6 +1,11 @@
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
+
 from pydantic import BaseModel, Field
+
+
+class MessageResponseSchema(BaseModel):
+    message: str = Field(..., description="Message")
 
 
 class CreateRepositoryResponseSchema(BaseModel):
@@ -30,6 +35,16 @@ class RepositorySchema(BaseModel):
     owner: RepositoryOwnerSchema = Field(..., description="Repository Owner")
 
 
+class RepositoryDetailsResponseSchema(BaseModel):
+    id: int = Field(..., description="ID")
+    name: str = Field(..., description="Name")
+    description: str = Field(..., description="Description")
+    is_public: bool = Field(..., description="Is Public")
+    updated_at: datetime = Field(..., description="Updated At")
+    owner: RepositoryOwnerSchema = Field(..., description="Repository Owner")
+    current_user_role: Optional[str] = Field(None, description="Current User Role")
+
+
 class GetJoinedRepositoriesSchema(BaseModel):
     does_user_have_any_repos: bool = Field(..., description="Does User Have Any Repos")
     results: List[RepositorySchema] = Field(..., description="Results")
@@ -43,5 +58,20 @@ class GetPublicRepositoriesResponseSchema(BaseModel):
     total_items: int = Field(..., description="Total Items")
 
 
+class ReindexAllResponseSchema(BaseModel):
+    success: bool = Field(..., description="Reindexing all documents status")
+
+
 class EditRepositoryResponseSchema(BaseModel):
     message: str = Field(..., description="Message")
+
+
+class RepositoryCollaboratorSchema(BaseModel):
+    id: int = Field(..., description="User ID")
+    first_name: str = Field(..., description="First Name")
+    last_name: str = Field(..., description="Last Name")
+    email: str = Field(..., description="Email")
+    role: str = Field(..., description="Role")
+
+    class Config:
+        orm_mode = True

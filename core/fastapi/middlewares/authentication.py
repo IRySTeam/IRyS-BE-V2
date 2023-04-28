@@ -8,6 +8,7 @@ from starlette.middleware.authentication import (
 from starlette.requests import HTTPConnection
 
 from core.config import config
+
 from ..schemas import CurrentUser
 
 
@@ -38,7 +39,9 @@ class AuthBackend(AuthenticationBackend):
             )
             user_id = payload.get("user_id")
             is_email_verified = payload.get("is_email_verified")
-            is_forgot_password_otp_verified = payload.get("is_forgot_password_otp_verified")
+            is_forgot_password_otp_verified = payload.get(
+                "is_forgot_password_otp_verified"
+            )
         except jwt.exceptions.PyJWTError:
             return False, current_user
 

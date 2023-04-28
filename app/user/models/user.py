@@ -1,11 +1,18 @@
 from typing import List
 
-from sqlalchemy import Column, Unicode, BigInteger, DateTime, func, Table, ForeignKey
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    DateTime,
+    ForeignKey,
+    Table,
+    Unicode,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.db import Base
 from core.db.mixins import TimestampMixin
-
 
 user_repositories = Table(
     "user_repositories",

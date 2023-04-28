@@ -1,5 +1,7 @@
 import os
+
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
+
 from core.config import config
 
 
@@ -39,3 +41,16 @@ class Mailer:
         )
         fm = FastMail(Mailer.conf)
         await fm.send_message(message, template_name="forgot_password_otp_email.html")
+
+    @staticmethod
+    async def send_repository_collaborator_email(email_to: str, body: dict):
+        message = MessageSchema(
+            subject="You have been added to collaborate on a repository!",
+            recipients=[email_to],
+            template_body=body,
+            subtype="html",
+        )
+        fm = FastMail(Mailer.conf)
+        await fm.send_message(
+            message, template_name="repository_collaborator_email.html"
+        )
