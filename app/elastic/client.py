@@ -228,7 +228,7 @@ class ElasticsearchClient:
           index_name: str -> Name of index that will be the base of the search
         """
         try:
-            bc = BertClient(ip='localhost', output_fmt="list", timeout=5000)
+            bc = BertClient(ip='bertserving', output_fmt="list", timeout=5000)
             query_vector = bc.encode([query])[0]
             
             script_query = {
