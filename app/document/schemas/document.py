@@ -29,6 +29,11 @@ class DocumentResponseSchema(BaseModel):
     elastic_doc_id: str = Field(None, description="Document id in Elasticsearch")
     elastic_index_name: str = Field(None, description="Elasticsearch index name")
     index: DocumentIndexing = Field(None, description="Document indexing status")
+    title: str = Field(None, description="Document title")
+    created_at: datetime = Field(None, description="Document create time")
+    updated_at: datetime = Field(None, description="Document last update time")
+    file_url: str = Field(None, description="Document link on GCS")
+    is_public: bool = Field(None, description="Document visibility")
 
     class Config:
         orm_mode = True

@@ -37,15 +37,17 @@ class SearchService:
         search_result = SearchResult(result=[])
         for hit in data['hits']['hits']:
             matched_document = MatchedDocument(
+                doc_id=hit['_source']['document_id'],
                 id=hit['_id'],
                 score=hit['_score'],
                 title=hit['_source']['title'],
+                preprocessed_text=hit['_source']['preprocessed_text'],
                 document_metadata=hit['_source']['document_metadata']
             )
             search_result.result.append(matched_document)
         return search_result
 
-    def elastic_keyword_search(self, query: str, domain: DomainEnum):
+    def elastic_keyword_search(self, query: str, domain: DomainEnum, doc_ids: List[int]):
         """
         Executes first part of search, calls elastic search to perform keyword based search
         [Input]
@@ -57,8 +59,9 @@ class SearchService:
             query=query, 
             index=f'{domain.value}-0001', 
             size=5,  
-            source=["title", "preprocessed_text", "document_metadata"], 
-            emb_vector="text_vector"
+            source=["document_id", "title", "preprocessed_text", "document_metadata"], 
+            emb_vector="text_vector",
+            doc_ids=doc_ids
         )
         return self.normalize_search_result(data)
 
@@ -121,7 +124,7 @@ class SearchService:
                 print('No operator match found')
         return search_result
     
-    def run_search(self, query, domain, advanced_filter):
+    def run_search(self, query, domain, advanced_filter, doc_ids, doc_details):
         """
         Calls query preprocessing, keyword search, and advanced filter methods
         [Parameters]
@@ -129,13 +132,11 @@ class SearchService:
           response: SemanticSearchResponse
         """
         processed_query = self.preprocess_query(query)
-        search_result = self.elastic_keyword_search(processed_query, domain)
+        search_result = self.elastic_keyword_search(processed_query, domain, doc_ids)
         search_result = self.evaluate_advanced_filter(search_result, domain, advanced_filter)
 
-        return SemanticSearchResponseSchema(
-            message=f"Successfully retrieved {len(search_result.result)} documents",
-            result=search_result.result
-        )
+        retrieved_doc_ids = [{"id": x.doc_id, "text": x.preprocessed_text[0:230]} for x in search_result.result]
+        return retrieved_doc_ids
     
     def parsing(self, file_content_str: str, with_ocr: bool = True):
         """
