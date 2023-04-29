@@ -380,7 +380,6 @@ class RecruitmentExtractor(GeneralExtractor):
 
         # Try to get first type after the header (dates, job title, or company)
         for idx, line in enumerate(experiences_segment):
-            type = "unknown"
 
             # Get regex match for job title
             match = re.match(JOB_TITLES_REGEX, line["text"].strip())
@@ -394,8 +393,6 @@ class RecruitmentExtractor(GeneralExtractor):
                         "span": (current_length + span[0], current_length + span[1]),
                     }
                 )
-                type = "job_title"
-
             # Get experience date range
             match = re.match(DATE_RANGE_REGEX, line["text"].strip())
             if match:
@@ -403,10 +400,6 @@ class RecruitmentExtractor(GeneralExtractor):
                     first_date_idx = idx
                 dates.append((match.group("start_date"), match.group("end_date")))
                 dates_idxs.append(idx)
-                type = "date"
-
-            if idx == 1 and first_type == "":
-                first_type = type
 
             current_length += len(line["text"]) + 1
 
@@ -422,6 +415,13 @@ class RecruitmentExtractor(GeneralExtractor):
                 )
                 date_to_job_title = first_job_title_idx - closest_date
                 job_title_idxs = [idx + date_to_job_title for idx in dates_idxs]
+
+                if 1 in dates_idxs:
+                    first_type = "date"
+                elif 1 in job_title_idxs:
+                    first_type = "job_title"
+                else:
+                    first_type = "unknown"
 
                 # Assume if type is unknown, then it is company
                 if first_type == "unknown":
