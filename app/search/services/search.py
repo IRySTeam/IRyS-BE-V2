@@ -20,12 +20,12 @@ from app.preprocess import PreprocessUtil, OCRUtil
 class SearchService:
     def __init__(self, algorithm, domain, scoring):
         self.algorithm = algorithm
-        self.domain = DomainEnum.GENERAL  # domain
+        self.domain = DomainEnum.GENERAL # domain
         self.scoring = scoring
 
     def preprocess_query(self, query: str):
         """
-        Refines raw user query by performing tokenization, stopword removal, stemming, lemmatization, and query expansion on it
+        Refines raw user query by performing tokenization, stopword removal, stemming, lemmatization, and query expansion on it 
         [Input]
           - query: str
         [Output]

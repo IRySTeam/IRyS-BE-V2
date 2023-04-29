@@ -3,7 +3,6 @@ from typing import List, Optional
 
 from app.search.enums.search import FilterOperatorEnum
 
-
 class AdvancedFilterConditions(BaseModel):
     key: str = Field(..., description="Entity name that will be evaluated")
     operator: FilterOperatorEnum = Field(..., description="Operator that will evaluate key and value relation")

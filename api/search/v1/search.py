@@ -18,7 +18,6 @@ from core.fastapi.dependencies import (
 search_router = APIRouter()
 ss = SearchService(None, None, None)
 
-
 @search_router.post(
     "/",
     description="Fetches relevant documents based on search query and advanced filter",

@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from fastapi import UploadFile
@@ -9,9 +7,8 @@ from app.search.enums.search import (
     ScoringAlgorithmEnum, 
     DomainEnum
 )
-from app.search.schemas.advanced_search import AdvancedSearchQuery
 from app.search.schemas.elastic import MatchedDocument
-
+from app.search.schemas.advanced_search import AdvancedSearchQuery
 
 class SemanticSearchRequest(BaseModel):
     query: str = Field(..., description="Raw user query input")

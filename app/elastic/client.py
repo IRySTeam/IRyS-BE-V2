@@ -17,9 +17,9 @@ from app.elastic.schemas import (
     ElasticIndexDetail,
     ElasticInfo,
 )
+from bert_serving.client import BertClient
 from core.config import config
 from core.exceptions.base import FailedDependencyException
-
 
 class ElasticsearchClient:
     """
@@ -228,7 +228,7 @@ class ElasticsearchClient:
         try:
             bc = BertClient(ip='bertserving', output_fmt="list", timeout=5000)
             query_vector = bc.encode([query])[0]
-
+            
             script_query = {
                 "script_score": {
                     "query": {"match_all": {}},
@@ -240,9 +240,12 @@ class ElasticsearchClient:
             }
 
             return self.client.search(
-                index=index, size=size, query=script_query, source={"includes": source}
+                index=index, 
+                size=size,
+                query=script_query,
+                source={"includes": source}
             )
-
+        
         except TimeoutError as e:
             raise e
         except ApiError as e:
