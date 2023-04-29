@@ -70,7 +70,7 @@ class RecruitmentExtractor(GeneralExtractor):
         resume_text = "[SEGMENT]".join(segmented_text)
 
         # Extract entities
-        entities = self.__extract_entities(resume_text)
+        entities = self.extract_entities(resume_text)
 
         flattened_entities = super().flatten_entities(entities)
 
