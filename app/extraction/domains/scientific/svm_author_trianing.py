@@ -1,11 +1,12 @@
 import os
 import pickle
+
 import pandas as pd
+from imblearn.over_sampling import SMOTENC
 from sklearn import model_selection, svm
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from imblearn.over_sampling import SMOTENC
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 training_data_path = os.path.join(dir_path, "training_data.json")

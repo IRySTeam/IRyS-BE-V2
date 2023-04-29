@@ -1,10 +1,11 @@
 import mimetypes
+from typing import Any, Dict
+
 import magic
 from tika import parser
-
 from transformers import pipeline
-from typing import List, Dict, Any
 
+from app.extraction.general_configuration import GENERAL_ENTITIES
 from app.extraction.ner_result import NERResult
 
 
@@ -25,6 +26,7 @@ class GeneralExtractor:
         self.pipeline = pipeline(
             "ner", model="dslim/bert-base-NER", aggregation_strategy="first"
         )
+        self.entity_list = GENERAL_ENTITIES
 
     def preprocess(self, text: str) -> str:
         """
@@ -48,29 +50,28 @@ class GeneralExtractor:
             Dict[str, Any] -> Dictionary containing extracted information and entities
         """
 
-        mimetype = magic.from_buffer(file, mime=True)
-        extension = mimetypes.guess_extension(mimetype)
-        size = len(file)
+        # Extract general information
+        result = self.extract_general_information(file)
 
         file_text: str = parser.from_buffer(file)["content"].strip()
 
         entities = self.extract_entities(file_text)
 
-        return {
-            "mimetype": mimetype,
-            "extension": extension,
-            "size": size,
-            "entities": entities,
-        }
+        flattened_entities = self.flatten_entities(entities)
 
-    def extract_entities(self, text: str) -> List[Dict[str, Any]]:
+        result.update({"entities": entities})
+        result.update(flattened_entities)
+
+        return result
+
+    def extract_entities(self, text: str) -> NERResult:
         """
         Extract entities from text
 
         [Arguments]
             text: str -> Text to extract entities from
         [Returns]
-            List[Dict[str, Any]] -> List of entities
+            NERResult -> Named entity recognition result
         """
 
         preprocessed = self.preprocess(text)
@@ -78,3 +79,44 @@ class GeneralExtractor:
         for ner in ner_result:
             ner["score"] = ner["score"].item()
         return NERResult(text, ner_result)
+
+    def extract_general_information(self, file: bytes) -> Dict[str, Any]:
+        """
+        Extract general information from file
+
+        [Arguments]
+            file: bytes -> File to extract information from
+        [Returns]
+            Dict[str, Any] -> Dictionary containing extracted information
+        """
+
+        mimetype = magic.from_buffer(file, mime=True)
+        extension = mimetypes.guess_extension(mimetype)
+        size = len(file)
+
+        return {
+            "mimetype": mimetype,
+            "extension": extension,
+            "size": size,
+        }
+
+    def flatten_entities(self, entities: NERResult) -> Dict[str, Any]:
+        """
+        Flatten entities to a dictionary
+
+        [Arguments]
+            entities: List[Dict[str, Any]] -> List of entities
+        [Returns]
+            Dict[str, Any] -> Dictionary of entities
+        """
+
+        flattened_entities = {
+            entity["name"]: [
+                entity_res["word"]
+                for entity_res in entities.results
+                if entity_res["entity_group"] == entity["name"]
+            ]
+            for entity in self.entity_list
+        }
+
+        return flattened_entities

@@ -30,6 +30,8 @@ services:
       - ./celery_app/.env
     depends_on:
       - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   celery_beat:
     build:

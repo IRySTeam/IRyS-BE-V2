@@ -43,8 +43,8 @@ fastapi-mail = "^1.2.6"
 uvloop = "^0.17.0"
 google-cloud-storage = "^2.8.0"
 google-auth = "^2.17.3"
-imbalanced-learn = "^0.10.1"
 pymupdf = "^1.21.1"
+imbalanced-learn = "^0.10.1"
 transformers = "^4.28.1"
 torch = {"version" = "^2.0.0+cpu", source = "pytorch-cpu"}
 
@@ -57,6 +57,17 @@ name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 secondary = true
 
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pycln]
+all = true
+
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true

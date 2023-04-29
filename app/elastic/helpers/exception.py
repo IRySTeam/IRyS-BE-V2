@@ -1,27 +1,33 @@
 from typing import Optional
+
 from elasticsearch.exceptions import ApiError
 
 from core.exceptions import (
-    CustomException,
     BadRequestException,
-    UnauthorizedException,
+    ConflictException,
+    CustomException,
+    FailedDependencyException,
     ForbiddenException,
     NotFoundException,
-    ConflictException,
-    FailedDependencyException,
+    UnauthorizedException,
 )
 
 
-def classify_error(error: ApiError) -> CustomException:
+def classify_error(
+    error: ApiError,
+    default_message: Optional[str] = None,
+) -> CustomException:
     """
     Classify the error from Elasticsearch to the corresponding exception.
     [Parameters]
-      error: ApiError -> Error from Elasticsearch.
+        error: ApiError -> Error from Elasticsearch.
+        default_message: Optional[str] -> Default message for the exception.
     [Returns]
-      CustomException: Exception that is classified from the error.
+        CustomException: Exception that is classified from the error.
     """
     reason = find_reason(error)
-    print(reason)
+    if not reason:
+        reason = default_message
     if error.status_code == 400:
         return BadRequestException(reason)
     elif error.status_code == 401:

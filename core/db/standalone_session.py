@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from .session import session, set_session_context, reset_session_context
+from .session import reset_session_context, session, set_session_context
 
 
 def standalone_session(func):

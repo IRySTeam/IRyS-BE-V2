@@ -1,37 +1,42 @@
-from typing import List, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends, Body
+from typing import Any, Dict, List
 
-from core.exceptions.base import CustomException
-from app.exception import BaseHttpErrorSchema
+from fastapi import APIRouter, Body, Depends
+
 from app.elastic import EsClient
 from app.elastic.schemas import (
-    ElasticInfo,
-    ElasticIndexCat,
-    ElasticIndexDetail,
+    CreateIndexBody,
     ElasticCreateIndexResponse,
     ElasticDocumentIndexedResponse,
-    IndexNamePathParams,
-    GetAllIndexQueryParams,
-    CreateIndexBody,
-    UpdateIndexBody,
-    ElasticIndexUpdateResponse,
+    ElasticIndexCat,
     ElasticIndexDeleteResponse,
+    ElasticIndexDetail,
+    ElasticIndexUpdateResponse,
+    ElasticInfo,
+    GetAllIndexQueryParams,
+    IndexNamePathParams,
+    UpdateIndexBody,
 )
+from core.exceptions import (
+    BadRequestException,
+    FailedDependencyException,
+    ForbiddenException,
+    NotFoundException,
+    UnauthorizedException,
+)
+from core.utils import CustomExceptionHelper
 
 elastic_router = APIRouter(
     responses={
-        401: {
-            "model": BaseHttpErrorSchema,
-            "description": "Unauthorized access to elasticsearch or application",
-        },
-        403: {
-            "model": BaseHttpErrorSchema,
-            "description": "Forbidden access to elasticsearch or application",
-        },
-        424: {
-            "model": BaseHttpErrorSchema,
-            "description": "Failed happened in Elasticsearch or when connecting to Elasticsearch",
-        },
+        "401": CustomExceptionHelper.get_exception_response(
+            UnauthorizedException, UnauthorizedException.message
+        ),
+        "403": CustomExceptionHelper.get_exception_response(
+            ForbiddenException, ForbiddenException.message
+        ),
+        "424": CustomExceptionHelper.get_exception_response(
+            FailedDependencyException,
+            "Failed happened in Elasticsearch or when connecting to Elasticsearch",
+        ),
     }
 )
 
@@ -42,13 +47,7 @@ elastic_router = APIRouter(
     response_model=ElasticInfo,
 )
 async def get_elastic_info():
-    try:
-        return EsClient.info()
-    except CustomException as e:
-        raise HTTPException(
-            status_code=e.error_code,
-            detail=e.message,
-        )
+    return EsClient.info()
 
 
 @elastic_router.get(
@@ -57,13 +56,7 @@ async def get_elastic_info():
     response_model=List[ElasticIndexCat],
 )
 async def get_elastic_indices(query: GetAllIndexQueryParams = Depends()):
-    try:
-        return EsClient.list_indices(all=query.all)
-    except CustomException as e:
-        raise HTTPException(
-            status_code=e.error_code,
-            detail=e.message,
-        )
+    return EsClient.list_indices(all=query.all)
 
 
 @elastic_router.get(
@@ -71,24 +64,17 @@ async def get_elastic_indices(query: GetAllIndexQueryParams = Depends()):
     description="Get an index in Elasticsearch",
     response_model=ElasticIndexDetail,
     responses={
-        400: {
-            "model": BaseHttpErrorSchema,
-            "description": "Bad request, please check request body, params, headers, or query",
-        },
-        404: {
-            "model": BaseHttpErrorSchema,
-            "description": "Index with the given name does not exist",
-        },
+        "400": CustomExceptionHelper.get_exception_response(
+            BadRequestException,
+            "Bad request, please check request body, params, headers, or query",
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            NotFoundException, "Index with given name does not exist"
+        ),
     },
 )
 async def get_elastic_index(path: IndexNamePathParams = Depends()):
-    try:
-        return EsClient.get_index(path.index_name)
-    except CustomException as e:
-        raise HTTPException(
-            status_code=e.error_code,
-            detail=e.message,
-        )
+    return EsClient.get_index(path.index_name)
 
 
 @elastic_router.post(
@@ -96,24 +82,18 @@ async def get_elastic_index(path: IndexNamePathParams = Depends()):
     description="Create an index in Elasticsearch",
     response_model=ElasticCreateIndexResponse,
     responses={
-        400: {
-            "model": BaseHttpErrorSchema,
-            "description": "Bad request, please check request body, params, headers, or query",
-        },
+        "400": CustomExceptionHelper.get_exception_response(
+            BadRequestException,
+            "Bad request, please check request body, params, headers, or query",
+        )
     },
 )
 async def create_elastic_index(body: CreateIndexBody):
-    try:
-        return EsClient.create_index(
-            index_name=body.index_name,
-            mapping=body.mappings,
-            settings=body.settings,
-        )
-    except CustomException as e:
-        raise HTTPException(
-            status_code=e.error_code,
-            detail=e.message,
-        )
+    return EsClient.create_index(
+        index_name=body.index_name,
+        mapping=body.mappings,
+        settings=body.settings,
+    )
 
 
 @elastic_router.post(
@@ -121,27 +101,20 @@ async def create_elastic_index(body: CreateIndexBody):
     description="Update an index dynamic settings in Elasticsearch",
     response_model=ElasticIndexUpdateResponse,
     responses={
-        400: {
-            "model": BaseHttpErrorSchema,
-            "description": "Bad request, please check request body, params, headers, or query",
-        },
-        404: {
-            "model": BaseHttpErrorSchema,
-            "description": "Index with the given name does not exist",
-        },
+        "400": CustomExceptionHelper.get_exception_response(
+            BadRequestException,
+            "Bad request, please check request body, params, headers, or query",
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            NotFoundException, "Index with given name does not exist"
+        ),
     },
 )
 async def update_elastic_index(
     body: UpdateIndexBody, path: IndexNamePathParams = Depends()
 ):
-    try:
-        EsClient.update_index(index=path.index_name, settings=body.settings)
-        return ElasticIndexUpdateResponse(updated=True)
-    except CustomException as e:
-        raise HTTPException(
-            status_code=e.error_code,
-            detail=e.message,
-        )
+    EsClient.update_index(index=path.index_name, settings=body.settings)
+    return ElasticIndexUpdateResponse(updated=True)
 
 
 @elastic_router.post(
@@ -149,45 +122,31 @@ async def update_elastic_index(
     description="Delete an index in Elasticsearch",
     response_model=ElasticIndexDeleteResponse,
     responses={
-        400: {
-            "model": BaseHttpErrorSchema,
-            "description": "Bad request, please check request body, params, headers, or query",
-        },
-        404: {
-            "model": BaseHttpErrorSchema,
-            "description": "Index with the given name does not exist",
-        },
+        "400": CustomExceptionHelper.get_exception_response(
+            BadRequestException,
+            "Bad request, please check request body, params, headers, or query",
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            NotFoundException, "Index with given name does not exist"
+        ),
     },
 )
 async def delete_elastic_index(path: IndexNamePathParams = Depends()):
-    try:
-        EsClient.delete_index(path.index_name)
-        return ElasticIndexDeleteResponse(deleted=True)
-    except CustomException as e:
-        raise HTTPException(
-            status_code=e.error_code,
-            detail=e.message,
-        )
+    EsClient.delete_index(path.index_name)
+    return ElasticIndexDeleteResponse(deleted=True)
 
 
 @elastic_router.get(
     "/indices/{index_name}/documents",
     description="Get all documents in an index in Elasticsearch",
     responses={
-        404: {
-            "model": BaseHttpErrorSchema,
-            "description": "Index with the given name does not exist",
-        }
+        "404": CustomExceptionHelper.get_exception_response(
+            NotFoundException, "Index with given name does not exist"
+        )
     },
 )
 async def get_all_index_documents(path: IndexNamePathParams = Depends()):
-    try:
-        return EsClient.list_index_docs(path.index_name)
-    except CustomException as e:
-        raise HTTPException(
-            status_code=e.error_code,
-            detail=e.message,
-        )
+    return EsClient.list_index_docs(path.index_name)
 
 
 @elastic_router.post(
@@ -195,24 +154,17 @@ async def get_all_index_documents(path: IndexNamePathParams = Depends()):
     description="Index a document in Elasticsearch",
     response_model=ElasticDocumentIndexedResponse,
     responses={
-        400: {
-            "model": BaseHttpErrorSchema,
-            "description": "Bad request, please check request body, params, headers, or query",
-        },
-        404: {
-            "model": BaseHttpErrorSchema,
-            "description": "Index with the given name does not exist",
-        },
+        "400": CustomExceptionHelper.get_exception_response(
+            BadRequestException,
+            "Bad request, please check request body, params, headers, or query",
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            NotFoundException, "Index with given name does not exist"
+        ),
     },
 )
 async def index_document(
     body: Dict[str, Any] = Body(..., description="Document to index"),
     path: IndexNamePathParams = Depends(),
 ):
-    try:
-        return EsClient.index_doc(index=path.index_name, doc=body)
-    except CustomException as e:
-        raise HTTPException(
-            status_code=e.error_code,
-            detail=e.message,
-        )
+    return EsClient.index_doc(index=path.index_name, doc=body)

@@ -1,9 +1,11 @@
 import os
 import pickle
-from typing import List, Dict
-from sklearn.svm import SVC
-from sklearn.preprocessing import LabelEncoder
+from enum import Enum
+from typing import Dict, List
+
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import LabelEncoder
+from sklearn.svm import SVC
 
 path = os.path.join(os.getcwd(), "app", "classification", "dump")
 labelencode_name = "labelencoder_fitted.pkl"
@@ -23,10 +25,16 @@ class Classifier:
         open(os.path.join(path, tfidf_vect_name), "rb")
     )
     svm: SVC = pickle.load(open(os.path.join(path, svm_name), "rb"))
-    label_mapping: Dict[str, str] = {
-        "__other__": "General Document (Not Classified)",
-        "__resume__": "Recruitment Document",
-        "__paper__": "Scientific Document",
+
+    class LabelEnum(Enum):
+        OTHER = "__other__"
+        RESUME = "__resume__"
+        PAPER = "__paper__"
+
+    label_mapping: Dict[LabelEnum, str] = {
+        LabelEnum.OTHER: "General Document (Not Classified)",
+        LabelEnum.RESUME: "Recruitment Document",
+        LabelEnum.PAPER: "Scientific Document",
     }
 
     @classmethod

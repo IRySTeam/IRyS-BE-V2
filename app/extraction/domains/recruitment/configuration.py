@@ -34,28 +34,56 @@ RECRUITMENT_ENTITIES = [
 ]
 
 RECRUITMENT_INFORMATION = [
-    # {
-    #     "name": "title",
-    #     "type": "text",
-    # },
-    # {
-    #     "name": "authors",
-    #     "type": "list",
-    # },
-    # {
-    #     "name": "affiliations",
-    #     "type": "list",
-    # },
-    # {
-    #     "name": "abstract",
-    #     "type": "text",
-    # },
-    # {
-    #     "name": "keywords",
-    #     "type": "list",
-    # },
-    # {
-    #     "name": "references",
-    #     "type": "list",
-    # },
+    {
+        "name": "name",
+        "type": "text",
+    },
+    {
+        "name": "email",
+        "type": "text",
+    },
+    {
+        "name": "skills",
+        "type": "list",
+    },
+    {
+        "name": "experiences_job_titles",
+        "type": "list",
+    },
+    {
+        "name": "experiences_companies",
+        "type": "list",
+    },
+    {
+        "name": "experiences_descriptions",
+        "type": "list",
+    },
+    {
+        "name": "education_institutions",
+        "type": "list",
+    },
+    {
+        "name": "education_degrees",
+        "type": "list",
+    },
+    {
+        "name": "education_descriptions",
+        "type": "list",
+    },
+    {
+        "name": "projects_titles",
+        "type": "list",
+    },
+    {
+        "name": "projects_descriptions",
+        "type": "list",
+    },
+    {
+        "name": "certifications_titles",
+        "type": "list",
+    },
+    {
+        "name": "certifications_descriptions",
+        "type": "list",
+    },
 ]
