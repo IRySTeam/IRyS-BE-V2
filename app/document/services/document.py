@@ -56,6 +56,22 @@ class DocumentService:
         if not data:
             raise NotFoundException("Document not with specified id not found")
         return data
+    
+    async def get_document_by_ids(
+        self, ids: List[int], include_index: bool = False
+    ) -> Document:
+        """
+        Get a document by id.
+        [Parameters]
+            id: int -> Document id.
+            include_index: bool = False -> Whether to include the indexing status of the document.
+        [Returns]
+            Document -> Document.
+        """
+        data = await self.document_repo.get_by_ids(ids=ids, include_index=include_index)
+        if not data:
+            raise NotFoundException("Document not with specified id not found")
+        return data
 
     @Transactional()
     async def create_document(
