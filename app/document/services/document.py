@@ -1,11 +1,15 @@
+from binascii import b2a_base64
 from datetime import datetime
 from typing import List
+
+from fastapi import UploadFile
 
 from app.document.enums.document import IndexingStatusEnum
 from app.document.models import Document
 from app.document.schemas import DocumentSchema
 from app.elastic import EsClient
-from core.db import Transactional, standalone_session
+from app.repository.enums import RepositoryRole
+from core.db import Transactional, session, standalone_session
 from core.exceptions import (
     InvalidRepositoryRoleException,
     NotFoundException,
@@ -13,6 +17,7 @@ from core.exceptions import (
     UserNotAllowedException,
 )
 from core.repository import DocumentIndexRepo, DocumentRepo, RepositoryRepo
+from core.utils import GCStorage
 
 
 class DocumentService:
@@ -250,6 +255,73 @@ class DocumentService:
         """
         document = await self.get_document_by_id(id, True)
         await self.reindex(document)
+
+    @Transactional()
+    async def upload_document(
+        self,
+        user_id: int,
+        repository_id: int,
+        files: List[UploadFile],
+    ) -> None:
+        """
+        Create a document and the corresponding indexing status.
+        [Parameters]
+            title: str -> Document title.
+            elastic_doc_id: int = None -> Document id in Elasticsearch.
+            elastic_index_name: int = None -> Elasticsearch index name.
+        """
+        from celery_app import parsing
+
+        user_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id, repository_id
+            )
+        )
+
+        if not user_role:
+            raise UserNotAllowedException
+
+        if user_role.upper() in RepositoryRole.__members__:
+            user_role = RepositoryRole[user_role.upper()]
+
+            if user_role < RepositoryRole.UPLOADER:
+                raise UserNotAllowedException
+        else:
+            raise InvalidRepositoryRoleException
+
+        for file in files:
+            # TODO: Is this the correct way to get the title?
+            title = ".".join(file.filename.split(".")[:-1])
+
+            # Upload file to GCS
+            uploaded_file_url = GCStorage().upload_file(file, "documents/")
+
+            file.file.seek(0)
+            document = await self.document_repo.save(
+                {
+                    "title": title,
+                    "file_url": uploaded_file_url,
+                    "repository_id": repository_id,
+                    "file_content_str": b2a_base64(file.file.read()).decode("utf-8"),
+                }
+            )
+            document_index = await self.document_index_repo.save(
+                {
+                    "doc_id": document.inserted_primary_key[0],
+                }
+            )
+
+            await session.flush()
+
+            # TODO: Add with OCR choice.
+            # TODO: Add check duplicate.
+
+            file.file.seek(0)
+            parsing.delay(
+                document_id=document.inserted_primary_key[0],
+                document_title=title,
+                file_content_str=b2a_base64(file.file.read()).decode("utf-8"),
+            )
 
     async def get_repository_documents(
         self,

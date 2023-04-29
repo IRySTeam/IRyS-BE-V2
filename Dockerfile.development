@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install "poetry"
 
 RUN poetry config virtualenvs.create false \
+    && poetry self update \
     && poetry install --no-dev
 
 RUN python -m nltk.downloader punkt wordnet stopwords averaged_perceptron_tagger

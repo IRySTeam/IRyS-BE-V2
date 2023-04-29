@@ -38,6 +38,8 @@ async def search(request: SemanticSearchRequest):
 
     result = ss.run_search(request.query, request.domain, request.advanced_filter, doc_ids)
     retrieved_doc_ids = [doc.get('id') for doc in result]
+    retrieved_doc_details = await DocumentService().get_document_by_ids(retrieved_doc_ids)
+    
     result_list = []
     if retrieved_doc_ids:
         retrieved_doc_details = await DocumentService().get_document_by_ids(retrieved_doc_ids)
@@ -71,17 +73,17 @@ async def upload_document(domain: DomainEnum, file: UploadFile = File(...)):
 
     result = ss.run_file_search(file, domain, doc_ids)
     retrieved_doc_ids = [doc.get('id') for doc in result]
+    retrieved_doc_details = await DocumentService().get_document_by_ids(retrieved_doc_ids)
+
     result_list = []
-    if retrieved_doc_ids:
-        retrieved_doc_details = await DocumentService().get_document_by_ids(retrieved_doc_ids)
-        for i in range(len(result)):
-            result_list.append(
-                DocumentDetails(
-                    details=retrieved_doc_details[i].__dict__,
-                    preview=f"...{result[i].get('text')}...",
-                    highlights=[]
-                )
+    for i in range(len(result)):
+        result_list.append(
+            DocumentDetails(
+                details=retrieved_doc_details[i].__dict__,
+                preview=f"...{result[i].get('text')}...",
+                highlights=[]
             )
+        )
     
     return SemanticSearchResponseSchema(
         message=f"Successfully retrieved {len(retrieved_doc_ids)} documents",

@@ -124,7 +124,18 @@ class SearchService:
                 print('No operator match found')
         return search_result
     
-    def run_search(self, query, domain, advanced_filter, doc_ids, doc_details):
+    def run_file_search(self, file: UploadFile, domain: DomainEnum, doc_ids: List[int]):
+        file.file.seek(0)
+
+        processed_query = self.parsing(
+            file_content_str=b2a_base64(file.file.read()).decode("utf-8"),
+        )
+        search_result = self.elastic_keyword_search(processed_query, domain, doc_ids)
+
+        retrieved_doc_ids = [{"id": x.doc_id, "text": x.preprocessed_text[0:230]} for x in search_result.result]
+        return retrieved_doc_ids
+    
+    def run_search(self, query, domain, advanced_filter, doc_ids):
         """
         Calls query preprocessing, keyword search, and advanced filter methods
         [Parameters]

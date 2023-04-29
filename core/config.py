@@ -36,12 +36,6 @@ class Config(BaseSettings):
     BERT_SERVER_IP: Optional[str]
     BERT_SERVER_PORT: Optional[int]
     BERT_SERVER_PORT_OUT: Optional[int]
-    ELASTICSEARCH_API_KEY: Optional[
-        str
-    ] = "N0tKMl9JWUJ0TVVqTHl4cnlWU3E6cmtoYVRQX3hSTjJ2OFQwVjRVcVNVZw=="
-    ELASTICSEARCH_SCHEME: Optional[str] = "http"
-    ELASTICSEARCH_HOST: Optional[str] = "localhost"
-    ELASTICSEARCH_PORT: Optional[int] = 9200
     GCS_BUCKET_NAME: str
     GOOGLE_PROJECT_ID: str
     GOOGLE_PRIVATE_KEY_ID: str
