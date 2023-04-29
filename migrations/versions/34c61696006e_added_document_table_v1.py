@@ -20,7 +20,7 @@ def upgrade():
     op.create_table(
         "documents",
         sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
-        sa.Column("elastic_doc_id", sa.Unicode(length=255), nullable=True),
+        sa.Column("elastic_doc_id", sa.Integer(), nullable=True),
         sa.Column("elastic_index_name", sa.Unicode(length=255), nullable=True),
         sa.Column("title", sa.Unicode(length=255), nullable=False),
         sa.Column("doc_created_at", sa.DateTime(), nullable=True),

@@ -1,22 +1,27 @@
-from app.extraction.domains.recruitment import (
+from app.extraction.domains.recruitment.configuration import (
     RECRUITMENT_ENTITIES,
     RECRUITMENT_INFORMATION,
 )
-from app.extraction.domains.scientific import (
+from app.extraction.domains.scientific.configuration import (
     SCIENTIFIC_ENTITIES,
     SCIENTIFIC_INFORMATION,
+)
+from app.extraction.general_configuration import (
+    GENERAL_ENTITIES,
+    GENERAL_INFORMATION,
 )
 
 TYPE_OPERATORS = {
     "text": [
-        "contains",
-        "not_contains",
-        "starts_with",
-        "ends_with",
         "equals",
-        "regex",
+        "not_equals",
+        "exists",
+        "not_exists",
         "in",
         "not_in",
+        "regex",
+        "contains",
+        "not_contains",
     ],
     "list": [
         "contains",
@@ -29,49 +34,19 @@ TYPE_OPERATORS = {
         "equals",
         "not_equals",
         "greater_than",
+        "greater_than_eq",
         "less_than",
+        "less_than_eq",
         "in",
         "not_in",
     ],
 }
 
 ENTITIES = {
-    "general": [
-        {
-            "name": "LOC",
-            "type": "text",
-        },
-        {
-            "name": "MISC",
-            "type": "text",
-        },
-        {
-            "name": "ORG",
-            "type": "text",
-        },
-        {
-            "name": "PER",
-            "type": "text",
-        },
-    ],
+    "general": GENERAL_ENTITIES,
     "scientific": SCIENTIFIC_ENTITIES,
     "recruitment": RECRUITMENT_ENTITIES,
 }
-
-GENERAL_INFORMATION = [
-    {
-        "name": "mimetype",
-        "type": "text",
-    },
-    {
-        "name": "extension",
-        "type": "text",
-    },
-    {
-        "name": "size",
-        "type": "number",
-    },
-]
 
 EXTRACTED_INFORMATION = {
     "general": ENTITIES["general"] + GENERAL_INFORMATION,

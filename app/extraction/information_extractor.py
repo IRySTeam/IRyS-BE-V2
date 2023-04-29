@@ -1,8 +1,7 @@
 from typing import Any, Dict
 
-from app.extraction.domains.scientific.scientific_extractor import (
-    ScientificExtractor,
-)
+from app.extraction.domains.recruitment import RecruitmentExtractor
+from app.extraction.domains.scientific import ScientificExtractor
 from app.extraction.general_extractor import GeneralExtractor
 
 
@@ -18,6 +17,7 @@ class InformationExtractor:
     extractor_mapping = {
         "general": GeneralExtractor,
         "scientific": ScientificExtractor,
+        "recruitment": RecruitmentExtractor,
     }
 
     def __init__(self, domain: str = "general") -> None:

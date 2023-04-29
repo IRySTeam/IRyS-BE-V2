@@ -1,30 +1,27 @@
 from enum import Enum
 
+class ScoringAlgorithmEnum(str, Enum):
+    COSINE_SIMILARITY = 'COSINE_SIMILARITY'
+    DOT_PRODUCT = 'DOT_PRODUCT'
+    OKAPI_BM = 'OKAPI_BM'
 
-class SearchAlgorithmEnum(Enum):
-    SYNTAX = 1
-    SEMANTIC = 2
+class DomainEnum(str, Enum):
+    GENERAL = 'general'
+    RECRUITMENT = 'recruitment'
+    SCIENTIFIC = 'scientific'
 
-
-class ScoringAlgorithmEnum(Enum):
-    COSINE_SIMILARITY = 1
-    OTHER = 2
-
-
-class DomainEnum(Enum):
-    GENERAL = 1
-    RECRUITMENT = 2
-    SCIENTIFIC = 3
-
-
-class FilterOperatorEnum(Enum):
-    IN = 1
-    NOT_IN = 2
-    EXIST = 3
-    NOT_EXIST = 4
-    EQUAL = 5
-    NOT_EQUAL = 6
-    GREATER = 7
-    SMALLER = 8
-    GREATER_EQUAL = 9
-    SMALLER_EQUAL = 10
+class FilterOperatorEnum(str, Enum):
+    IN = 'IN'
+    NIN = 'NOT IN'
+    EXI = 'EXISTS'
+    NEXI = 'NOT EXISTS'
+    EQ = 'EQUAL'
+    NEQ = 'NOT EQUAL'
+    GT = 'GREATER THAN'
+    LT = 'LESS THAN'
+    GTE = 'GREATER THAN EQUAL'
+    LTE = 'LESS THAN EQUAL'    
+    CON = 'CONTAINS'
+    NCON = 'NOT CONTAINS'
+    REG = 'REGEX'
+    SEM = 'SEMANTIC SEARCH'
