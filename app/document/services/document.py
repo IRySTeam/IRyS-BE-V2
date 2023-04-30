@@ -1,10 +1,14 @@
 from typing import List
 
+from asgiref.sync import async_to_sync
+from fastapi import UploadFile
+
 from app.document.enums.document import IndexingStatusEnum
-from app.document.models import Document
+from app.document.models import Document, DocumentIndex
 from app.document.schemas import DocumentSchema
 from app.elastic import EsClient
 from app.elastic.configuration import GENERAL_ELASTICSEARCH_INDEX_NAME
+from app.repository.enums import RepositoryRole
 from core.db import Transactional, standalone_session
 from core.exceptions import (
     InvalidRepositoryRoleException,
@@ -13,6 +17,7 @@ from core.exceptions import (
     UserNotAllowedException,
 )
 from core.repository import DocumentIndexRepo, DocumentRepo, RepositoryRepo
+from core.utils import GCStorage
 
 
 class DocumentService:
@@ -57,12 +62,31 @@ class DocumentService:
             raise NotFoundException("Document not with specified id not found")
         return data
 
+    @async_to_sync
+    @standalone_session
+    async def get_document_by_id_celery(
+        self, id: int, include_index: bool = False
+    ) -> Document:
+        """
+        Get a document by id but with a standalone session.
+        [Parameters]
+            id: int -> Document id.
+            include_index: bool = False -> Whether to include the indexing status of the document.
+        [Returns]
+            Document -> Document.
+        """
+        data = await self.document_repo.get_by_id(id=id, include_index=include_index)
+        print("TESTING")
+        print(type(data))
+        if not data:
+            raise NotFoundException("Document not with specified id not found")
+        return data
+
     @Transactional()
     async def create_document(
         self,
         title: str,
         repository_id: int,
-        file_content_str: str,
         file_url: str = "dummy",
         general_elastic_doc_id: str = None,
         elastic_doc_id: str = None,
@@ -76,7 +100,6 @@ class DocumentService:
         [Parameters]
             title: str -> Document title.
             repository_id: int -> Repository id.
-            file_content_str: str -> Document content.
             file_url: str = "dummy" -> Document url.
             general_elastic_doc_id: str = None -> General document id in Elasticsearch.
             elastic_doc_id: str = None -> Document id in Elasticsearch.
@@ -94,7 +117,6 @@ class DocumentService:
             {
                 "title": title,
                 "repository_id": repository_id,
-                "file_content_str": file_content_str,
                 "file_url": file_url,
                 "general_elastic_doc_id": general_elastic_doc_id,
                 "elastic_doc_id": elastic_doc_id,
@@ -114,98 +136,43 @@ class DocumentService:
     async def update_document(
         self,
         id: int,
-        title: str = None,
-        file_url: str = None,
-        repository_id: int = None,
-        general_elastic_doc_id=None,
-        elastic_doc_id: int = None,
-        elastic_index_name: str = None,
-        mimetype: str = None,
-        extension: str = None,
-        size: int = None,
+        params: dict,
     ) -> Document:
         """
         Update a document.
         [Parameters]
             id: int -> Document id.
-            title: str -> Document title.
-            file_url: str = None -> Document url.
-            repository_id: int -> Repository id.
-            elastic_doc_id: str = None -> Document id in Elasticsearch.
-            elastic_index_name: str = None -> Elasticsearch index name.
-            mimetype: str = None -> Document mimetype.
-            extension: str = None -> Document extension.
-            size: int = None -> Document size.
+            params: dict -> Document parameters.
         [Returns]
             Document -> Document.
         """
-        document = await self.get_document_by_id(id)
         # Construct params
         await self.document_repo.update_by_id(
             id=id,
-            params={
-                "title": title or document.title,
-                "file_url": file_url or document.file_url,
-                "repository_id": repository_id or document.repository_id,
-                "general_elastic_doc_id": general_elastic_doc_id
-                or document.general_elastic_doc_id,
-                "elastic_doc_id": elastic_doc_id or document.elastic_doc_id,
-                "elastic_index_name": elastic_index_name or document.elastic_index_name,
-                "mimetype": mimetype or document.mimetype,
-                "extension": extension or document.extension,
-                "size": size or document.size,
-            },
+            params=params,
         )
-        document = await self.get_document_by_id(id)
-        return document
+        return await self.get_document_by_id(id)
 
     @standalone_session
     @Transactional()
     async def update_document_celery(
         self,
         id: int,
-        title: str = None,
-        file_url: str = None,
-        repository_id: int = None,
-        general_elastic_doc_id=None,
-        elastic_doc_id: int = None,
-        elastic_index_name: str = None,
-        mimetype: str = None,
-        extension: str = None,
-        size: int = None,
-    ) -> bool:
+        params: dict,
+    ) -> Document:
         """
         Update a document.
         [Parameters]
             id: int -> Document id.
-            title: str -> Document title.
-            file_url: str = None -> Document url.
-            repository_id: int -> Repository id.
-            elastic_doc_id: str = None -> Document id in Elasticsearch.
-            elastic_index_name: str = None -> Elasticsearch index name.
-            mimetype: str = None -> Document mimetype.
-            extension: str = None -> Document extension.
-            size: int = None -> Document size.
+            params: dict -> Document parameters.
         [Returns]
-            bool -> True if successful.
+            Document -> Document.
         """
-        document = await self.get_document_by_id(id)
         await self.document_repo.update_by_id(
             id=id,
-            params={
-                "title": title or document.title,
-                "file_url": file_url or document.file_url,
-                "repository_id": repository_id or document.repository_id,
-                "general_elastic_doc_id": general_elastic_doc_id
-                or document.general_elastic_doc_id,
-                "elastic_doc_id": elastic_doc_id or document.elastic_doc_id,
-                "elastic_index_name": elastic_index_name or document.elastic_index_name,
-                "mimetype": mimetype or document.mimetype,
-                "extension": extension or document.extension,
-                "size": size or document.size,
-            },
+            params=params,
         )
-        return True
+        return await self.get_document_by_id(id)
 
     @Transactional()
     async def delete_document(self, id: int) -> bool:
@@ -231,22 +198,31 @@ class DocumentService:
         # Fuck partial dependency.
         from celery_app import celery, parsing
 
-        index = document.index
+        index: DocumentIndex = document.index
 
         # Revoke the task if indexing is still in progress.
-        if index.status != IndexingStatusEnum.SUCCESS and not (index.current_task_id):
+        if index.status != IndexingStatusEnum.SUCCESS and index.current_task_id:
             celery.control.revoke(index.current_task_id, terminate=True)
+            await self.document_index_repo.update_by_doc_id(
+                doc_id=document.id,
+                params={
+                    "status": IndexingStatusEnum.FAILED,
+                    "reason": "Terminated because of re-indexing",
+                    "current_task_id": None,
+                },
+            )
 
         # Delete corresponding index in elasticsearch if exist, also remove it in db.
         if index.status == IndexingStatusEnum.SUCCESS:
             if document.general_elastic_doc_id:
-                EsClient.delete_doc(
+                # Ignore if document doesn't exists in elasticsearch.
+                EsClient.safe_delete_doc(
                     GENERAL_ELASTICSEARCH_INDEX_NAME, document.general_elastic_doc_id
                 )
                 document.general_elastic_doc_id = None
-
             if document.elastic_doc_id and document.elastic_index_name:
-                EsClient.delete_doc(
+                # Ignore if document doesn't exists in elasticsearch.
+                EsClient.safe_delete_doc(
                     document.elastic_index_name, document.elastic_doc_id
                 )
                 document.elastic_doc_id = None
@@ -261,10 +237,11 @@ class DocumentService:
                 },
             )
 
+        # Re-index the document.
         parsing.delay(
             document_id=document.id,
             document_title=document.title,
-            file_content_str=document.file_content_str,
+            document_url=document.file_url,
         )
 
     async def reindex_by_id(self, doc_id: int, user_id: int) -> None:
@@ -298,7 +275,7 @@ class DocumentService:
         status: str = None,
         page_size: int = 10,
         page_no: int = 1,
-    ) -> List[Document]:
+    ) -> dict:
         """
         Monitor all documents in a repository.
         [Parameters]
@@ -322,13 +299,137 @@ class DocumentService:
         ):
             raise UserNotAllowedException
 
-        documents = await self.document_repo.monitor_all_documents(
+        return await self.document_repo.monitor_all_documents(
             status=status,
             repository_id=repository_id,
             page_no=page_no,
             page_size=page_size,
         )
-        return documents
+
+    async def check_user_access_upload_document(
+        self,
+        user_id: int,
+        repository_id: int,
+    ) -> bool:
+        """
+        Check if user has access to upload document.
+        [Parameters]
+            user_id: int -> User id.
+            repository_id: int -> Repository id.
+        """
+        user_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id, repository_id
+            )
+        )
+        if not user_role:
+            raise UserNotAllowedException
+
+        if user_role.upper() in RepositoryRole.__members__:
+            user_role = RepositoryRole[user_role.upper()]
+
+            if user_role < RepositoryRole.UPLOADER:
+                raise UserNotAllowedException
+        else:
+            raise InvalidRepositoryRoleException
+
+    @Transactional()
+    async def process_upload_document(
+        self,
+        repository_id: int,
+        file: UploadFile,
+    ) -> Document:
+        """
+        Upload document and create task to index it.
+        [Parameters]
+            repository_id: int -> Id of the corresponding repository.
+            file: UploadFile -> File to be uploaded.
+        """
+        from celery_app import parsing
+
+        document: Document = None
+
+        try:
+            title = ".".join(file.filename.split(".")[:-1])
+
+            # Upload file to GCS
+            uploaded_file_url = GCStorage().upload_file(file, "documents/")
+
+            doc_id = await DocumentService().create_document(
+                title=title,
+                repository_id=repository_id,
+                file_url=uploaded_file_url,
+            )
+            document = await DocumentService().get_document_by_id(
+                id=doc_id, include_index=True
+            )
+
+            parsing.delay(
+                document_id=document.id,
+                document_title=title,
+                document_url=uploaded_file_url,
+            )
+
+            return document
+
+        except Exception as e:
+            # Delete the document if there is an error.
+            if document:
+                await self.delete_document(document.id)
+            raise e
+
+    @Transactional()
+    async def upload_document(
+        self,
+        user_id: int,
+        repository_id: int,
+        file: UploadFile,
+    ) -> Document:
+        """
+        Create a document and the corresponding indexing status.
+        [Parameters]
+            title: str -> Document title.
+            elastic_doc_id: int = None -> Document id in Elasticsearch.
+            elastic_index_name: int = None -> Elasticsearch index name.
+        """
+        if not await self.repository_repo.is_exist(repository_id):
+            raise RepositoryNotFoundException
+
+        await self.check_user_access_upload_document(
+            user_id=user_id,
+            repository_id=repository_id,
+        )
+
+        return await self.process_upload_document(repository_id, file)
+
+    @Transactional()
+    async def upload_multiple_document(
+        self,
+        user_id: int,
+        repository_id: int,
+        files: List[UploadFile],
+    ) -> List[Document]:
+        """
+        Create a document and the corresponding indexing status.
+        [Parameters]
+            title: str -> Document title.
+            elastic_doc_id: int = None -> Document id in Elasticsearch.
+            elastic_index_name: int = None -> Elasticsearch index name.
+        """
+        if not await self.repository_repo.is_exist(repository_id):
+            raise RepositoryNotFoundException
+
+        await self.check_user_access_upload_document(
+            user_id=user_id,
+            repository_id=repository_id,
+        )
+
+        files_response = []
+        for file in files:
+            processed_file = await self.process_upload_document(repository_id, file)
+            files_response.append(processed_file)
+
+        return files_response
 
     async def get_repository_documents(
         self,

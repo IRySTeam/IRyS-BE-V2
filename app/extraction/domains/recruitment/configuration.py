@@ -56,7 +56,7 @@ RECRUITMENT_INFORMATION = [
     },
     {
         "name": "experiences_descriptions",
-        "type": "semantic list",
+        "type": "semantic text",
     },
     {
         "name": "education_institutions",
@@ -68,7 +68,7 @@ RECRUITMENT_INFORMATION = [
     },
     {
         "name": "education_descriptions",
-        "type": "semantic list",
+        "type": "semantic text",
     },
     {
         "name": "projects_titles",
@@ -76,7 +76,7 @@ RECRUITMENT_INFORMATION = [
     },
     {
         "name": "projects_descriptions",
-        "type": "semantic list",
+        "type": "semantic text",
     },
     {
         "name": "certifications_titles",
@@ -84,6 +84,6 @@ RECRUITMENT_INFORMATION = [
     },
     {
         "name": "certifications_descriptions",
-        "type": "semantic list",
+        "type": "semantic text",
     },
 ]

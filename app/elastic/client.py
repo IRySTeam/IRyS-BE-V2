@@ -14,7 +14,7 @@ from app.elastic.schemas import (
     ElasticInfo,
 )
 from core.config import config
-from core.exceptions.base import FailedDependencyException
+from core.exceptions.base import FailedDependencyException, NotFoundException
 
 
 class ElasticsearchClient:
@@ -189,6 +189,31 @@ class ElasticsearchClient:
         except Exception as e:
             raise FailedDependencyException(e)
 
+    def safe_delete_doc(self, index_name: str, doc_id: str) -> ObjectApiResponse[Any]:
+        """
+        Delete a document from an Elasticsearch index, but ignore if document does not exist.
+        [Parameters]
+            index_name: str -> Name of index that will contain the document
+            doc_id: str -> ID of the document to be deleted in the corresponding index
+        [Returns]
+            ObjectApiResponse[Any]: Response from Elasticsearch
+        """
+        try:
+            return self.client.delete(index=index_name, id=doc_id)
+        except ApiError as e:
+            error = classify_error(
+                e,
+                "Document with id: {} not found in index: {}".format(
+                    doc_id, index_name
+                ),
+            )
+            if isinstance(error, NotFoundException):
+                print(error.message)
+                return None
+            raise error
+        except Exception as e:
+            raise FailedDependencyException(e)
+
     def delete_doc(self, index_name: str, doc_id: str) -> ObjectApiResponse[Any]:
         """
         Delete a document from an Elasticsearch index.
@@ -200,6 +225,28 @@ class ElasticsearchClient:
         """
         try:
             return self.client.delete(index=index_name, id=doc_id)
+        except ApiError as e:
+            raise classify_error(
+                e,
+                "Document with id: {} not found in index: {}".format(
+                    doc_id, index_name
+                ),
+            )
+        except Exception as e:
+            raise FailedDependencyException(e)
+
+    def update_doc(self, index_name: str, doc_id: str, doc: Mapping[str, Any]):
+        """
+        Update a document from an Elasticsearch index.
+        [Parameters]
+            index_name: str -> Name of index that will contain the document
+            doc_id: str -> ID of the document to be updated in the corresponding index
+            doc: Mapping[str, Any] -> Document to be updated.
+        [Returns]
+            ObjectApiResponse[Any]: Response from Elasticsearch
+        """
+        try:
+            return self.client.update(index=index_name, id=doc_id, body=doc)
         except ApiError as e:
             raise classify_error(
                 e,

@@ -126,6 +126,12 @@ class IndexNamePathParams:
     index_name: str = Path(..., description="Name of the index")
 
 
+@dataclass
+class DocDetailPathParams:
+    index_name: str = Path(..., description="Name of the index")
+    doc_id: str = Path(..., description="ID of the document")
+
+
 # ==============================================================================
 # Query parameters-related Schemas.
 # ==============================================================================

@@ -38,17 +38,30 @@ class DocumentRepo(BaseRepo[Document]):
     async def monitor_all_documents(
         self,
         repository_id: int,
-        status: str = None,
+        status: str = "ALL",
         page_size: int = 10,
         page_no: int = 1,
-    ):
+    ) -> dict:
         query = (
             select(Document)
             .where(Document.repository_id == repository_id)
             .options(selectinload(Document.index))
         )
-        if status:
+        if status != "ALL":
             query = query.where(Document.index.has(status=status))
+
+        result = await session.execute(query)
+        full_items = result.fetchall()
+        total_items = len(full_items)
+        total_pages = (total_items + page_size - 1) // page_size
+
         query = query.limit(page_size).offset((page_no - 1) * page_size)
         result = await session.execute(query)
-        return result.scalars().all()
+        data = result.scalars().all()
+
+        return {
+            "results": data,
+            "current_page": page_no,
+            "total_pages": total_pages,
+            "total_items": total_items,
+        }

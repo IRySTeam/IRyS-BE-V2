@@ -1,26 +1,19 @@
-from binascii import b2a_base64
 from typing import List
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends
 
-from app.document.models import Document
 from app.document.schemas import (
     DocumentPathParams,
     DocumentResponseSchema,
     IncludeIndexQueryParams,
-    ReindexDocumentResponse,
 )
 from app.document.services import document_service
-from celery_app import parsing
 from core.exceptions import (
     BadRequestException,
     NotFoundException,
     UnauthorizedException,
 )
-from core.exceptions.user import (
-    EmailNotVerifiedException,
-    UserNotAllowedException,
-)
+from core.exceptions.user import EmailNotVerifiedException
 from core.fastapi.dependencies.permission import (
     IsAuthenticated,
     IsEmailVerified,
@@ -50,6 +43,7 @@ document_router = APIRouter(
             "Bad request, please check request body, params, headers, or query",
         )
     },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def get_all_documents(query: IncludeIndexQueryParams = Depends()):
     documents = await document_service.get_document_list(
@@ -71,6 +65,7 @@ async def get_all_documents(query: IncludeIndexQueryParams = Depends()):
             "Document with specified ID does not found",
         ),
     },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def get_document(
     path: DocumentPathParams = Depends(), query: IncludeIndexQueryParams = Depends()
@@ -79,67 +74,3 @@ async def get_document(
         id=path.doc_id, include_index=query.include_index
     )
     return document.__dict__
-
-
-@document_router.post(
-    "/upload",
-    description="Upload a document and index it in Elasticsearch (Temporary)",
-    response_model=DocumentResponseSchema,
-    responses={
-        "400": CustomExceptionHelper.get_exception_response(
-            BadRequestException,
-            "Bad request, please check request body, params, headers, or query",
-        ),
-        "404": CustomExceptionHelper.get_exception_response(
-            NotFoundException,
-            "Repository with specified ID does not found",
-        ),
-    },
-)
-async def upload_document(repository_id: int = Form(...), file: UploadFile = File(...)):
-    document: Document = None
-    try:
-        file_bytes = file.file.read()
-        title = ".".join(file.filename.split(".")[:-1])
-        file_content_str = b2a_base64(file_bytes).decode("utf-8")
-        doc_id = await document_service.create_document(
-            title=title,
-            repository_id=repository_id,
-            file_content_str=file_content_str,
-        )
-        document = await document_service.get_document_by_id(
-            id=doc_id, include_index=True
-        )
-        parsing.delay(
-            document_id=document.id,
-            document_title=title,
-            file_content_str=file_content_str,
-        )
-        return document
-    except Exception as e:
-        # Delete the document if there is an error.
-        if document:
-            await document_service.delete_document(document.id)
-        raise e
-
-
-@document_router.get(
-    "/{doc_id}/reindex",
-    response_model=ReindexDocumentResponse,
-    description="Reindex a document in Elasticsearch",
-    responses={
-        "403": CustomExceptionHelper.get_exception_response(
-            UserNotAllowedException, "Not allowed"
-        ),
-        "404": CustomExceptionHelper.get_exception_response(
-            NotFoundException,
-            "Document with specified ID does not found",
-        ),
-    },
-    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
-)
-async def reindex_document(request: Request, path: DocumentPathParams = Depends()):
-    await document_service.reindex_by_id(doc_id=path.doc_id, user_id=request.user.id)
-    return {
-        "success": True,
-    }

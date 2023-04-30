@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 
 class IndexingStatus(str, Enum):
+    ALL = "ALL"
     READY = "READY"
     PARSING = "PARSING"
     EXTRACTING = "EXTRACTING"
@@ -43,11 +44,21 @@ class RemoveRepositoryCollaboratorRequestSchema(BaseModel):
 
 @dataclass
 class MonitorAllDocumentPathParams:
-    repository_id: int = Path(..., description="Document id")
+    repository_id: int = Path(..., description="Repository id")
+
+
+@dataclass
+class ReindexDocumentPathParams:
+    doc_id: int = Path(..., description="Document id")
+
+
+@dataclass
+class ReindexAllDocumentPathParams:
+    repository_id: int = Path(..., description="Repository id")
 
 
 @dataclass
 class MonitorAllDocumentQueryParams:
-    status: IndexingStatus = Query(IndexingStatus.FAILED, description="Type")
+    status: IndexingStatus = Query(..., description="Type")
     page_no: int = Query(1, description="Page Number")
     page_size: int = Query(10, description="Page Size")

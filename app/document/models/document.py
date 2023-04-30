@@ -21,7 +21,6 @@ class Document(Base, TimestampMixin):
     mimetype = Column(Unicode(255), nullable=True)
     extension = Column(Unicode(255), nullable=True)
     size = Column(BigInteger, nullable=True)
-    file_content_str = Column(TEXT, nullable=True)
 
     index = relationship(
         "DocumentIndex",

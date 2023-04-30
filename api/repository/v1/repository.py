@@ -2,8 +2,6 @@ from typing import List
 
 from fastapi import APIRouter, Depends, Query, Request
 
-from app.document.schemas import DocumentResponseSchema
-from app.document.services import DocumentService
 from app.repository.schemas import (
     AddRepositoryCollaboratorRequestSchema,
     CreateRepositoryRequestSchema,
@@ -37,12 +35,7 @@ from core.fastapi.dependencies import (
 )
 from core.utils import CustomExceptionHelper
 
-repository_router = APIRouter()
-
-
-@repository_router.post(
-    "/create",
-    response_model=CreateRepositoryResponseSchema,
+repository_router = APIRouter(
     responses={
         "401": CustomExceptionHelper.get_exception_response(
             UnauthorizedException, "Unauthorized"
@@ -50,6 +43,14 @@ repository_router = APIRouter()
         "403": CustomExceptionHelper.get_exception_response(
             EmailNotVerifiedException, "Email not verified"
         ),
+    },
+)
+
+
+@repository_router.post(
+    "/create",
+    response_model=CreateRepositoryResponseSchema,
+    responses={
         "400": CustomExceptionHelper.get_exception_response(
             RepositoryDetailsEmptyException, "Some repository details are empty"
         ),
@@ -65,14 +66,6 @@ async def create_repository(request: Request, body: CreateRepositoryRequestSchem
 @repository_router.get(
     "/joined",
     response_model=GetJoinedRepositoriesSchema,
-    responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "403": CustomExceptionHelper.get_exception_response(
-            EmailNotVerifiedException, "Email not verified"
-        ),
-    },
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def get_joined_repositories(
@@ -96,14 +89,6 @@ async def get_joined_repositories(
 @repository_router.get(
     "/public",
     response_model=GetPublicRepositoriesResponseSchema,
-    responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "403": CustomExceptionHelper.get_exception_response(
-            EmailNotVerifiedException, "Email not verified"
-        ),
-    },
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def get_public_repositories(
@@ -120,12 +105,6 @@ async def get_public_repositories(
     "/{repository_id}/edit",
     response_model=MessageResponseSchema,
     responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "403": CustomExceptionHelper.get_exception_response(
-            EmailNotVerifiedException, "Email not verified"
-        ),
         "403": CustomExceptionHelper.get_exception_response(
             UserNotAllowedException, "Not allowed"
         ),
@@ -150,12 +129,6 @@ async def edit_repository(
     "/{repository_id}",
     response_model=RepositoryDetailsResponseSchema,
     responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "403": CustomExceptionHelper.get_exception_response(
-            EmailNotVerifiedException, "Email not verified"
-        ),
         "404": CustomExceptionHelper.get_exception_response(
             RepositoryNotFoundException, "Repository not found"
         ),
@@ -172,12 +145,6 @@ async def get_repository_details(request: Request, repository_id: int):
     "/{repository_id}/members",
     response_model=List[RepositoryCollaboratorSchema],
     responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "403": CustomExceptionHelper.get_exception_response(
-            EmailNotVerifiedException, "Email not verified"
-        ),
         "403": CustomExceptionHelper.get_exception_response(
             UserNotAllowedException, "Not allowed"
         ),
@@ -200,12 +167,6 @@ async def get_repository_collaborators(
     "/{repository_id}/members/add",
     response_model=MessageResponseSchema,
     responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "403": CustomExceptionHelper.get_exception_response(
-            EmailNotVerifiedException, "Email not verified"
-        ),
         "403": CustomExceptionHelper.get_exception_response(
             UserNotAllowedException, "Not allowed"
         ),
@@ -236,12 +197,6 @@ async def add_repository_collaborator(
     "/{repository_id}/members/edit",
     response_model=MessageResponseSchema,
     responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "403": CustomExceptionHelper.get_exception_response(
-            EmailNotVerifiedException, "Email not verified"
-        ),
         "403": CustomExceptionHelper.get_exception_response(
             UserNotAllowedException, "Not allowed"
         ),
@@ -272,12 +227,6 @@ async def edit_repository_collaborator(
     "/{repository_id}/members/remove",
     response_model=MessageResponseSchema,
     responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "403": CustomExceptionHelper.get_exception_response(
-            EmailNotVerifiedException, "Email not verified"
-        ),
         "403": CustomExceptionHelper.get_exception_response(
             UserNotAllowedException, "Not allowed"
         ),
@@ -302,12 +251,6 @@ async def remove_repository_collaborator(
     "/{repository_id}/members/add/search",
     response_model=SearchUserResponseSchema,
     responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "403": CustomExceptionHelper.get_exception_response(
-            EmailNotVerifiedException, "Email not verified"
-        ),
         "403": CustomExceptionHelper.get_exception_response(
             UserNotAllowedException, "Not allowed"
         ),
@@ -330,32 +273,4 @@ async def search_user(
         repository_id=repository_id,
         page_no=page_no,
         page_size=page_size,
-    )
-
-
-@repository_router.get(
-    "/{repository_id}/documents",
-    response_model=List[DocumentResponseSchema],
-    responses={
-        "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, "Unauthorized"
-        ),
-        "403": CustomExceptionHelper.get_exception_response(
-            EmailNotVerifiedException, "Email not verified"
-        ),
-        "403": CustomExceptionHelper.get_exception_response(
-            UserNotAllowedException, "Not allowed"
-        ),
-        "404": CustomExceptionHelper.get_exception_response(
-            RepositoryNotFoundException, "Repository not found"
-        ),
-    },
-    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
-)
-async def get_repository_documents(
-    request: Request,
-    repository_id: int,
-):
-    return await DocumentService().get_repository_documents(
-        user_id=request.user.id, repository_id=repository_id
     )

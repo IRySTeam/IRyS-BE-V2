@@ -13,6 +13,7 @@ from app.elastic.configuration import (
 )
 from app.elastic.schemas import (
     CreateIndexBody,
+    DocDetailPathParams,
     ElasticCreateIndexResponse,
     ElasticDocumentIndexedResponse,
     ElasticIndexCat,
@@ -25,22 +26,28 @@ from app.elastic.schemas import (
     IndexType,
     UpdateIndexBody,
 )
+from app.elastic.schemas.document import MessageResponseSchema
 from core.exceptions import (
     BadRequestException,
     FailedDependencyException,
-    ForbiddenException,
     NotFoundException,
     UnauthorizedException,
+)
+from core.exceptions.user import EmailNotVerifiedException
+from core.fastapi.dependencies.permission import (
+    IsAuthenticated,
+    IsEmailVerified,
+    PermissionDependency,
 )
 from core.utils import CustomExceptionHelper
 
 elastic_router = APIRouter(
     responses={
         "401": CustomExceptionHelper.get_exception_response(
-            UnauthorizedException, UnauthorizedException.message
+            UnauthorizedException, "Unauthorized"
         ),
         "403": CustomExceptionHelper.get_exception_response(
-            ForbiddenException, ForbiddenException.message
+            EmailNotVerifiedException, "Email not verified"
         ),
         "424": CustomExceptionHelper.get_exception_response(
             FailedDependencyException,
@@ -54,6 +61,7 @@ elastic_router = APIRouter(
     "/info",
     description="Get information about the Elasticsearch cluster",
     response_model=ElasticInfo,
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def get_elastic_info():
     return EsClient.info()
@@ -63,6 +71,7 @@ async def get_elastic_info():
     "/indices",
     description="List indices in Elasticsearch",
     response_model=List[ElasticIndexCat],
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def get_elastic_indices(query: GetAllIndexQueryParams = Depends()):
     return EsClient.list_indices(all=query.all)
@@ -81,6 +90,7 @@ async def get_elastic_indices(query: GetAllIndexQueryParams = Depends()):
             NotFoundException, "Index with given name does not exist"
         ),
     },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def get_elastic_index(path: IndexNamePathParams = Depends()):
     return EsClient.get_index(path.index_name)
@@ -96,6 +106,7 @@ async def get_elastic_index(path: IndexNamePathParams = Depends()):
             "Bad request, please check request body, params, headers, or query",
         )
     },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def create_elastic_index(body: CreateIndexBody):
     settings = body.settings
@@ -131,6 +142,7 @@ async def create_elastic_index(body: CreateIndexBody):
             NotFoundException, "Index with given name does not exist"
         ),
     },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def update_elastic_index(
     body: UpdateIndexBody, path: IndexNamePathParams = Depends()
@@ -152,6 +164,7 @@ async def update_elastic_index(
             NotFoundException, "Index with given name does not exist"
         ),
     },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def delete_elastic_index(path: IndexNamePathParams = Depends()):
     EsClient.delete_index(path.index_name)
@@ -166,6 +179,7 @@ async def delete_elastic_index(path: IndexNamePathParams = Depends()):
             NotFoundException, "Index with given name does not exist"
         )
     },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def get_all_index_documents(path: IndexNamePathParams = Depends()):
     return EsClient.list_index_docs(path.index_name)
@@ -184,9 +198,53 @@ async def get_all_index_documents(path: IndexNamePathParams = Depends()):
             NotFoundException, "Index with given name does not exist"
         ),
     },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def index_document(
     body: Dict[str, Any] = Body(..., description="Document to index"),
     path: IndexNamePathParams = Depends(),
 ):
     return EsClient.index_doc(index=path.index_name, doc=body)
+
+
+@elastic_router.post(
+    "/indices/{index_name}/documents/{doc_id}/delete",
+    description="Delete a document in Elasticsearch",
+    response_model=MessageResponseSchema,
+    responses={
+        "400": CustomExceptionHelper.get_exception_response(
+            BadRequestException,
+            "Bad request, please check request body, params, headers, or query",
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            NotFoundException,
+            "Document with given elasticsearch index name and id does not exist",
+        ),
+    },
+)
+async def delete_document(
+    path: DocDetailPathParams = Depends(),
+):
+    EsClient.delete_doc(index=path.index_name, doc_id=path.doc_id)
+    return MessageResponseSchema(message="Document deleted successfully")
+
+
+@elastic_router.post(
+    "/indices/{index_name}/documents/{doc_id}/update",
+    description="Update a document in Elasticsearch",
+    responses={
+        "400": CustomExceptionHelper.get_exception_response(
+            BadRequestException,
+            "Bad request, please check request body, params, headers, or query",
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            NotFoundException,
+            "Document with given elasticsearch index name and id does not exist",
+        ),
+    },
+)
+async def update_document(
+    body: Dict[str, Any] = Body(..., description="Document to update"),
+    path: DocDetailPathParams = Depends(),
+):
+    return EsClient.update_doc(index=path.index_name, doc_id=path.doc_id, doc=body)

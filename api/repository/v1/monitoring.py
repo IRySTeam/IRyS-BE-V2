@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, Request
 
 from app.document.services import DocumentService
 from app.repository.schemas import (
+    MessageResponseSchema,
     MonitorAllDocumentPathParams,
     MonitorAllDocumentQueryParams,
     MonitorAllDocumentResponseSchema,
-    ReindexAllResponseSchema,
+    ReindexAllDocumentPathParams,
+    ReindexDocumentPathParams,
 )
 from app.repository.services import RepositoryService
 from core.exceptions import (
@@ -13,6 +15,8 @@ from core.exceptions import (
     UnauthorizedException,
     UserNotAllowedException,
 )
+from core.exceptions.base import NotFoundException
+from core.exceptions.repository import RepositoryNotFoundException
 from core.fastapi.dependencies import (
     IsAuthenticated,
     IsEmailVerified,
@@ -30,6 +34,9 @@ monitoring_router = APIRouter(
         ),
         "403": CustomExceptionHelper.get_exception_response(
             UserNotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository with specified id not found"
         ),
     }
 )
@@ -54,16 +61,40 @@ async def monitor_repository_documents(
     )
 
 
-@monitoring_router.post(
-    "/{repository_id}/reindex-all",
-    response_model=ReindexAllResponseSchema,
+@monitoring_router.get(
+    "/documents/{doc_id}/reindex",
+    response_model=MessageResponseSchema,
+    description="Reindex a document in Elasticsearch",
+    responses={
+        "404": CustomExceptionHelper.get_exception_response(
+            NotFoundException,
+            "Document with specified ID does not found",
+        ),
+    },
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
-async def reindex_all(request: Request, repository_id: int):
+async def reindex_document(
+    request: Request, path: ReindexDocumentPathParams = Depends()
+):
+    await DocumentService().reindex_by_id(doc_id=path.doc_id, user_id=request.user.id)
+    return MessageResponseSchema(
+        message="Document reindexing has been started",
+    )
+
+
+@monitoring_router.post(
+    "/{repository_id}/documents/reindex",
+    response_model=MessageResponseSchema,
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def reindex_all(
+    request: Request,
+    path: ReindexAllDocumentPathParams = Depends(),
+):
     await RepositoryService().reindex_all(
-        repository_id=repository_id,
+        repository_id=path.repository_id,
         user_id=request.user.id,
     )
-    return {
-        "success": True,
-    }
+    return MessageResponseSchema(
+        message="All documents reindexing has been started",
+    )

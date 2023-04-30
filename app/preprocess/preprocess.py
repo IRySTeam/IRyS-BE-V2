@@ -1,6 +1,6 @@
 import string
 from collections import defaultdict
-from typing import List
+from typing import List, Union
 
 from nltk import pos_tag
 from nltk.corpus import stopwords
@@ -73,14 +73,16 @@ class PreprocessUtil:
         ]
 
     @classmethod
-    def preprocess(cls, text: str) -> List[str]:
+    def preprocess(cls, text: Union[str, List[str]]) -> List[str]:
         """
         Function to preprocess text.
         [Parameters]
-            text: str -> Text to be preprocessed.
+            text: Union[str, List[str]] -> Text to be preprocessed.
         [Returns]
             List[str]: List of preprocessed words.
         """
+        if isinstance(text, list):
+            text = " ".join(text)
 
         # Do preprocessing.
         text = cls.case_folding(text)
