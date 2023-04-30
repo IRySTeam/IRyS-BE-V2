@@ -15,7 +15,6 @@ search_router = APIRouter()
 ss = SearchService(None, None, None)
 ds = DocumentService()
 
-
 @search_router.post(
     "/",
     description="Fetches relevant documents based on search query and advanced filter",
