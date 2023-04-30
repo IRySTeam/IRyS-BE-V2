@@ -27,6 +27,14 @@ class ScientificExtractor(GeneralExtractor):
     author_classifier = pickle.load(
         open(os.path.join(dir_path, "dump", "svm_author_classifier.pkl"), "rb")
     )
+    author_classifier_no_characteristic = pickle.load(
+        open(
+            os.path.join(
+                dir_path, "dump", "svm_author_classifier_no_characteristic.pkl"
+            ),
+            "rb",
+        )
+    )
 
     abstract_keywords = ["abstract"]
     introduction_keywords = ["introduction"]
@@ -96,10 +104,15 @@ class ScientificExtractor(GeneralExtractor):
         if result["extension"] == ".doc" or result["extension"] == ".docx":
             file = self.file_converter.doc_to_pdf(file, result["extension"])
 
-        # TODO: Handle txt if possible
-        if result["extension"] != ".txt":
+        if (
+            result["extension"] == ".pdf"
+            or result["extension"] == ".doc"
+            or result["extension"] == ".docx"
+        ):
             metadata = self.extract_scientific_information(file)
-            result = result | metadata
+        else:
+            metadata = self.extract_scientific_information_txt(file)
+        result = result | metadata
 
         return result
 
@@ -129,106 +142,6 @@ class ScientificExtractor(GeneralExtractor):
             result += ner_results[idx]
 
         return NERResult(full_text, result)
-
-    def ext_txt(self, file):
-        scientific_information = {
-            "title": [],
-            "abstract": [],
-            "keywords": [],
-            "authors": [],
-            "affiliations": [],
-            "references": [],
-        }
-
-        file_text: str = parser.from_buffer(file)["content"].strip()
-
-        # Split lines and remove empty
-        lines = [line.strip() for line in file_text.splitlines() if line.strip() != ""]
-
-        abstract_line = 99999
-        introduction_line = 99999
-        keywords_line = 99999
-
-        # Limit to the first 50 lines or less
-        for idx, line in enumerate(lines[:50]):
-            # Find first line that contains abstract
-            if abstract_line == 99999 and any(
-                line.lower().startswith(keyword) for keyword in self.abstract_keywords
-            ):
-                abstract_line = idx
-
-            # Find first line that contains introduction
-            if introduction_line == 99999 and any(
-                keyword in line.lower() for keyword in self.introduction_keywords
-            ):
-                introduction_line = idx
-
-            # Find first line that contains keywords
-            if keywords_line == 99999 and any(
-                line.lower().startswith(keyword) for keyword in self.keywords_keywords
-            ):
-                keywords_line = idx
-
-        # Get breakpoint line for header
-        breakpoint_line = min(abstract_line, introduction_line, keywords_line)
-
-        line_labels = ["unkown" for _ in lines]
-
-        # Assume the first non-empty line is title
-        scientific_information["title"].append(lines[0])
-        line_labels[0] = "title"
-
-        for idx, line in enumerate(lines):
-            # If located in the header (above breakpoint) or located in the top 1/4 of the page
-            if idx < breakpoint_line or idx < 50:
-                # If the line contains affiliation keywords, add to affiliations
-                if any(
-                    keyword in line.lower() for keyword in self.affiliation_keywords
-                ):
-                    scientific_information["affiliations"].append(line)
-                    line_labels[idx] = "affiliation"
-
-            # If located in the line that contains "Abstract" and after it
-            if abstract_line != 99999 and idx >= abstract_line:
-                # If line is before the keywords line and introduction line, add to abstract
-                if idx < keywords_line and idx < introduction_line:
-                    scientific_information["abstract"].append(line)
-                    line_labels[idx] = "abstract"
-
-            # If line is in the keywords section
-            if keywords_line != 99999 and idx >= keywords_line:
-                # If line is before the introduction line, add to keywords
-                if introduction_line != 99999 and idx < introduction_line:
-                    scientific_information["keywords"].append(line)
-                    line_labels[idx] = "keywords"
-                # If there is no introduction line, assume keywords takes 2 lines
-                # TODO: is there a better heuristic for this? or just assume introduction line is always there?
-                elif introduction_line == 99999 and idx < keywords_line + 2:
-                    scientific_information["keywords"].append(line)
-                    line_labels[idx] = "keywords"
-
-        # Reference header regex
-        ref_header_regex = re.compile(r"references|bibliography", re.IGNORECASE)
-
-        # Get reference header lines
-        try:
-            reference_header_line = lines.index(
-                list(filter(ref_header_regex.search, lines))[-1]
-            )
-        except IndexError:
-            reference_header_line = 99999
-
-        # Get reference lines
-        if reference_header_line != 99999:
-            reference_lines = lines[reference_header_line + 1 :]
-
-            for line in reference_lines:
-                if line.isspace() or line.isnumeric():
-                    continue
-                else:
-                    scientific_information["references"].append(line)
-
-        return self.__post_process(scientific_information)
 
     def extract_scientific_information(self, file: bytes) -> Dict[str, Any]:
         """
@@ -386,8 +299,131 @@ class ScientificExtractor(GeneralExtractor):
         # Post process
         return self.__post_process(scientific_information)
 
+    def extract_scientific_information_txt(self, file: bytes) -> Dict[str, Any]:
+        """
+        Extract information from a txt file
+
+        [Arguments]
+            file: bytes -> File bytes to extract information from
+        [Returns]
+            Dict -> Dictionary containing extracted information
+        """
+
+        scientific_information = {
+            "title": [],
+            "abstract": [],
+            "keywords": [],
+            "authors": [],
+            "affiliations": [],
+            "references": [],
+        }
+
+        file_text: str = parser.from_buffer(file)["content"].strip()
+
+        # Split lines and remove empty
+        lines = [
+            {"text": line.strip(), "label": "unknown"}
+            for line in file_text.splitlines()
+            if line.strip() != ""
+        ]
+
+        abstract_line = 99999
+        introduction_line = 99999
+        keywords_line = 99999
+
+        # Limit to the first 50 lines or less
+        for idx, line in enumerate(lines[:50]):
+            # Find first line that contains abstract
+            if abstract_line == 99999 and any(
+                line["text"].lower().startswith(keyword)
+                for keyword in self.abstract_keywords
+            ):
+                abstract_line = idx
+
+            # Find first line that contains introduction
+            if introduction_line == 99999 and any(
+                keyword in line["text"].lower()
+                for keyword in self.introduction_keywords
+            ):
+                introduction_line = idx
+
+            # Find first line that contains keywords
+            if keywords_line == 99999 and any(
+                line["text"].lower().startswith(keyword)
+                for keyword in self.keywords_keywords
+            ):
+                keywords_line = idx
+
+        # Get breakpoint line for header
+        breakpoint_line = min(abstract_line, introduction_line, keywords_line)
+
+        # Assume the first non-empty line is title
+        scientific_information["title"].append(lines[0]["text"])
+        lines[0]["label"] = "title"
+
+        for idx, line in enumerate(lines):
+            # If located in the header (above breakpoint) or located in the top 1/4 of the page
+            if idx < breakpoint_line or idx < 50:
+                # If the line contains affiliation keywords, add to affiliations
+                if any(
+                    keyword in line["text"].lower()
+                    for keyword in self.affiliation_keywords
+                ):
+                    scientific_information["affiliations"].append(line["text"])
+                    line["labels"] = "affiliation"
+
+            # If located in the line that contains "Abstract" and after it
+            if abstract_line != 99999 and idx >= abstract_line:
+                # If line is before the keywords line and introduction line, add to abstract
+                if idx < keywords_line and idx < introduction_line:
+                    scientific_information["abstract"].append(line["text"])
+                    line["labels"] = "abstract"
+
+            # If line is in the keywords section
+            if keywords_line != 99999 and idx >= keywords_line:
+                # If line is before the introduction line, add to keywords
+                if introduction_line != 99999 and idx < introduction_line:
+                    scientific_information["keywords"].append(line["text"])
+                    line["labels"] = "keywords"
+                # If there is no introduction line, assume keywords takes 2 lines
+                # TODO: is there a better heuristic for this? or just assume introduction line is always there?
+                elif introduction_line == 99999 and idx < keywords_line + 2:
+                    scientific_information["keywords"].append(line["text"])
+                    line["labels"] = "keywords"
+
+        # Reference header regex
+        ref_header_regex = re.compile(r"references|bibliography", re.IGNORECASE)
+
+        # Get reference header lines
+        try:
+            # Get reference header line
+            reference_header_line = [
+                idx
+                for idx, line in enumerate(lines)
+                if ref_header_regex.search(line["text"])
+            ][0]
+        except IndexError:
+            reference_header_line = 99999
+
+        # Get reference lines
+        if reference_header_line != 99999:
+            reference_lines = lines[reference_header_line + 1 :]
+
+            for line in reference_lines:
+                if line["text"].isspace() or line["text"].isnumeric():
+                    continue
+                else:
+                    scientific_information["references"].append(line["text"])
+
+        # Extract authors
+        scientific_information["authors"] = self.__classify_authors(
+            lines, breakpoint_line, False
+        )
+
+        return self.__post_process(scientific_information)
+
     def __classify_authors(
-        self, paper_header: List[dict], breakpoint_line: int
+        self, paper_header: List[dict], breakpoint_line: int, use_characteristic: bool
     ) -> List[str]:
         """
         Classify authors from paper header
@@ -395,6 +431,7 @@ class ScientificExtractor(GeneralExtractor):
         [Arguments]
             paper_header: List[dict] -> List of lines in paper header
             breakpoint_line: int -> Line number of breakpoint
+            use_characteristic: bool -> Whether to use characteristic to classify authors
         [Returns]
             List[str] -> List of author lines
         """
@@ -405,18 +442,21 @@ class ScientificExtractor(GeneralExtractor):
             # Calculate line features if before breakpoint and does not only contains whitespace
             if idx < breakpoint_line and not line["text"].isspace():
                 if idx == 0 and idx == len(paper_header) - 1:
-                    features = self.__calculate_line_features(line)
+                    features = self.__calculate_line_features(line, use_characteristic)
                 if idx == 0:
                     features = self.__calculate_line_features(
-                        line, next=paper_header[idx + 1]
+                        line, use_characteristic, next=paper_header[idx + 1]
                     )
                 elif idx == len(paper_header) - 1:
                     features = self.__calculate_line_features(
-                        line, prev=paper_header[idx - 1]
+                        line, use_characteristic, prev=paper_header[idx - 1]
                     )
                 else:
                     features = self.__calculate_line_features(
-                        line, next=paper_header[idx + 1], prev=paper_header[idx - 1]
+                        line,
+                        use_characteristic,
+                        next=paper_header[idx + 1],
+                        prev=paper_header[idx - 1],
                     )
 
                 lines_features.append(features)
@@ -425,7 +465,12 @@ class ScientificExtractor(GeneralExtractor):
             dataframe = pd.DataFrame(lines_features)
 
             # Predict author lines
-            author_labels = self.author_classifier.predict(dataframe)
+            if use_characteristic:
+                author_labels = self.author_classifier.predict(dataframe)
+            else:
+                author_labels = self.author_classifier_no_characteristic.predict(
+                    dataframe
+                )
 
             # Add author lines to authors list
             for idx, label in enumerate(author_labels):
@@ -442,6 +487,7 @@ class ScientificExtractor(GeneralExtractor):
 
         [Arguments]
             pages: List[dict] -> List of reference pages
+            reference_pages_numbers: list[int] -> List of reference pages numbers
         [Returns]
             List[str] -> List of references
         """
@@ -544,13 +590,14 @@ class ScientificExtractor(GeneralExtractor):
         return references
 
     def __calculate_line_features(
-        self, line: dict, prev: dict = None, next: dict = None
+        self, line: dict, use_characteristic: bool, prev: dict = None, next: dict = None
     ) -> dict:
         """
         Calculate features for a line to be used for classification
 
         [Arguments]
             line: dict -> Line to calculate features for
+            use_characteristic: bool -> Use characteristic features
             prev: dict -> Previous line
             next: dict -> Next line
         [Returns]
@@ -558,8 +605,10 @@ class ScientificExtractor(GeneralExtractor):
         """
 
         text = line["text"]
-        flags = line["flags"]
-        font_size = line["font_size"]
+
+        if use_characteristic:
+            flags = line["flags"]
+            font_size = line["font_size"]
 
         caps_count = 0
         at_count = 0
@@ -584,7 +633,7 @@ class ScientificExtractor(GeneralExtractor):
             if word in text.lower():
                 affiliation_count += 1
 
-        return {
+        result = {
             "label": line["label"],
             "caps_count": caps_count,
             "at_count": at_count,
@@ -596,17 +645,17 @@ class ScientificExtractor(GeneralExtractor):
             "punct_percent": punct_count / len(text) if len(text) > 0 else 0,
             "prev_label": prev["label"] if prev else "unknown",
             "next_label": next["label"] if next else "unknown",
-            "same_characteristic_prev": int(
+        }
+
+        if use_characteristic:
+            result["same_characteristic_prev"] = int(
                 prev["flags"] == flags and prev["font_size"] == font_size
             )
-            if prev
-            else 0,
-            "same_characteristic_next": int(
+            result["same_characteristic_next"] = int(
                 next["flags"] == flags and next["font_size"] == font_size
             )
-            if next
-            else 0,
-        }
+
+        return result
 
     def __post_process(self, metadata: dict) -> dict:
         """
