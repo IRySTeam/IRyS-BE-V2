@@ -31,6 +31,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY ./requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
+# Create log file for tika and give permissions, /var/log/tika.log
+RUN touch /var/log/tika.log \
+    && chmod 777 /var/log/tika.log
+
 # # Install poetry and dependencies.
 # COPY ./pyproject.toml /pyproject.toml
 # RUN pip install "poetry" \
@@ -59,4 +63,6 @@ COPY ./celery_app/flower/start /start-flower
 RUN sed -i 's/\r$//g' /start-flower \
     && chmod +x /start-flower
 
+# Copy all project files
+COPY . /app
 WORKDIR /app

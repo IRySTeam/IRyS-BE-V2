@@ -1,50 +1,66 @@
 import json
+import magic
+import mimetypes
 import re
-from typing import Optional, List
-from datetime import datetime
+from typing import List
+from binascii import a2b_base64, b2a_base64
+from fastapi import UploadFile
+from tika import parser
 
-# from app.search.schemas import (
-#     ElasticSearchResult, 
-#     SemanticSearchRequest, 
-#     SemanticSearchResponse
-# )
-from app.search.constants.search import DOMAIN_INDEXES
 from app.search.enums.search import DomainEnum, FilterOperatorEnum
+from app.search.schemas.advanced_search import AdvancedFilterConditions
 from app.search.schemas.elastic import MatchedDocument, SearchResult
 from app.search.schemas.advanced_search import AdvancedFilterConditions
-from app.search.schemas.search import SemanticSearchResponseSchema
+from app.search.services.advanced_search import AdvancedSearchService
+from app.search.services.query_expansion import QueryExpansionService
 from app.elastic.client import ElasticsearchClient
 from app.preprocess import PreprocessUtil
 
 class SearchService:
     def __init__(self, algorithm, domain, scoring):
         self.algorithm = algorithm
-        self.domain = DomainEnum.GENERAL # domain
+        self.domain = DomainEnum.GENERAL  # domain
         self.scoring = scoring
+        self.recruitment_expander = QueryExpansionService(model='salsabiilashifa11/gpt-cv')
+        self.scientific_expander = QueryExpansionService(model='salsabiilashifa11/gpt-paper')
 
-    def preprocess_query(self, query):
+    def preprocess_query(
+            self, 
+            query: str, 
+            domain: DomainEnum, 
+            should_expand: bool = True,
+            expansion_method: str = "p_sampling"
+        ):
         """
-        Refines raw user query by performing tokenization, stopword removal, stemming, lemmatization, and query expansion on it 
+        Refines raw user query by performing tokenization, stopword removal, stemming, lemmatization, and query expansion on it
         [Input]
           - query: str
         [Output]
           - preprocessed query: str
         """
+        if (should_expand) and (domain == DomainEnum.RECRUITMENT):
+            query = self.recruitment_expander.expansion_method[expansion_method](query)
+        if (should_expand) and (domain == DomainEnum.SCIENTIFIC):
+            query = self.recruitment_expander.expansion_method[expansion_method](query)
         return " ".join(PreprocessUtil().preprocess(query))
 
     def normalize_search_result(self, data):
         search_result = SearchResult(result=[])
-        for hit in data['hits']['hits']:
+        for hit in data["hits"]["hits"]:
             matched_document = MatchedDocument(
-                id=hit['_id'],
-                score=hit['_score'],
-                title=hit['_source']['title'],
-                document_metadata=hit['_source']['document_metadata']
+                doc_id=hit["_source"]["document_id"],
+                id=hit["_id"],
+                score=hit["_score"],
+                title=hit["_source"]["title"],
+                preprocessed_text=hit["_source"]["preprocessed_text"],
+                document_metadata=hit["_source"]["document_metadata"],
             )
             search_result.result.append(matched_document)
         return search_result
 
-    def elastic_keyword_search(self, query, domain):
+    def elastic_keyword_search(
+        self, query: str, domain: DomainEnum, doc_ids: List[int]
+    ):
         """
         Executes first part of search, calls elastic search to perform keyword based search
         [Input]
@@ -53,11 +69,12 @@ class SearchService:
           - ElasticSearchResult
         """
         data = ElasticsearchClient().search_semantic(
-            query=query, 
-            index=f'{domain.value}-0001', 
-            size=5,  
-            source=["title", "preprocessed_text", "document_metadata"], 
-            emb_vector="text_vector"
+            query=query,
+            index=f"{domain.value}-0001",
+            size=5,
+            source=["document_id", "title", "preprocessed_text", "document_metadata"],
+            emb_vector="text_vector",
+            doc_ids=doc_ids,
         )
         return self.normalize_search_result(data)
 
@@ -69,17 +86,23 @@ class SearchService:
         [Returns]
           filtered_documents: ? # TODO: Should the schema be the same as retrieved documents or directly as API response schema?
         """
-        advanced_search_result = search_result 
+        advanced_search_result = search_result
 
         # Evaluate advanced filters
-        if (bool(advanced_filter.match)):
-            print("went in")
+        if bool(advanced_filter.match):
             for filter in advanced_filter.match:
-                advanced_search_result.result = self.evaluate_filter(advanced_search_result, domain, filter)
+                advanced_search_result.result = self.evaluate_filter(
+                    advanced_search_result, domain, filter
+                )
 
         return advanced_search_result
-    
-    def evaluate_filter(self, search_result: List[MatchedDocument], domain: DomainEnum, filter: AdvancedFilterConditions):
+
+    def evaluate_filter(
+        self,
+        search_result: List[MatchedDocument],
+        domain: DomainEnum,
+        filter: AdvancedFilterConditions,
+    ):
         """
         Performs filtering using basic operators from retrieved documents
         [Parameters]
@@ -90,297 +113,105 @@ class SearchService:
         """
         match filter.operator:
             case FilterOperatorEnum.IN:
-                return self.evaluate_in_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_in_filter(search_result, filter)
             case FilterOperatorEnum.NIN:
-                return self.evaluate_nin_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_nin_filter(
+                    search_result, filter
+                )
             case FilterOperatorEnum.EXI:
-                return self.evaluate_exi_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_exi_filter(
+                    search_result, filter
+                )
             case FilterOperatorEnum.NEXI:
-                return self.evaluate_nexi_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_nexi_filter(
+                    search_result, filter
+                )
             case FilterOperatorEnum.EQ:
-                return self.evaluate_eq_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_eq_filter(search_result, filter)
             case FilterOperatorEnum.NEQ:
-                return self.evaluate_neq_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_neq_filter(
+                    search_result, filter
+                )
             case FilterOperatorEnum.GT:
-                return self.evaluate_gt_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_gt_filter(search_result, filter)
             case FilterOperatorEnum.LT:
-                return self.evaluate_lt_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_lt_filter(search_result, filter)
             case FilterOperatorEnum.GTE:
-                return self.evaluate_gte_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_gte_filter(
+                    search_result, filter
+                )
             case FilterOperatorEnum.LTE:
-                return self.evaluate_lte_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_lte_filter(
+                    search_result, filter
+                )
             case FilterOperatorEnum.CON:
-                return self.evaluate_con_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_con_filter(
+                    search_result, filter
+                )
             case FilterOperatorEnum.NCON:
-                return self.evaluate_ncon_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_ncon_filter(
+                    search_result, filter
+                )
             case FilterOperatorEnum.REG:
-                return self.evaluate_reg_filter(search_result, filter)
+                return AdvancedSearchService().evaluate_reg_filter(
+                    search_result, filter
+                )
             case FilterOperatorEnum.SEM:
-                return self.evaluate_semantic_filter(search_result, domain, filter)
+                return AdvancedSearchService().evaluate_semantic_filter(
+                    search_result, domain, filter
+                )
             case _:
-                print('No operator match found')
+                print("No operator match found")
         return search_result
-    
-    def evaluate_in_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using IN operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is not None
-                and d.document_metadata.get(filter.key) 
-                    in filter.value]
-    
-    def evaluate_nin_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using NOT IN operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is not None
-                and d.document_metadata.get(filter.key) 
-                    not in filter.value]
-    
-    def evaluate_exi_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using EXISTS operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is not None]
-    
-    def evaluate_nexi_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using NOT EXISTS operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is None]
-    
-    def evaluate_eq_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using EQUAL operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """ 
-        return [d for d in search_result.result 
-            if d.document_metadata.get(filter.key) 
-                == filter.value]
-    
-    def evaluate_neq_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using NOT EQUAL operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is not None
-                and d.document_metadata.get(filter.key) 
-                    != filter.value]
-    
-    def evaluate_gt_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using GREATER THAN operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        if re.search(r'^date', filter.data_type) is not None:
-            datetime_fmt = re.findall(r'^date: (.*)', filter.data_type)[0]
-            filter.value = datetime.strptime(filter.value, datetime_fmt)
-            return [d for d in search_result.result 
-                    if d.document_metadata.get(filter.key)
-                        is not None
-                    and datetime.strptime(d.document_metadata.get(filter.key), datetime_fmt)
-                        > filter.value]
-        if filter.data_type == "numeric":
-            return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is not None
-                and d.document_metadata.get(filter.key) 
-                    > filter.value]
-        
-    def evaluate_lt_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using LESS THAN operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        if re.search(r'^date', filter.data_type) is not None:
-            datetime_fmt = re.findall(r'^date: (.*)', filter.data_type)[0]
-            filter.value = datetime.strptime(filter.value, datetime_fmt)
-            return [d for d in search_result.result 
-                    if d.document_metadata.get(filter.key)
-                        is not None
-                    and datetime.strptime(d.document_metadata.get(filter.key), datetime_fmt)
-                        < filter.value]
-        if filter.data_type == "numeric":
-            return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is not None
-                and d.document_metadata.get(filter.key) 
-                    < filter.value]
-        
-    def evaluate_gte_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using GREATER THAN EQUAL operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        if re.search(r'^date', filter.data_type) is not None:
-            datetime_fmt = re.findall(r'^date: (.*)', filter.data_type)[0]
-            filter.value = datetime.strptime(filter.value, datetime_fmt)
-            return [d for d in search_result.result 
-                    if d.document_metadata.get(filter.key)
-                        is not None
-                    and datetime.strptime(d.document_metadata.get(filter.key), datetime_fmt)
-                        >= filter.value]
-        if filter.data_type == "numeric":
-            return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is not None
-                and d.document_metadata.get(filter.key) 
-                    >= filter.value]
-        
-    def evaluate_lte_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using LESS THAN EQUAL operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        if re.search(r'^date', filter.data_type) is not None:
-            datetime_fmt = re.findall(r'^date: (.*)', filter.data_type)[0]
-            filter.value = datetime.strptime(filter.value, datetime_fmt)
-            return [d for d in search_result.result 
-                    if d.document_metadata.get(filter.key)
-                        is not None
-                    and datetime.strptime(d.document_metadata.get(filter.key), datetime_fmt)
-                        <= filter.value]
-        if filter.data_type == "numeric":
-            return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is not None
-                and d.document_metadata.get(filter.key) 
-                    <= filter.value]
-    
-    def evaluate_con_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using CONTAINS operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is not None
-                and self.find_contains(filter.value, d.document_metadata.get(filter.key))]
-    
-    def evaluate_ncon_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using NOT CONTAINS operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is not None
-                and not self.find_contains(filter.value, d.document_metadata.get(filter.key))]
-    
-    def evaluate_reg_filter(self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions):
-        """
-        Performs filtering using REGEX operator
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        return [d for d in search_result.result 
-                if d.document_metadata.get(filter.key) 
-                    is not None
-                and re.search(filter.value) is not None]
-    
-    def evaluate_semantic_filter(self, search_result: List[MatchedDocument], domain: DomainEnum, filter: AdvancedFilterConditions):
-        """
-        Performs filtering using semantic search on specific metadata and entities from retrieved documents
-        [Parameters]
-          search_result: List[MatchedDocument]
-          filter: SemanticFilterConditions
-        [Returns]
-          MatchedDocument
-        """
-        data = ElasticsearchClient().search_semantic(
-            query=filter.value,
-            index=f'{domain}-0001', 
-            size=filter.top_n,
-            source=["title", "preprocessed_text", "document_metadata", "document_entities"],
-            emb_vector=f"{filter.key}_vector"
-        )
-        return search_result
-    
-    def find_contains(self, value, source):
-        for val in value:
-            if val in source.split():
-                return True
-        return False
 
-    def run_search(self, query, domain, advanced_filter):
+    def run_file_search(self, file: UploadFile, domain: DomainEnum, doc_ids: List[int]):
+        file.file.seek(0)
+
+        processed_query = self.parsing(
+            file_content_str=b2a_base64(file.file.read()).decode("utf-8"),
+        )
+        search_result = self.elastic_keyword_search(processed_query, domain, doc_ids)
+
+        retrieved_doc_ids = [
+            {"id": x.doc_id, "text": x.preprocessed_text[0:230]}
+            for x in search_result.result
+        ]
+        return retrieved_doc_ids
+
+    def run_search(self, query, domain, advanced_filter, doc_ids):
         """
         Calls query preprocessing, keyword search, and advanced filter methods
         [Parameters]
         [Returns]
           response: SemanticSearchResponse
         """
-        processed_query = self.preprocess_query(query)
-        search_result = self.elastic_keyword_search(processed_query, domain)
-        search_result = self.evaluate_advanced_filter(search_result, domain, advanced_filter)
-
-        return SemanticSearchResponseSchema(
-            message=f"Successfully retrieved {len(search_result.result)} documents",
-            result=search_result.result
+        processed_query = self.preprocess_query(query, domain)
+        search_result = self.elastic_keyword_search(processed_query, domain, doc_ids)
+        search_result = self.evaluate_advanced_filter(
+            search_result, domain, advanced_filter
         )
-        
-        # *tentative TODO: Transform result from last function call to response schema
+
+        retrieved_doc_ids = [
+            {"id": x.doc_id, "text": x.preprocessed_text[0:230]}
+            for x in search_result.result
+        ]
+        return retrieved_doc_ids
+
+    def parsing(self, file_content_str: str, with_ocr: bool = True):
+        """
+        Extracts and preprocesses text from uploaded document
+        [Parameters]
+            file_content_str: str -> Decoded file content in base64.
+            with_ocr: bool -> Whether to OCR the document or not.
+        [Returns]
+            str
+        """
+        try:
+            file_content = a2b_base64(file_content_str)
+            file_text: str = parser.from_buffer(file_content)["content"]
+            # TODO: Handle different file types and utilize OCR
+
+            return " ".join(PreprocessUtil.preprocess(file_text))
+        except Exception as e:
+            print(e)
+            raise e

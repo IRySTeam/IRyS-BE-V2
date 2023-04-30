@@ -1,6 +1,7 @@
 import mimetypes
 import time
 
+import requests
 from google.cloud import storage
 from google.oauth2.service_account import Credentials
 
@@ -32,3 +33,7 @@ class GCStorage:
         blob = self.bucket.blob(file_path)
         blob.upload_from_file(file.file, content_type=type)
         return blob.public_url
+
+    def get_file(self, path) -> bytes:
+        req = requests.get(path)
+        return req.content

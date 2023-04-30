@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from app.document.schemas import MonitorDocumentResponseSchema
+
 
 class MessageResponseSchema(BaseModel):
     message: str = Field(..., description="Message")
@@ -58,10 +60,6 @@ class GetPublicRepositoriesResponseSchema(BaseModel):
     total_items: int = Field(..., description="Total Items")
 
 
-class ReindexAllResponseSchema(BaseModel):
-    success: bool = Field(..., description="Reindexing all documents status")
-
-
 class EditRepositoryResponseSchema(BaseModel):
     message: str = Field(..., description="Message")
 
@@ -75,3 +73,10 @@ class RepositoryCollaboratorSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class MonitorAllDocumentResponseSchema(BaseModel):
+    results: List[MonitorDocumentResponseSchema] = Field(..., description="Results")
+    current_page: int = Field(..., description="Current Page")
+    total_pages: int = Field(..., description="Total Page")
+    total_items: int = Field(..., description="Total Items")
