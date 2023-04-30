@@ -63,4 +63,6 @@ COPY ./celery_app/flower/start /start-flower
 RUN sed -i 's/\r$//g' /start-flower \
     && chmod +x /start-flower
 
+# Copy all project files
+COPY . /app
 WORKDIR /app
