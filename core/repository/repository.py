@@ -358,3 +358,15 @@ class RepositoryRepo(BaseRepo[Repository]):
         if result.rowcount == 0:
             return None
         return result.fetchone().role
+
+    async def find_repository_owners_and_admins_by_repository_id(
+        self, repository_id: int
+    ) -> List[User]:
+        query = """
+        SELECT u.*
+        FROM users u
+        INNER JOIN user_repositories ur ON ur.user_id = u.id
+        WHERE ur.repository_id = :repository_id AND ur.role IN ('Owner', 'Admin')
+        """
+        result = await session.execute(text(query), {"repository_id": repository_id})
+        return result.fetchall()

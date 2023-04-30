@@ -23,3 +23,14 @@ class DocumentSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class DocumentCollaboratorSchema(BaseModel):
+    id: int = Field(..., description="User id")
+    first_name: str = Field(..., description="First name")
+    last_name: str = Field(..., description="Last name")
+    email: str = Field(..., description="Email")
+    role: str = Field(..., description="Role")
+
+    class Config:
+        orm_mode = True

@@ -51,3 +51,6 @@ class User(Base, TimestampMixin):
     repositories: Mapped[List["Repository"]] = relationship(
         "Repository", secondary=user_repositories, back_populates="users"
     )
+    documents: Mapped[List["Document"]] = relationship(
+        "Document", secondary=user_documents, back_populates="collaborators"
+    )
