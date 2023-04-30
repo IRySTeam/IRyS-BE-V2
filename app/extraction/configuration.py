@@ -43,6 +43,19 @@ TYPE_OPERATORS = {
         "less_than_eq",
         "in",
         "not_in",
+        "regex",
+        "contains",
+        "not_contains",
+    ],
+    "date": [
+        "equals",
+        "not_equals",
+        "greater_than",
+        "greater_than_eq",
+        "less_than",
+        "less_than_eq",
+        "in",
+        "not_in",
     ],
 }
 

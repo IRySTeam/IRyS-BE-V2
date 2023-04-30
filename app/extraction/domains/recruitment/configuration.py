@@ -44,15 +44,15 @@ RECRUITMENT_INFORMATION = [
     },
     {
         "name": "skills",
-        "type": "list",
+        "type": "text",
     },
     {
         "name": "experiences_job_titles",
-        "type": "list",
+        "type": "text",
     },
     {
         "name": "experiences_companies",
-        "type": "list",
+        "type": "text",
     },
     {
         "name": "experiences_descriptions",
@@ -60,11 +60,11 @@ RECRUITMENT_INFORMATION = [
     },
     {
         "name": "education_institutions",
-        "type": "list",
+        "type": "text",
     },
     {
         "name": "education_degrees",
-        "type": "list",
+        "type": "text",
     },
     {
         "name": "education_descriptions",
@@ -72,7 +72,7 @@ RECRUITMENT_INFORMATION = [
     },
     {
         "name": "projects_titles",
-        "type": "list",
+        "type": "text",
     },
     {
         "name": "projects_descriptions",
@@ -80,7 +80,7 @@ RECRUITMENT_INFORMATION = [
     },
     {
         "name": "certifications_titles",
-        "type": "list",
+        "type": "text",
     },
     {
         "name": "certifications_descriptions",

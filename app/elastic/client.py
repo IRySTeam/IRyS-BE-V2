@@ -258,7 +258,13 @@ class ElasticsearchClient:
             raise FailedDependencyException(e)
 
     def search_semantic(
-        self, query: str, index: str, size: int, source: List[str], emb_vector: str
+        self,
+        query: str,
+        index: str,
+        size: int,
+        source: List[str],
+        emb_vector: str,
+        doc_ids: List[int],
     ):
         """
         Retrieve documents from an Elasticsearch index based on an input query
@@ -271,12 +277,19 @@ class ElasticsearchClient:
             query_vector = bc.encode([query])[0]
 
             script_query = {
-                "script_score": {
-                    "query": {"match_all": {}},
-                    "script": {
-                        "source": f'doc["{emb_vector}"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, "{emb_vector}") + 1.0',
-                        "params": {"query_vector": query_vector},
-                    },
+                "bool": {
+                    "must": [
+                        {"terms": {"document_id": doc_ids}},
+                        {
+                            "script_score": {
+                                "query": {"match_all": {}},
+                                "script": {
+                                    "source": f'doc["{emb_vector}"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, "{emb_vector}") + 1.0',
+                                    "params": {"query_vector": query_vector},
+                                },
+                            }
+                        },
+                    ]
                 }
             }
 

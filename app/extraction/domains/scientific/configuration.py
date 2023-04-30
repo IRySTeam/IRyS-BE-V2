@@ -36,11 +36,11 @@ SCIENTIFIC_INFORMATION = [
     },
     {
         "name": "authors",
-        "type": "list",
+        "type": "text",
     },
     {
         "name": "affiliations",
-        "type": "list",
+        "type": "text",
     },
     {
         "name": "abstract",
@@ -48,10 +48,10 @@ SCIENTIFIC_INFORMATION = [
     },
     {
         "name": "keywords",
-        "type": "list",
+        "type": "text",
     },
     {
         "name": "references",
-        "type": "list",
+        "type": "text",
     },
 ]

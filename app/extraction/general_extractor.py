@@ -1,6 +1,8 @@
+import datetime
 import mimetypes
-from typing import Any, Dict
+from typing import Any, Dict, List
 
+import dateparser.search
 import magic
 from tika import parser
 from transformers import pipeline
@@ -62,6 +64,10 @@ class GeneralExtractor:
         result.update({"entities": entities.to_dict()})
         result.update(flattened_entities)
 
+        # Extract dates
+        dates = self.__extract_dates(file_text)
+        result.update({"dates": dates})
+
         return result
 
     def extract_entities(self, text: str) -> NERResult:
@@ -120,3 +126,20 @@ class GeneralExtractor:
         }
 
         return flattened_entities
+
+    def __extract_dates(self, text: str) -> List[datetime.date]:
+        """
+        Extract dates from text
+
+        [Arguments]
+            text: str -> Text to extract dates from
+        [Returns]
+            List[datetime.date] -> List of dates
+        """
+
+        dates = dateparser.search.search_dates(
+            text, languages=["en"], settings={"PREFER_DAY_OF_MONTH": "first"}
+        )
+        if dates is None:
+            return []
+        return [date[1].date() for date in dates]

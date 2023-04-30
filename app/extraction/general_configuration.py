@@ -30,4 +30,8 @@ GENERAL_INFORMATION = [
         "name": "size",
         "type": "number",
     },
+    {
+        "name": "dates",
+        "type": "date",
+    },
 ]
