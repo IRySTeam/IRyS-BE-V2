@@ -56,8 +56,6 @@ class RecruitmentExtractor(GeneralExtractor):
             Dict -> Dictionary containing extracted information
         """
 
-        result = super().extract_general_information(file)
-
         # Get resume segments and text
         resume_segments_and_text = self.__get_resume_segments_and_text(file)
 
@@ -68,6 +66,9 @@ class RecruitmentExtractor(GeneralExtractor):
         ]
         segmented_text = ["\n".join(segment) for segment in segmented_text]
         resume_text = "[SEGMENT]".join(segmented_text)
+
+        # Extract general information
+        result = super().extract_general_information(file, resume_text)
 
         # Extract entities
         entities = self.extract_entities(resume_text)

@@ -56,6 +56,7 @@ GENERAL_ELASTICSEARCH_INDEX_INFORMATION = {
     "mimetype": {"type": "text"},
     "extension": {"type": "text"},
     "size": {"type": "integer"},
+    "dates": {"type": "text"},
 }
 
 GENERAL_ELASTICSEARCH_INDEX_MAPPINGS = deepcopy(BASE_ELASTICSEARCH_INDEX_MAPPINGS)

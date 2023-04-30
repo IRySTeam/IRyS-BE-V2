@@ -146,6 +146,12 @@ def extraction(
         size = document_metadata.get("size", None)
         document_title = document_metadata.get("title", None) or document_title
 
+        # Get dates from extracted metadata.
+        print("GENERAL METADATA")
+        print(general_document_metadata.get("dates", ""))
+        print("DOCUMENT METADATA")
+        print(document_metadata.get("dates", ""))
+
         # Update document in database according to extracted metadata and do indexing.
         async_to_sync(document_service.update_document_celery)(
             id=document_id,
