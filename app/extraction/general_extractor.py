@@ -7,6 +7,7 @@ import magic
 from tika import parser
 from transformers import pipeline
 
+from app.extraction.converter import Converter
 from app.extraction.general_configuration import GENERAL_ENTITIES
 from app.extraction.ner_result import NERResult
 
@@ -29,6 +30,7 @@ class GeneralExtractor:
             "ner", model="dslim/bert-base-NER", aggregation_strategy="first"
         )
         self.entity_list = GENERAL_ENTITIES
+        self.file_converter = Converter()
 
     def preprocess(self, text: str) -> str:
         """
