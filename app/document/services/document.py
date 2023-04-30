@@ -403,7 +403,7 @@ class DocumentService:
         if repo_role.upper() in RepositoryRole.__members__:
             repo_role = RepositoryRole[repo_role.upper()]
 
-            if repo_role <= RepositoryRole.ADMIN:
+            if repo_role < RepositoryRole.ADMIN:
                 doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
                     collaborator_id=user_id, document_id=document_id
                 )
