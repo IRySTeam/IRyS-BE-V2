@@ -3,20 +3,30 @@ from typing import List
 from asgiref.sync import async_to_sync
 from fastapi import UploadFile
 
-from app.document.enums.document import IndexingStatusEnum
+from app.document.enums import DocumentRole, IndexingStatusEnum
 from app.document.models import Document, DocumentIndex
-from app.document.schemas import DocumentSchema
+from app.document.schemas import DocumentCollaboratorSchema, DocumentSchema
 from app.elastic import EsClient
 from app.elastic.configuration import GENERAL_ELASTICSEARCH_INDEX_NAME
 from app.repository.enums import RepositoryRole
 from core.db import Transactional, standalone_session
 from core.exceptions import (
+    DocumentCollaboratorAlreadyExistException,
+    DocumentCollaboratorNotFoundException,
+    DocumentNotFoundException,
+    InvalidDocumentRoleException,
     InvalidRepositoryRoleException,
     NotFoundException,
     RepositoryNotFoundException,
     UserNotAllowedException,
+    UserNotFoundException,
 )
-from core.repository import DocumentIndexRepo, DocumentRepo, RepositoryRepo
+from core.repository import (
+    DocumentIndexRepo,
+    DocumentRepo,
+    RepositoryRepo,
+    UserRepo,
+)
 from core.utils import GCStorage
 
 
@@ -29,6 +39,7 @@ class DocumentService:
     repository_repo = RepositoryRepo()
     document_repo = DocumentRepo()
     document_index_repo = DocumentIndexRepo()
+    user_repo = UserRepo()
 
     def __init__(self):
         ...
@@ -480,3 +491,279 @@ class DocumentService:
             repository_id
         )
         return documents
+
+    async def edit_document(
+        self, user_id: int, repo_id: int, document_id: int, params: dict
+    ):
+        if not self.document_repo.is_exist(document_id):
+            raise DocumentNotFoundException
+
+        repo_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id=user_id, repository_id=repo_id
+            )
+        )
+
+        if not repo_role:
+            raise UserNotAllowedException
+        if repo_role.upper() in RepositoryRole.__members__:
+            repo_role = RepositoryRole[repo_role.upper()]
+
+            if repo_role < RepositoryRole.ADMIN:
+                doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+                    collaborator_id=user_id, document_id=document_id
+                )
+                if not doc_role:
+                    raise UserNotAllowedException
+
+                if doc_role.upper() in DocumentRole.__members__:
+                    doc_role = DocumentRole[doc_role.upper()]
+                    if doc_role < DocumentRole.EDITOR:
+                        raise UserNotAllowedException
+                else:
+                    raise InvalidDocumentRoleException
+        else:
+            raise InvalidRepositoryRoleException
+
+        params = {k: v for k, v in params.items() if v is not None}
+        await self.document_repo.update_by_id(document_id, params)
+
+    async def get_document_collaborators(
+        self, user_id: int, repository_id: int, document_id: int
+    ) -> List[DocumentCollaboratorSchema]:
+        document = await self.document_repo.get_by_id(document_id)
+
+        if not document:
+            raise DocumentNotFoundException
+
+        if not document.is_public:
+            repo_role = (
+                await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                    user_id=user_id, repository_id=repository_id
+                )
+            )
+
+            if not repo_role:
+                raise UserNotAllowedException
+            if repo_role.upper() in RepositoryRole.__members__:
+                repo_role = RepositoryRole[repo_role.upper()]
+
+                if repo_role < RepositoryRole.ADMIN:
+                    doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+                        collaborator_id=user_id, document_id=document_id
+                    )
+                    if not doc_role:
+                        raise UserNotAllowedException
+
+                    if not doc_role.upper() in DocumentRole.__members__:
+                        raise InvalidDocumentRoleException
+
+            else:
+                raise InvalidRepositoryRoleException
+
+        collaborators = await self.document_repo.get_collaborators_by_document_id(
+            document_id=document_id, repository_id=repository_id
+        )
+
+        results = []
+        for collaborator in collaborators:
+            results.append(
+                DocumentCollaboratorSchema(
+                    id=collaborator.id,
+                    first_name=collaborator.first_name,
+                    last_name=collaborator.last_name,
+                    email=collaborator.email,
+                    role=collaborator.role,
+                )
+            )
+        return collaborators
+
+    async def add_document_collaborator(
+        self,
+        user_id: int,
+        repository_id: int,
+        document_id: int,
+        collaborator_id: int,
+        role: str,
+    ) -> None:
+        document = await self.document_repo.get_by_id(document_id)
+
+        if not await self.user_repo.is_exist(collaborator_id):
+            raise UserNotFoundException
+
+        if not document:
+            raise DocumentNotFoundException
+
+        repo_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id=user_id, repository_id=repository_id
+            )
+        )
+
+        if not repo_role:
+            raise UserNotAllowedException
+        if repo_role.upper() in RepositoryRole.__members__:
+            repo_role = RepositoryRole[repo_role.upper()]
+
+            if repo_role < RepositoryRole.ADMIN:
+                doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+                    collaborator_id=user_id, document_id=document_id
+                )
+                if not doc_role:
+                    raise UserNotAllowedException
+
+                if doc_role.upper() in DocumentRole.__members__:
+                    doc_role = DocumentRole[doc_role.upper()]
+
+                    if doc_role < DocumentRole.EDITOR:
+                        raise UserNotAllowedException
+
+                    if role.upper() in DocumentRole.__members__:
+                        role = DocumentRole[role.upper()]
+                        if role > doc_role or role == doc_role:
+                            raise UserNotAllowedException
+
+                        await self.document_repo.add_collaborator(
+                            document_id, collaborator_id, role.name
+                        )
+                    else:
+                        raise InvalidDocumentRoleException
+                else:
+                    raise InvalidDocumentRoleException
+        else:
+            raise InvalidRepositoryRoleException
+
+        if await self.document_repo.is_collaborator_exist(document_id, collaborator_id):
+            raise DocumentCollaboratorAlreadyExistException
+
+        if not role.upper() in DocumentRole.__members__:
+            raise InvalidDocumentRoleException
+
+        role = DocumentRole[role.upper()]
+
+        if role is DocumentRole.OWNER:
+            raise UserNotAllowedException
+
+        await self.document_repo.add_collaborator(
+            document_id, collaborator_id, role.name.title()
+        )
+
+    async def edit_document_collaborator(
+        self,
+        user_id: int,
+        repository_id: int,
+        document_id: int,
+        collaborator_id: int,
+        role: str,
+    ) -> None:
+        document = await self.document_repo.get_by_id(document_id)
+
+        if not self.user_repo.is_exist(collaborator_id):
+            raise UserNotFoundException
+
+        if not document:
+            raise DocumentNotFoundException
+
+        repo_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id=user_id, repository_id=repository_id
+            )
+        )
+
+        if not repo_role:
+            raise UserNotAllowedException
+        if repo_role.upper() in RepositoryRole.__members__:
+            repo_role = RepositoryRole[repo_role.upper()]
+
+            if repo_role < RepositoryRole.ADMIN:
+                doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+                    collaborator_id=user_id, document_id=document_id
+                )
+                if not doc_role:
+                    raise UserNotAllowedException
+
+                if doc_role.upper() in DocumentRole.__members__:
+                    doc_role = DocumentRole[doc_role.upper()]
+
+                    if doc_role < DocumentRole.EDITOR:
+                        raise UserNotAllowedException
+
+                    if role.upper() in DocumentRole.__members__:
+                        role = DocumentRole[role.upper()]
+                        if role > DocumentRole.VIEWER:
+                            raise UserNotAllowedException
+
+                        await self.document_repo.edit_collaborator(
+                            document_id, collaborator_id, role.name
+                        )
+                    else:
+                        raise InvalidDocumentRoleException
+                else:
+                    raise InvalidDocumentRoleException
+        else:
+            raise InvalidRepositoryRoleException
+
+        if not await self.document_repo.is_collaborator_exist(
+            document_id, collaborator_id
+        ):
+            raise DocumentCollaboratorNotFoundException
+
+        if not role.upper() in DocumentRole.__members__:
+            raise InvalidDocumentRoleException
+
+        role = DocumentRole[role.upper()]
+
+        if role is DocumentRole.OWNER:
+            raise UserNotAllowedException
+
+        await self.document_repo.edit_collaborator(
+            document_id, collaborator_id, role.name.title()
+        )
+
+    async def delete_document_collaborator(
+        self, user_id: int, repository_id: int, document_id: int, collaborator_id: int
+    ) -> None:
+        document = await self.document_repo.get_by_id(document_id)
+
+        if not self.user_repo.is_exist(collaborator_id):
+            raise UserNotFoundException
+
+        if not document:
+            raise DocumentNotFoundException
+
+        repo_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id=user_id, repository_id=repository_id
+            )
+        )
+
+        if not repo_role:
+            raise UserNotAllowedException
+        if repo_role.upper() in RepositoryRole.__members__:
+            repo_role = RepositoryRole[repo_role.upper()]
+
+            if repo_role < RepositoryRole.ADMIN:
+                doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+                    collaborator_id=user_id, document_id=document_id
+                )
+                if not doc_role:
+                    raise UserNotAllowedException
+
+                if doc_role.upper() in DocumentRole.__members__:
+                    doc_role = DocumentRole[doc_role.upper()]
+
+                    if doc_role < DocumentRole.EDITOR:
+                        raise UserNotAllowedException
+
+                    await self.document_repo.delete_collaborator(
+                        document_id, collaborator_id
+                    )
+                else:
+                    raise InvalidDocumentRoleException
+        else:
+            raise InvalidRepositoryRoleException
+
+        if not self.document_repo.is_collaborator_exist(document_id, collaborator_id):
+            raise DocumentCollaboratorNotFoundException
+
+        await self.document_repo.delete_collaborator(document_id, collaborator_id)
