@@ -2,28 +2,34 @@ import json
 import magic
 import mimetypes
 import re
-from typing import Optional, List
+from typing import List
 from binascii import a2b_base64, b2a_base64
-from datetime import datetime
 from fastapi import UploadFile
 from tika import parser
 
-from app.search.constants.search import DOMAIN_INDEXES
 from app.search.enums.search import DomainEnum, FilterOperatorEnum
 from app.search.schemas.elastic import MatchedDocument, SearchResult
-from app.search.schemas.advanced_search import AdvancedFilterConditions, AdvancedSearchQuery
-from app.search.schemas.search import SemanticSearchResponseSchema
+from app.search.schemas.advanced_search import AdvancedFilterConditions
 from app.search.services.advanced_search import AdvancedSearchService
+from app.search.services.query_expansion import QueryExpansionService
 from app.elastic.client import ElasticsearchClient
-from app.preprocess import PreprocessUtil, OCRUtil
+from app.preprocess import PreprocessUtil
 
 class SearchService:
     def __init__(self, algorithm, domain, scoring):
         self.algorithm = algorithm
         self.domain = DomainEnum.GENERAL # domain
         self.scoring = scoring
+        self.recruitment_expander = QueryExpansionService(model='salsabiilashifa11/gpt-cv')
+        self.scientific_expander = QueryExpansionService(model='salsabiilashifa11/gpt-paper')
 
-    def preprocess_query(self, query: str):
+    def preprocess_query(
+            self, 
+            query: str, 
+            domain: DomainEnum, 
+            should_expand: bool = True,
+            expansion_method: str = "p_sampling"
+        ):
         """
         Refines raw user query by performing tokenization, stopword removal, stemming, lemmatization, and query expansion on it 
         [Input]
@@ -31,6 +37,10 @@ class SearchService:
         [Output]
           - preprocessed query: str
         """
+        if (should_expand) and (domain == DomainEnum.RECRUITMENT):
+            query = self.recruitment_expander.expansion_method[expansion_method](query)
+        if (should_expand) and (domain == DomainEnum.SCIENTIFIC):
+            query = self.recruitment_expander.expansion_method[expansion_method](query)
         return " ".join(PreprocessUtil().preprocess(query))
 
     def normalize_search_result(self, data):
@@ -142,7 +152,7 @@ class SearchService:
         [Returns]
           response: SemanticSearchResponse
         """
-        processed_query = self.preprocess_query(query)
+        processed_query = self.preprocess_query(query, domain)
         search_result = self.elastic_keyword_search(processed_query, domain, doc_ids)
         search_result = self.evaluate_advanced_filter(search_result, domain, advanced_filter)
 
