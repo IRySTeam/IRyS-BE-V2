@@ -23,6 +23,17 @@ TYPE_OPERATORS = {
         "contains",
         "not_contains",
     ],
+    "semantic text": [
+        "equals",
+        "not_equals",
+        "exists",
+        "not_exists",
+        "in",
+        "not_in",
+        "regex",
+        "contains",
+        "not_contains",
+    ],
     "number": [
         "equals",
         "not_equals",
@@ -32,6 +43,9 @@ TYPE_OPERATORS = {
         "less_than_eq",
         "in",
         "not_in",
+        "regex",
+        "contains",
+        "not_contains",
     ],
     "date": [
         "equals",
