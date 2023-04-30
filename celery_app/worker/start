@@ -3,4 +3,7 @@
 set -o errexit
 set -o nounset
 
+# Run init_tika.py
+python3 ./celery_app/worker/init_tika.py
+
 celery -A celery_app.main.celery worker --loglevel=info
