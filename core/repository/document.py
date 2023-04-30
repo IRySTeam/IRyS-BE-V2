@@ -160,3 +160,37 @@ class DocumentRepo(BaseRepo[Document]):
             {"user_id": collaborator_id, "document_id": document_id},
         )
         return result.fetchone().count > 0
+    
+    async def get_all_accessible_documents(
+        self, collaborator_id: int
+    ) -> List[int]:
+        query = """
+        SELECT d.id FROM documents d
+        INNER JOIN user_documents ud ON d.id = ud.document_id
+        WHERE user_id = :user_id OR d.is_public IS true
+        UNION
+        SELECT d.id FROM documents d 
+        INNER JOIN repositories r ON d.repository_id = r.id
+        INNER JOIN user_repositories ur ON r.id = ur.repository_id
+        WHERE ur.user_id = :user_id;
+        """
+        result = await session.execute(
+            text(query),
+            {"user_id": collaborator_id}
+        )
+        return result.fetchall()
+    
+    async def get_repo_accessible_documents(
+        self, repository_id: int
+    ) -> List[int]:
+        query = """
+        SELECT d.id FROM documents d 
+        INNER JOIN repositories r ON d.repository_id = r.id
+        INNER JOIN user_repositories ur ON r.id = ur.repository_id
+        WHERE r.id = :repository_id;
+        """
+        result = await session.execute(
+            text(query),
+            {"repository_id": repository_id}
+        )
+        return result.fetchall()
