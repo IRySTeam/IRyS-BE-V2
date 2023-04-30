@@ -23,14 +23,17 @@ TYPE_OPERATORS = {
         "contains",
         "not_contains",
     ],
-    "list": [
-        "contains",
-        "not_contains",
+    "number": [
         "equals",
+        "not_equals",
+        "greater_than",
+        "greater_than_eq",
+        "less_than",
+        "less_than_eq",
         "in",
         "not_in",
     ],
-    "number": [
+    "date": [
         "equals",
         "not_equals",
         "greater_than",
