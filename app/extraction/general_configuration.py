@@ -32,6 +32,6 @@ GENERAL_INFORMATION = [
     },
     {
         "name": "dates",
-        "type": "list",
+        "type": "date",
     },
 ]
