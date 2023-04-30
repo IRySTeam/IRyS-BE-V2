@@ -6,10 +6,6 @@ from elasticsearch import Elasticsearch
 from elasticsearch.client import IndicesClient
 from elasticsearch.exceptions import ApiError
 
-from app.elastic.configuration import (
-    GENERAL_ELASTICSEARCH_INDEX_MAPPINGS,
-    GENERAL_ELASTICSEARCH_INDEX_SETTINGS,
-)
 from app.elastic.helpers import classify_error
 from app.elastic.schemas import (
     ElasticCreateIndexResponse,
@@ -17,9 +13,9 @@ from app.elastic.schemas import (
     ElasticIndexDetail,
     ElasticInfo,
 )
-from bert_serving.client import BertClient
 from core.config import config
-from core.exceptions.base import FailedDependencyException
+from core.exceptions.base import FailedDependencyException, NotFoundException
+
 
 class ElasticsearchClient:
     """
@@ -106,14 +102,14 @@ class ElasticsearchClient:
     def create_index(
         self,
         index_name: str,
-        mapping: Optional[Mapping[str, Any]] = None,
+        mappings: Optional[Mapping[str, Any]] = None,
         settings: Optional[Mapping[str, Any]] = None,
     ) -> ElasticCreateIndexResponse:
         """
         Create an index in Elasticsearch.
         [Parameters]
           index_name: str -> Name of the index.
-          mapping: Optional[Mapping[str, Any]] -> Define how a document, and the fields it contains,
+          mappings: Optional[Mapping[str, Any]] -> Define how a document, and the fields it contains,
             are stored and indexed.
           settings: Optional[Mapping[str, Any]] -> Index configuration, there are static (unchangeable)
             and dynamic (changeable) settings.
@@ -121,12 +117,8 @@ class ElasticsearchClient:
           ElasticCreateIndexResponse: Response of creating an index.
         """
         try:
-            if mapping is None or mapping == {}:
-                mapping = GENERAL_ELASTICSEARCH_INDEX_MAPPINGS
-            if settings is None or settings == {}:
-                settings = GENERAL_ELASTICSEARCH_INDEX_SETTINGS
             return self.indices_client.create(
-                index=index_name, mappings=mapping, settings=settings
+                index=index_name, mappings=mappings, settings=settings
             )
         except ApiError as e:
             raise classify_error(e)
@@ -197,6 +189,31 @@ class ElasticsearchClient:
         except Exception as e:
             raise FailedDependencyException(e)
 
+    def safe_delete_doc(self, index_name: str, doc_id: str) -> ObjectApiResponse[Any]:
+        """
+        Delete a document from an Elasticsearch index, but ignore if document does not exist.
+        [Parameters]
+            index_name: str -> Name of index that will contain the document
+            doc_id: str -> ID of the document to be deleted in the corresponding index
+        [Returns]
+            ObjectApiResponse[Any]: Response from Elasticsearch
+        """
+        try:
+            return self.client.delete(index=index_name, id=doc_id)
+        except ApiError as e:
+            error = classify_error(
+                e,
+                "Document with id: {} not found in index: {}".format(
+                    doc_id, index_name
+                ),
+            )
+            if isinstance(error, NotFoundException):
+                print(error.message)
+                return None
+            raise error
+        except Exception as e:
+            raise FailedDependencyException(e)
+
     def delete_doc(self, index_name: str, doc_id: str) -> ObjectApiResponse[Any]:
         """
         Delete a document from an Elasticsearch index.
@@ -218,9 +235,37 @@ class ElasticsearchClient:
         except Exception as e:
             raise FailedDependencyException(e)
 
+    def update_doc(self, index_name: str, doc_id: str, doc: Mapping[str, Any]):
+        """
+        Update a document from an Elasticsearch index.
+        [Parameters]
+            index_name: str -> Name of index that will contain the document
+            doc_id: str -> ID of the document to be updated in the corresponding index
+            doc: Mapping[str, Any] -> Document to be updated.
+        [Returns]
+            ObjectApiResponse[Any]: Response from Elasticsearch
+        """
+        try:
+            return self.client.update(index=index_name, id=doc_id, body=doc)
+        except ApiError as e:
+            raise classify_error(
+                e,
+                "Document with id: {} not found in index: {}".format(
+                    doc_id, index_name
+                ),
+            )
+        except Exception as e:
+            raise FailedDependencyException(e)
+
     def search_semantic(
-            self, query: str, index: str, size: int, source: List[str], emb_vector: str, doc_ids: List[int]
-        ):
+        self,
+        query: str,
+        index: str,
+        size: int,
+        source: List[str],
+        emb_vector: str,
+        doc_ids: List[int],
+    ):
         """
         Retrieve documents from an Elasticsearch index based on an input query
         [Parameters]
@@ -228,39 +273,30 @@ class ElasticsearchClient:
           index_name: str -> Name of index that will be the base of the search
         """
         try:
-            bc = BertClient(ip='bertserving', output_fmt="list", timeout=5000)
+            bc = BertClient(ip="bertserving", output_fmt="list", timeout=5000)
             query_vector = bc.encode([query])[0]
-            
+
             script_query = {
                 "bool": {
                     "must": [
-                        {
-                            "terms": {
-                                "document_id": doc_ids
-                            }
-                        },
+                        {"terms": {"document_id": doc_ids}},
                         {
                             "script_score": {
-                                "query": {
-                                    "match_all": {}
-                                },
+                                "query": {"match_all": {}},
                                 "script": {
-                                    "source": f"doc[\"{emb_vector}\"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, \"{emb_vector}\") + 1.0",
-                                    "params": {"query_vector": query_vector}
-                                }
+                                    "source": f'doc["{emb_vector}"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, "{emb_vector}") + 1.0',
+                                    "params": {"query_vector": query_vector},
+                                },
                             }
-                        }
+                        },
                     ]
                 }
             }
 
             return self.client.search(
-                index=index, 
-                size=size,
-                query=script_query,
-                source={"includes": source}
+                index=index, size=size, query=script_query, source={"includes": source}
             )
-        
+
         except TimeoutError as e:
             raise e
         except ApiError as e:
