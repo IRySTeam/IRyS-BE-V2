@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ffmpeg libsm6 libxext6  \
   # Additional dependencies
   telnet netcat \
+  # Libreoffice for converting docx to pdf
+  libreoffice \
   # Fix java certificate issues
   && apt-get clean \
   && update-ca-certificates -f \
