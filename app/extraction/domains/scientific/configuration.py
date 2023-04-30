@@ -32,7 +32,7 @@ SCIENTIFIC_ENTITIES = [
 SCIENTIFIC_INFORMATION = [
     {
         "name": "title",
-        "type": "text",
+        "type": "semantic text",
     },
     {
         "name": "authors",
@@ -44,7 +44,7 @@ SCIENTIFIC_INFORMATION = [
     },
     {
         "name": "abstract",
-        "type": "text",
+        "type": "semantic text",
     },
     {
         "name": "keywords",

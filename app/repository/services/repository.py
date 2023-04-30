@@ -126,8 +126,21 @@ class RepositoryService:
             results=results, total_page=total_page, total_items=total_items
         )
 
-    async def reindex_all(self, repository_id: int = None):
-        # Find the repository
+    async def reindex_all(self, user_id: int, repository_id: int):
+        # User permission check.
+        if not await self.repository_repo.is_exist(repository_id):
+            raise RepositoryNotFoundException
+        if not (
+            await self.repository_repo.is_user_id_owner_of_repository(
+                user_id, repository_id
+            )
+            or await self.repository_repo.is_user_id_admin_of_repository(
+                user_id, repository_id
+            )
+        ):
+            raise UserNotAllowedException
+
+        # Find the repository and reindex all documents.
         repository = await self.repository_repo.get_by_id(repository_id, True, True)
         if not repository:
             raise NotFoundException("Repository with specified id not found")

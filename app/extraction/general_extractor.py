@@ -51,22 +51,17 @@ class GeneralExtractor:
         [Returns]
             Dict[str, Any] -> Dictionary containing extracted information and entities
         """
+        file_text: str = parser.from_buffer(file)["content"].strip()
 
         # Extract general information
-        result = self.extract_general_information(file)
-
-        file_text: str = parser.from_buffer(file)["content"].strip()
+        result = self.extract_general_information(file, file_text)
 
         entities = self.extract_entities(file_text)
 
         flattened_entities = self.flatten_entities(entities)
 
-        result.update({"entities": entities})
+        result.update({"entities": entities.to_dict()})
         result.update(flattened_entities)
-
-        # Extract dates
-        dates = self.__extract_dates(file_text)
-        result.update({"dates": dates})
 
         return result
 
@@ -86,12 +81,15 @@ class GeneralExtractor:
             ner["score"] = ner["score"].item()
         return NERResult(text, ner_result)
 
-    def extract_general_information(self, file: bytes) -> Dict[str, Any]:
+    def extract_general_information(
+        self, file: bytes, file_text: str = None
+    ) -> Dict[str, Any]:
         """
         Extract general information from file
 
         [Arguments]
             file: bytes -> File to extract information from
+            file_text: str -> Text of file
         [Returns]
             Dict[str, Any] -> Dictionary containing extracted information
         """
@@ -100,10 +98,27 @@ class GeneralExtractor:
         extension = mimetypes.guess_extension(mimetype)
         size = len(file)
 
+        # Extract dates
+        if file_text is None:
+            file_text: str = parser.from_buffer(file)["content"].strip()
+        dates = self.__extract_dates(file_text)
+        converted_dates = [date.strftime("%Y-%m-%d") for date in dates]
+
+        # Manually convert three digit years to four digit years
+        def convert_year(date: str) -> str:
+            date = date.split("-")
+            year = date[0]
+            if len(year) != 4:
+                year = year.zfill(4)
+            return "-".join([year, date[1], date[2]])
+
+        converted_dates = [convert_year(date) for date in converted_dates]
+
         return {
             "mimetype": mimetype,
             "extension": extension,
             "size": size,
+            "dates": converted_dates,
         }
 
     def flatten_entities(self, entities: NERResult) -> Dict[str, Any]:

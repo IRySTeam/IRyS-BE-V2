@@ -60,24 +60,16 @@ class DocumentIndexService:
     async def update_indexing_status_celery(
         self,
         doc_id: int,
-        status: IndexingStatusEnum,
-        reason: str = None,
-        current_task_id: str = None,
-    ) -> None:
+        params: dict,
+    ) -> DocumentIndex:
         """
         Update the indexing status of a document.
         [Parameters]
             doc_id: int -> Document id.
-            status: IndexingStatusEnum -> Indexing status.
-            reason: str -> Reason for the indexing status.
-            current_task_id: str -> Celery task id.
+            params: dict -> Parameters to update.
         """
-        await self.get_by_doc_id(doc_id)
         await self.document_index_repo.update_by_doc_id(
             doc_id=doc_id,
-            params={
-                "status": status,
-                "reason": reason,
-                "current_task_id": current_task_id,
-            },
+            params=params,
         )
+        return await self.get_by_doc_id(doc_id)

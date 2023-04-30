@@ -12,3 +12,13 @@ class NERResult:
         self.text = text
         self.results = results
         self.entities = {res["entity_group"] for res in results}
+
+    def to_dict(self):
+        return self.__dict__()
+
+    def __dict__(self):
+        return {
+            "text": self.text,
+            "results": self.results,
+            "entities": list(self.entities),
+        }
