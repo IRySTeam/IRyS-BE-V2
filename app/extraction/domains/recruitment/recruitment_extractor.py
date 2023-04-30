@@ -3,9 +3,9 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 import fitz
+from tika import parser
 from transformers import pipeline
 
-from app.extraction.converter import Converter
 from app.extraction.domains.recruitment.configuration import (
     RECRUITMENT_ENTITIES,
 )
@@ -36,7 +36,6 @@ class RecruitmentExtractor(GeneralExtractor):
             "ner", model="topmas/IRyS-NER-Recruitment", aggregation_strategy="simple"
         )
         self.entity_list = RECRUITMENT_ENTITIES
-        self.file_converter = Converter()
 
     def preprocess(self, text: str) -> str:
         """
@@ -58,8 +57,16 @@ class RecruitmentExtractor(GeneralExtractor):
             Dict -> Dictionary containing extracted information
         """
 
+        result = super().extract_general_information(file)
+
+        is_pdf = result["extension"] == ".pdf"
+
+        if result["extension"] == ".doc" or result["extension"] == ".docx":
+            file = self.file_converter.doc_to_pdf(file, result["extension"])
+            is_pdf = True
+
         # Get resume segments and text
-        resume_segments_and_text = self.__get_resume_segments_and_text(file)
+        resume_segments_and_text = self.__get_resume_segments_and_text(file, is_pdf)
 
         # Join text for every segment
         segmented_text = [
@@ -80,15 +87,10 @@ class RecruitmentExtractor(GeneralExtractor):
         result.update({"entities": entities.to_dict()})
         result.update(flattened_entities)
 
-        if result["extension"] == ".doc" or result["extension"] == ".docx":
-            file = self.file_converter.doc_to_pdf(file, result["extension"])
-
-        # TODO: Handle txt if possible
-        if result["extension"] != ".txt":
-            recruitment_information = self.__extract_recruitment_information(
-                resume_segments_and_text
-            )
-            result = result | recruitment_information
+        recruitment_information = self.__extract_recruitment_information(
+            resume_segments_and_text, is_pdf
+        )
+        result = result | recruitment_information
 
         return result
 
@@ -133,7 +135,7 @@ class RecruitmentExtractor(GeneralExtractor):
         return NERResult(full_text, result)
 
     def __extract_recruitment_information(
-        self, resume_segments_and_text: Dict[str, Any]
+        self, resume_segments_and_text: Dict[str, Any], is_pdf: bool
     ) -> Dict[str, Any]:
         """
         Extract recruitment information from resume file
@@ -158,7 +160,7 @@ class RecruitmentExtractor(GeneralExtractor):
         resume_text = resume_segments_and_text["text"]
 
         # Extract name and email from profile segment
-        name = self.__extract_name(resume_segments["profile"])
+        name = self.__extract_name(resume_segments["profile"], is_pdf)
         recruitment_information["name"] = name
 
         # Extract email
@@ -179,17 +181,22 @@ class RecruitmentExtractor(GeneralExtractor):
             resume_segments["education"]
         )
 
-        # Extract projects
-        recruitment_information |= self.__extract_projects(resume_segments["projects"])
+        if is_pdf:
+            # Extract projects
+            recruitment_information |= self.__extract_projects(
+                resume_segments["projects"]
+            )
 
-        # Extract certifications
-        recruitment_information |= self.__extract_certifications(
-            resume_segments["certifications"]
-        )
+            # Extract certifications
+            recruitment_information |= self.__extract_certifications(
+                resume_segments["certifications"]
+            )
 
         return recruitment_information
 
-    def __get_resume_segments_and_text(self, file: bytes) -> Dict[str, Any]:
+    def __get_resume_segments_and_text(
+        self, file: bytes, is_pdf: bool
+    ) -> Dict[str, Any]:
         """
         Get resume segments and text from resume file
 
@@ -199,69 +206,78 @@ class RecruitmentExtractor(GeneralExtractor):
             Dict -> Dictionary of resume segments and text
         """
 
-        if isinstance(file, bytes):
-            doc = fitz.open(stream=file, filetype="pdf")
-        else:
-            raise TypeError("file must be bytes")
-
-        pages = []
-        dict_flags = (
-            (fitz.TEXTFLAGS_DICT | fitz.TEXT_DEHYPHENATE)
-            & ~fitz.TEXT_PRESERVE_IMAGES
-            & ~fitz.TEXT_PRESERVE_LIGATURES
-        )
-        text_flags = (
-            (fitz.TEXTFLAGS_TEXT | fitz.TEXT_DEHYPHENATE)
-            & ~fitz.TEXT_PRESERVE_IMAGES
-            & ~fitz.TEXT_PRESERVE_LIGATURES
-        )
-        resume_text = ""
-        for page in doc:
-            pages.append(page.get_text("dict", sort=False, flags=dict_flags))
-            resume_text += page.get_text("text", sort=False, flags=text_flags)
-
         page_lines = []
-        max_font_size = 0
-        header_font_size = 0
-        possible_header_sizes = [0]
-        for page in pages:
-            for block in page["blocks"]:
-                for line in block["lines"]:
-                    line_text = ""
-                    span_font_sizes = defaultdict(int)
-                    span_flags = defaultdict(int)
-                    for span in line["spans"]:
+        if is_pdf:
+            if isinstance(file, bytes):
+                doc = fitz.open(stream=file, filetype="pdf")
+            else:
+                raise TypeError("file must be bytes")
 
-                        line_text += span["text"]
-                        span_font_sizes[span["size"]] += len(span["text"])
-                        span_flags[span["flags"]] += len(span["text"])
+            pages = []
+            dict_flags = (
+                (fitz.TEXTFLAGS_DICT | fitz.TEXT_DEHYPHENATE)
+                & ~fitz.TEXT_PRESERVE_IMAGES
+                & ~fitz.TEXT_PRESERVE_LIGATURES
+            )
+            text_flags = (
+                (fitz.TEXTFLAGS_TEXT | fitz.TEXT_DEHYPHENATE)
+                & ~fitz.TEXT_PRESERVE_IMAGES
+                & ~fitz.TEXT_PRESERVE_LIGATURES
+            )
+            resume_text = ""
+            for page in doc:
+                pages.append(page.get_text("dict", sort=False, flags=dict_flags))
+                resume_text += page.get_text("text", sort=False, flags=text_flags)
 
-                    if not line_text == "" and not line_text.isspace():
-                        common_font_size = max(span_font_sizes, key=span_font_sizes.get)
-                        if re.match(RESUME_HEADERS_REGEX, line_text):
-                            possible_header_sizes.append(common_font_size)
-                        common_flag = max(span_flags, key=span_flags.get)
-                        page_lines.append(
-                            {
-                                "text": line_text.encode("ascii", errors="ignore")
-                                .decode()
-                                .strip(),
-                                "block": block["number"],
-                                "label": "unknown",
-                                "size": common_font_size,
-                                "flags": common_flag,
-                                "bbox": line["bbox"],
-                            }
-                        )
+            max_font_size = 0
+            header_font_size = 0
+            possible_header_sizes = [0]
+            for page in pages:
+                for block in page["blocks"]:
+                    for line in block["lines"]:
+                        line_text = ""
+                        span_font_sizes = defaultdict(int)
+                        span_flags = defaultdict(int)
+                        for span in line["spans"]:
 
-                        # Get max font size that are horizontal
-                        if common_font_size > max_font_size and line["dir"] == (
-                            1.0,
-                            0.0,
-                        ):
-                            max_font_size = common_font_size
+                            line_text += span["text"]
+                            span_font_sizes[span["size"]] += len(span["text"])
+                            span_flags[span["flags"]] += len(span["text"])
 
-        header_font_size = max(possible_header_sizes)
+                        if not line_text == "" and not line_text.isspace():
+                            common_font_size = max(
+                                span_font_sizes, key=span_font_sizes.get
+                            )
+                            if re.match(RESUME_HEADERS_REGEX, line_text):
+                                possible_header_sizes.append(common_font_size)
+                            common_flag = max(span_flags, key=span_flags.get)
+                            page_lines.append(
+                                {
+                                    "text": line_text.encode("ascii", errors="ignore")
+                                    .decode()
+                                    .strip(),
+                                    # "block": block["number"],
+                                    "label": "unknown",
+                                    "size": common_font_size,
+                                    "flags": common_flag,
+                                }
+                            )
+
+                            # Get max font size that are horizontal
+                            if common_font_size > max_font_size and line["dir"] == (
+                                1.0,
+                                0.0,
+                            ):
+                                max_font_size = common_font_size
+
+            header_font_size = max(possible_header_sizes)
+        else:  # txt file
+            resume_text: str = parser.from_buffer(file)["content"].strip()
+            page_lines = [
+                {"text": line.strip(), "label": "unknown"}
+                for line in resume_text.splitlines()
+                if line.strip() != ""
+            ]
 
         i = 0
         resume_segment = []
@@ -272,7 +288,11 @@ class RecruitmentExtractor(GeneralExtractor):
         while i < len(page_lines):
             # Match line text with resume header regex and font size
             match = re.match(RESUME_HEADERS_REGEX, page_lines[i]["text"].lower())
-            while not (match and page_lines[i]["size"] == header_font_size):
+
+            if is_pdf:
+                match = match and page_lines[i]["size"] == header_font_size
+
+            while not match:
                 resume_segment.append(page_lines[i])
                 current_text += page_lines[i]["text"] + "\n"
                 page_lines[i]["label"] = current_label
@@ -302,7 +322,9 @@ class RecruitmentExtractor(GeneralExtractor):
             "text": resume_text,
         }
 
-    def __extract_name(self, profile_segment: List[Dict[str, Any]]) -> str:
+    def __extract_name(
+        self, profile_segment: List[Dict[str, Any]], is_pdf: bool
+    ) -> str:
         """
         Extract name and email from profile segment
 
@@ -314,12 +336,17 @@ class RecruitmentExtractor(GeneralExtractor):
 
         name = ""
 
-        # Assume the name is the text with the largest font size in the profile segment
-        profile_max_font_size = 0
-        for line in profile_segment:
-            if line["size"] > profile_max_font_size:
-                profile_max_font_size = line["size"]
-                name = line["text"]
+        if is_pdf:
+            # Assume the name is the text with the largest font size in the profile segment
+            profile_max_font_size = 0
+            for line in profile_segment:
+                if line["size"] > profile_max_font_size:
+                    profile_max_font_size = line["size"]
+                    name = line["text"]
+        else:
+            # Assume the name is the first line in the profile segment
+            name = profile_segment[0]["text"]
+
         return name
 
     def __extract_email(self, text: str) -> str:

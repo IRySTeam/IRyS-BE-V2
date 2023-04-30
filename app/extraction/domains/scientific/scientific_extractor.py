@@ -11,7 +11,6 @@ import pandas as pd
 from tika import parser
 from transformers import pipeline
 
-from app.extraction.converter import Converter
 from app.extraction.domains.scientific.configuration import SCIENTIFIC_ENTITIES
 from app.extraction.general_extractor import GeneralExtractor
 from app.extraction.ner_result import NERResult
@@ -64,7 +63,6 @@ class ScientificExtractor(GeneralExtractor):
             "ner", model="topmas/IRyS-NER-Paper", aggregation_strategy="first"
         )
         self.entity_list = SCIENTIFIC_ENTITIES
-        self.file_converter = Converter()
 
     def preprocess(self, text: str) -> Union[str, List[str]]:
         """
