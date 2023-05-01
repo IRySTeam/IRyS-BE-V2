@@ -1,4 +1,5 @@
 from sqlalchemy import select, update
+from sqlalchemy.sql import text
 
 from app.document.models import DocumentIndex
 from core.db.session import session
@@ -28,3 +29,14 @@ class DocumentIndexRepo(BaseRepo[DocumentIndex]):
             .execution_options(synchronize_session=synchronize_session)
         )
         await session.execute(query)
+
+    async def delete_by_repository_id(self, repository_id: int):
+        sql = text(
+            """
+            DELETE FROM document_indexes
+            WHERE doc_id IN (
+                SELECT id FROM documents WHERE repository_id = :repository_id
+            )
+            """
+        )
+        await session.execute(sql, {"repository_id": repository_id})

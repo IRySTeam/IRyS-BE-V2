@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 from app.extraction.domains.recruitment import RecruitmentExtractor
 from app.extraction.domains.scientific import ScientificExtractor
@@ -31,15 +31,22 @@ class InformationExtractor:
         if domain not in self.extractor_mapping:
             domain = "general"
 
-        self.extractor = self.extractor_mapping[domain]()
+        self.extractor: Union[
+            GeneralExtractor, ScientificExtractor, RecruitmentExtractor
+        ] = self.extractor_mapping[domain]()
 
-    def extract(self, file: bytes) -> Dict[str, Any]:
+    def extract(
+        self,
+        file: bytes,
+        file_text: str = None,
+    ) -> Dict[str, Any]:
         """
         Extract entities and metadata from text
 
         [Arguments]
-            text: str -> Text to extract entities from
-            file: IO -> File to extract metadata from
+            file: bytes -> File to extract metadata from
+            file_text: str -> Text of file to extract entities from (optional), used when
+                file is scanned PDF
         """
 
-        return self.extractor.extract(file)
+        return self.extractor.extract(file, file_text)

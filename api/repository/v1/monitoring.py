@@ -58,6 +58,7 @@ async def monitor_repository_documents(
         status=query.status,
         page_size=query.page_size,
         page_no=query.page_no,
+        find_document=query.find_document,
     )
 
 
