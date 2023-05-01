@@ -55,3 +55,30 @@ SCIENTIFIC_INFORMATION = [
         "type": "text",
     },
 ]
+
+SCIENTIFIC_INFORMATION_NOT_FLATTENED = [
+    {
+        "name": "title",
+        "type": "semantic text",
+    },
+    {
+        "name": "authors",
+        "type": "text",
+    },
+    {
+        "name": "affiliations",
+        "type": "text",
+    },
+    {
+        "name": "abstract",
+        "type": "semantic text",
+    },
+    {
+        "name": "keywords",
+        "type": "text",
+    },
+    {
+        "name": "references",
+        "type": "text",
+    },
+]

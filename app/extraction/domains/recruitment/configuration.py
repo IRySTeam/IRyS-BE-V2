@@ -87,3 +87,34 @@ RECRUITMENT_INFORMATION = [
         "type": "semantic text",
     },
 ]
+
+RECRUITMENT_INFORMATION_NOT_FLATTENED = [
+    {
+        "name": "name",
+        "type": "text",
+    },
+    {
+        "name": "email",
+        "type": "text",
+    },
+    {
+        "name": "skills",
+        "type": "text",
+    },
+    {
+        "name": "experiences",
+        "type": "text",
+    },
+    {
+        "name": "education",
+        "type": "text",
+    },
+    {
+        "name": "projects",
+        "type": "text",
+    },
+    {
+        "name": "certifications",
+        "type": "text",
+    },
+]

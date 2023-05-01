@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, Request
 
 from app.document.services import DocumentService
 from app.repository.schemas import (
+    DocumentIdPathParams,
     MessageResponseSchema,
-    MonitorAllDocumentPathParams,
     MonitorAllDocumentQueryParams,
     MonitorAllDocumentResponseSchema,
     ReindexAllDocumentPathParams,
-    ReindexDocumentPathParams,
+    RepositoryIdPathParams,
 )
 from app.repository.services import RepositoryService
 from core.exceptions import (
@@ -49,7 +49,7 @@ monitoring_router = APIRouter(
 )
 async def monitor_repository_documents(
     request: Request,
-    path: MonitorAllDocumentPathParams = Depends(),
+    path: RepositoryIdPathParams = Depends(),
     query: MonitorAllDocumentQueryParams = Depends(),
 ):
     return await DocumentService().monitor_all_document(
@@ -74,9 +74,7 @@ async def monitor_repository_documents(
     },
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
-async def reindex_document(
-    request: Request, path: ReindexDocumentPathParams = Depends()
-):
+async def reindex_document(request: Request, path: DocumentIdPathParams = Depends()):
     await DocumentService().reindex_by_id(doc_id=path.doc_id, user_id=request.user.id)
     return MessageResponseSchema(
         message="Document reindexing has been started",

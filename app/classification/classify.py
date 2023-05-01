@@ -1,7 +1,7 @@
 import os
 import pickle
 from enum import Enum
-from typing import Dict, List
+from typing import List
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
@@ -31,12 +31,6 @@ class Classifier:
         RESUME = "__resume__"
         PAPER = "__paper__"
 
-    label_mapping: Dict[LabelEnum, str] = {
-        LabelEnum.OTHER: "General Document (Not Classified)",
-        LabelEnum.RESUME: "Recruitment Document",
-        LabelEnum.PAPER: "Scientific Document",
-    }
-
     @classmethod
     def classify(cls, texts: List[str]) -> str:
         """
@@ -50,14 +44,3 @@ class Classifier:
         texts_vectorized = cls.tfidf_vect.transform([texts])
         prediction = cls.svm.predict(texts_vectorized)
         return cls.labelencode.inverse_transform(prediction)[0]
-
-    @classmethod
-    def label_to_doc_category(cls, label: str) -> str:
-        """
-        Get document category from label.
-        [Parameters]
-            label: str -> Label of the text.
-        [Returns]
-            str: Document category.
-        """
-        return cls.label_mapping[label]

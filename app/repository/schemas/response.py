@@ -3,7 +3,10 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.document.schemas import MonitorDocumentResponseSchema
+from app.document.schemas import (
+    DocumentDatabaseResponseSchema,
+    MonitorDocumentResponseSchema,
+)
 
 
 class MessageResponseSchema(BaseModel):
@@ -77,6 +80,13 @@ class RepositoryCollaboratorSchema(BaseModel):
 
 class MonitorAllDocumentResponseSchema(BaseModel):
     results: List[MonitorDocumentResponseSchema] = Field(..., description="Results")
+    current_page: int = Field(..., description="Current Page")
+    total_pages: int = Field(..., description="Total Page")
+    total_items: int = Field(..., description="Total Items")
+
+
+class AllDocumentDatabaseResponseSchema(BaseModel):
+    results: List[DocumentDatabaseResponseSchema] = Field(..., description="Results")
     current_page: int = Field(..., description="Current Page")
     total_pages: int = Field(..., description="Total Page")
     total_items: int = Field(..., description="Total Items")

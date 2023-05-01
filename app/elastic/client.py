@@ -189,6 +189,22 @@ class ElasticsearchClient:
         except Exception as e:
             raise FailedDependencyException(e)
 
+    def get_doc(self, index: str, doc_id: str) -> dict:
+        """
+        Get a document in Elasticsearch.
+        [Parameters]
+            index: str -> Name of the index.
+            doc_id: str -> ID of the document to be retrieved.
+        [Returns]
+            dict: Document retrieved.
+        """
+        try:
+            return self.client.get(index=index, id=doc_id)
+        except ApiError as e:
+            raise classify_error(e)
+        except Exception as e:
+            raise FailedDependencyException(e)
+
     def safe_delete_doc(self, index_name: str, doc_id: str) -> ObjectApiResponse[Any]:
         """
         Delete a document from an Elasticsearch index, but ignore if document does not exist.

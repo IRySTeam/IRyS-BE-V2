@@ -1,15 +1,24 @@
 from app.extraction.domains.recruitment.configuration import (
     RECRUITMENT_ENTITIES,
     RECRUITMENT_INFORMATION,
+    RECRUITMENT_INFORMATION_NOT_FLATTENED,
 )
 from app.extraction.domains.scientific.configuration import (
     SCIENTIFIC_ENTITIES,
     SCIENTIFIC_INFORMATION,
+    SCIENTIFIC_INFORMATION_NOT_FLATTENED,
 )
 from app.extraction.general_configuration import (
     GENERAL_ENTITIES,
     GENERAL_INFORMATION,
+    GENERAL_INFORMATION_NOT_FLATTENED,
 )
+
+__all__ = [
+    "RECRUITMENT_INFORMATION_NOT_FLATTENED",
+    "SCIENTIFIC_INFORMATION_NOT_FLATTENED",
+    "GENERAL_INFORMATION_NOT_FLATTENED",
+]
 
 TYPE_OPERATORS = {
     "text": [

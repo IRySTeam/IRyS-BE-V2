@@ -35,3 +35,22 @@ GENERAL_INFORMATION = [
         "type": "date",
     },
 ]
+
+GENERAL_INFORMATION_NOT_FLATTENED = [
+    {
+        "name": "mimetype",
+        "type": "text",
+    },
+    {
+        "name": "extension",
+        "type": "text",
+    },
+    {
+        "name": "size",
+        "type": "number",
+    },
+    {
+        "name": "dates",
+        "type": "date",
+    },
+]

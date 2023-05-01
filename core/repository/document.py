@@ -46,19 +46,20 @@ class DocumentRepo(BaseRepo[Document]):
         result = await session.execute(query)
         return result.scalars().all()
 
-    async def monitor_all_documents(
+    async def get_all_documents_in_repo(
         self,
         repository_id: int,
         status: str = "ALL",
         page_size: int = 10,
         page_no: int = 1,
         find_document: str = None,
+        include_index: bool = True,
     ) -> dict:
-        query = (
-            select(Document)
-            .where(Document.repository_id == repository_id)
-            .options(selectinload(Document.index))
-        )
+        query = select(Document).where(Document.repository_id == repository_id)
+
+        if include_index:
+            query = query.options(selectinload(Document.index))
+
         if status != "ALL":
             query = query.where(Document.index.has(status=status))
 
@@ -198,6 +199,13 @@ class DocumentRepo(BaseRepo[Document]):
         WHERE repository_id = :repository_id
         """
         await session.execute(text(sql), {"repository_id": repository_id})
+
+    async def delete_user_documents_by_document_id(self, document_id: int):
+        sql = """
+        DELETE FROM user_documents
+        WHERE document_id = :document_id
+        """
+        await session.execute(text(sql), {"document_id": document_id})
 
     async def delete_user_documents_by_repository_id(self, repository_id: int):
         sql = """

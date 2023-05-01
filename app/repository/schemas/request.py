@@ -43,12 +43,12 @@ class RemoveRepositoryCollaboratorRequestSchema(BaseModel):
 
 
 @dataclass
-class MonitorAllDocumentPathParams:
+class RepositoryIdPathParams:
     repository_id: int = Path(..., description="Repository id")
 
 
 @dataclass
-class ReindexDocumentPathParams:
+class DocumentIdPathParams:
     doc_id: int = Path(..., description="Document id")
 
 
@@ -60,6 +60,13 @@ class ReindexAllDocumentPathParams:
 @dataclass
 class MonitorAllDocumentQueryParams:
     status: IndexingStatus = Query(..., description="Type")
+    page_no: int = Query(1, description="Page Number")
+    page_size: int = Query(10, description="Page Size")
+    find_document: Optional[str] = Query(None, description="Find Document")
+
+
+@dataclass
+class DocumentDatabaseQueryParams:
     page_no: int = Query(1, description="Page Number")
     page_size: int = Query(10, description="Page Size")
     find_document: Optional[str] = Query(None, description="Find Document")
