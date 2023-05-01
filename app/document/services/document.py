@@ -70,7 +70,7 @@ class DocumentService:
         """
         data = await self.document_repo.get_by_id(id=id, include_index=include_index)
         if not data:
-            raise NotFoundException("Document not with specified id not found")
+            raise NotFoundException("Document with specified id not found")
         return data
 
     async def get_document_by_ids(
@@ -86,7 +86,7 @@ class DocumentService:
         """
         data = await self.document_repo.get_by_ids(ids=ids, include_index=include_index)
         if not data:
-            raise NotFoundException("Document not with specified id not found")
+            raise NotFoundException("Document with specified ids not found")
         return data
 
     @async_to_sync
@@ -767,3 +767,33 @@ class DocumentService:
             raise DocumentCollaboratorNotFoundException
 
         await self.document_repo.delete_collaborator(document_id, collaborator_id)
+
+    async def get_all_accessible_documents(
+        self, user_id: int
+    ) -> List[int]:
+        """
+        Get all document ids that a user has access to, either in their repositories or public documents.
+        [Parameters]
+            user_id: int -> User id.
+        [Returns]
+            List[int] -> List[int].
+        """
+        data = await self.document_repo.get_all_accessible_documents(collaborator_id=user_id)
+        if not data:
+            raise NotFoundException("No accessible documents found")
+        return data
+    
+    async def get_repo_accessible_documents(
+        self, repository_id: int
+    ) -> List[int]:
+        """
+        Get all document ids within a specific repository.
+        [Parameters]
+            user_id: int -> User id.
+        [Returns]
+            List[int] -> List[int].
+        """
+        data = await self.document_repo.get_repo_accessible_documents(repository_id=repository_id)
+        if not data:
+            raise NotFoundException("No accessible documents found")
+        return data

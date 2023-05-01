@@ -167,18 +167,21 @@ class DocumentRepo(BaseRepo[Document]):
         query = """
         SELECT d.id FROM documents d
         INNER JOIN user_documents ud ON d.id = ud.document_id
-        WHERE user_id = :user_id OR d.is_public IS true
+        WHERE user_id = :user_id
         UNION
         SELECT d.id FROM documents d 
         INNER JOIN repositories r ON d.repository_id = r.id
         INNER JOIN user_repositories ur ON r.id = ur.repository_id
-        WHERE ur.user_id = :user_id;
+        WHERE ur.user_id = :user_id
+        UNION 
+        SELECT d.id FROM documents d 
+        WHERE d.is_public IS true;
         """
         result = await session.execute(
             text(query),
             {"user_id": collaborator_id}
         )
-        return result.fetchall()
+        return [r.id for r in result.fetchall()]
     
     async def get_repo_accessible_documents(
         self, repository_id: int
@@ -193,4 +196,4 @@ class DocumentRepo(BaseRepo[Document]):
             text(query),
             {"repository_id": repository_id}
         )
-        return result.fetchall()
+        return [r.id for r in result.fetchall()]

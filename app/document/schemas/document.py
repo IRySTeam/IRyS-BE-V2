@@ -32,7 +32,9 @@ class DocumentResponseSchema(BaseModel):
     elastic_index_name: str = Field(None, description="Elasticsearch index name")
     created_at: datetime = Field(None, description="Document's created at metadata")
     updated_at: datetime = Field(None, description="Document's updated at metadata")
-    index: DocumentIndexing = Field(None, description="Document indexing status")
+    is_public: bool = Field(None, description="Document visibility")
+    mimetype: str = Field(None, description="Document format")
+
 
     class Config:
         orm_mode = True

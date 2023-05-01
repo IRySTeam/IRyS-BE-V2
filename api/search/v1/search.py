@@ -1,5 +1,6 @@
-from fastapi import APIRouter, File, UploadFile
+import pandas as pd
 
+from fastapi import Depends, APIRouter, File, UploadFile, Request
 from app.document.services.document import DocumentService
 from app.exception import BaseHttpErrorSchema
 from app.preprocess import PreprocessUtil
@@ -8,6 +9,22 @@ from app.search.schemas.search import (
     DocumentDetails,
     SemanticSearchRequest,
     SemanticSearchResponseSchema,
+    RepoSearchPathParams,
+    FileSearchPathParams,
+)
+from core.exceptions import (
+    EmailNotVerifiedException,
+    InvalidRepositoryCollaboratorException,
+    InvalidRepositoryRoleException,
+    RepositoryNotFoundException,
+    UnauthorizedException,
+    UserNotAllowedException,
+)
+from core.utils import CustomExceptionHelper
+from core.fastapi.dependencies import (
+    IsAuthenticated,
+    IsEmailVerified,
+    PermissionDependency,
 )
 from app.search.services.search import SearchService
 
@@ -16,67 +33,122 @@ ss = SearchService(None, None, None)
 ds = DocumentService()
 
 @search_router.post(
-    "/",
-    description="Fetches relevant documents based on search query and advanced filter",
-    response_model=SemanticSearchResponseSchema,
+    "/public",
+    description="Fetches relevant public documents",
+    response_model=SemanticSearchResponseSchema,        
     responses={
-        400: {
-            "model": BaseHttpErrorSchema,
-            "description": "Bad request, please check request body, params, headers, or query",
-        }
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
     },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
-async def search(request: SemanticSearchRequest):
-    doc_ids = [16, 17, 18]  # TODO: Get from document repo
+async def search_public(
+        request: Request,
+        body: SemanticSearchRequest
+    ):
+    doc_ids = await DocumentService().get_all_accessible_documents(request.user.id)
 
     result = ss.run_search(
-        request.query, request.domain, request.advanced_filter, doc_ids
+        body.query, body.domain, body.advanced_filter, doc_ids
     )
     retrieved_doc_ids = [doc.get("id") for doc in result]
+    retrieved_doc_ids = pd.Series(retrieved_doc_ids).drop_duplicates().tolist()
     
     result_list = []
     if (retrieved_doc_ids):
         retrieved_doc_details = await DocumentService().get_document_by_ids(
             retrieved_doc_ids
         )
-        for i in range(len(result)):
+        for i in range(len(retrieved_doc_ids)):
             result_list.append(
                 DocumentDetails(
                     details=retrieved_doc_details[i].__dict__,
                     preview=f"...{result[i].get('text')}...",
-                    highlights=PreprocessUtil().preprocess(request.query),
+                    highlights=PreprocessUtil().preprocess(body.query),
                 )
             )
 
     return SemanticSearchResponseSchema(
-        message=f"Successfully retrieved {len(retrieved_doc_ids)} documents",
+        num_docs_retrieved=len(retrieved_doc_ids),
         result=result_list,
     )
 
-
 @search_router.post(
-    "/file",
-    description="Fetch similar documents based on uploaded document",
+    "/repository/{repository_id}",
+    description="Fetches relevant public documents",
     response_model=SemanticSearchResponseSchema,
     responses={
-        400: {
-            "model": BaseHttpErrorSchema,
-            "description": "Bad request, please check request body, params, headers, or query",
-        }
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
     },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
-async def upload_document(domain: DomainEnum, file: UploadFile = File(...)):
-    doc_ids = [16, 17, 18]  # TODO: Get from document repo
-
-    result = ss.run_file_search(file, domain, doc_ids)
+async def search_repo(
+        request: Request,
+        path: RepoSearchPathParams,
+        body: SemanticSearchRequest
+    ):
+    doc_ids = await DocumentService().get_repo_accessible_documents(path.repository_id)
+    result = ss.run_search(
+        body.query, body.domain, body.advanced_filter, doc_ids
+    )
     retrieved_doc_ids = [doc.get("id") for doc in result]
+    retrieved_doc_ids = pd.Series(retrieved_doc_ids).drop_duplicates().tolist()
     
+    result_list = []
     if (retrieved_doc_ids):
         retrieved_doc_details = await DocumentService().get_document_by_ids(
             retrieved_doc_ids
         )
-        result_list = []
-        for i in range(len(result)):
+        for i in range(len(retrieved_doc_ids)):
+            result_list.append(
+                DocumentDetails(
+                    details=retrieved_doc_details[i].__dict__,
+                    preview=f"...{result[i].get('text')}...",
+                    highlights=PreprocessUtil().preprocess(body.query),
+                )
+            )
+
+    return SemanticSearchResponseSchema(
+        num_docs_retrieved=len(retrieved_doc_ids),
+        result=result_list,
+    )
+
+@search_router.post(
+    "/file/{repository_id}",
+    description="Fetch similar documents based on uploaded document",
+    response_model=SemanticSearchResponseSchema,
+    responses={
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def upload_document(
+        request: Request,
+        path: FileSearchPathParams = Depends(),
+        file: UploadFile = File(...)):
+    doc_ids = await DocumentService().get_repo_accessible_documents(path.repository_id)
+
+    result = ss.run_file_search(file, path.domain, doc_ids)
+    retrieved_doc_ids = [doc.get("id") for doc in result]
+    retrieved_doc_ids = pd.Series(retrieved_doc_ids).drop_duplicates().tolist()
+    
+    result_list = []
+    if (retrieved_doc_ids):
+        retrieved_doc_details = await DocumentService().get_document_by_ids(
+            retrieved_doc_ids
+        )
+        for i in range(len(retrieved_doc_ids)):
             result_list.append(
                 DocumentDetails(
                     details=retrieved_doc_details[i].__dict__,
@@ -86,6 +158,6 @@ async def upload_document(domain: DomainEnum, file: UploadFile = File(...)):
             )
 
     return SemanticSearchResponseSchema(
-        message=f"Successfully retrieved {len(retrieved_doc_ids)} documents",
+        num_docs_retrieved=len(retrieved_doc_ids),
         result=result_list,
     )
