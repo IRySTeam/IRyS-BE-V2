@@ -333,6 +333,7 @@ class DocumentService:
             repository_id=repository_id,
             page_no=page_no,
             page_size=page_size,
+            find_document=find_document,
         )
 
     async def check_user_access_upload_document(

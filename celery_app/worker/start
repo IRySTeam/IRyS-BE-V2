@@ -3,7 +3,12 @@
 set -o errexit
 set -o nounset
 
+# Create directory for tika log with all permissions
+mkdir -m 777 -p ./celery_app/worker/tika_log
+export TIKA_LOG_PATH=./celery_app/worker/tika_log
+
 # Run init_tika.py
 python3 ./celery_app/worker/init_tika.py
+
 
 celery -A celery_app.main.celery worker --loglevel=info
