@@ -118,3 +118,4 @@ RECRUITMENT_INFORMATION_NOT_FLATTENED = [
         "type": "text",
     },
 ]
+NER_MODEL = "topmas/IRyS-NER-Recruitment"

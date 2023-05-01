@@ -1,3 +1,4 @@
+import os
 import re
 from collections import defaultdict
 from typing import Any, Dict, List
@@ -6,6 +7,7 @@ import fitz
 from tika import parser
 from transformers import pipeline
 
+from app.extraction.domains.general import GeneralExtractor
 from app.extraction.domains.recruitment.configuration import (
     RECRUITMENT_ENTITIES,
 )
@@ -18,8 +20,9 @@ from app.extraction.domains.recruitment.constants import (
     RESUME_SECTIONS_KEYWORDS_INV,
     SKILLS_REGEX,
 )
-from app.extraction.general_extractor import GeneralExtractor
 from app.extraction.ner_result import NERResult
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
 class RecruitmentExtractor(GeneralExtractor):
@@ -31,9 +34,10 @@ class RecruitmentExtractor(GeneralExtractor):
         """
         Constructor of RecruitmentExtractor class
         """
-
         self.pipeline = pipeline(
-            "ner", model="topmas/IRyS-NER-Recruitment", aggregation_strategy="simple"
+            "ner",
+            model=os.path.join(dir_path, "ner_model"),
+            aggregation_strategy="simple",
         )
         self.entity_list = RECRUITMENT_ENTITIES
 

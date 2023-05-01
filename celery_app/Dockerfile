@@ -66,3 +66,5 @@ RUN sed -i 's/\r$//g' /start-flower \
 # Copy all project files
 COPY . /app
 WORKDIR /app
+
+ENV PYTHONPATH /app

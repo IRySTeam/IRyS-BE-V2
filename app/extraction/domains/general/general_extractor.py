@@ -1,5 +1,6 @@
 import datetime
 import mimetypes
+import os
 from typing import Any, Dict, List
 
 import dateparser.search
@@ -8,8 +9,10 @@ from tika import parser
 from transformers import pipeline
 
 from app.extraction.converter import Converter
-from app.extraction.general_configuration import GENERAL_ENTITIES
+from app.extraction.domains.general.configuration import GENERAL_ENTITIES
 from app.extraction.ner_result import NERResult
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
 class GeneralExtractor:
@@ -27,7 +30,9 @@ class GeneralExtractor:
         """
 
         self.pipeline = pipeline(
-            "ner", model="dslim/bert-base-NER", aggregation_strategy="first"
+            "ner",
+            model=os.path.join(dir_path, "ner_model"),
+            aggregation_strategy="first",
         )
         self.entity_list = GENERAL_ENTITIES
         self.file_converter = Converter()

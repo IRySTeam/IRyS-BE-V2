@@ -1,8 +1,8 @@
 from typing import Any, Dict, Union
 
+from app.extraction.domains.general import GeneralExtractor
 from app.extraction.domains.recruitment import RecruitmentExtractor
 from app.extraction.domains.scientific import ScientificExtractor
-from app.extraction.general_extractor import GeneralExtractor
 
 
 class InformationExtractor:

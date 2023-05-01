@@ -10,5 +10,6 @@ export TIKA_LOG_PATH=./celery_app/worker/tika_log
 # Run init_tika.py
 python3 ./celery_app/worker/init_tika.py
 
+python3 ./celery_app/worker/init_ner_models.py
 
 celery -A celery_app.main.celery worker --loglevel=info

@@ -54,3 +54,4 @@ GENERAL_INFORMATION_NOT_FLATTENED = [
         "type": "date",
     },
 ]
+NER_MODEL = "dslim/bert-base-NER"
