@@ -182,6 +182,17 @@ class RepositoryRepo(BaseRepo[Repository]):
 
         return repositories, total_pages, total_items
 
+    async def does_user_id_have_any_repository(self, user_id: int) -> bool:
+        query = """
+        SELECT COUNT(r.id) as total_count
+        FROM repositories r
+        INNER JOIN user_repositories ur ON ur.repository_id = r.id
+        WHERE ur.user_id = :user_id
+        """
+        result = await session.execute(text(query), {"user_id": user_id})
+        total_items = result.fetchone().total_count
+        return total_items > 0
+
     async def get_repository_collaborators(self, repository_id: int) -> List[User]:
         query = """
         SELECT u.*, ur.role
@@ -372,3 +383,15 @@ class RepositoryRepo(BaseRepo[Repository]):
 
         # Execute SQL query
         await session.execute(sql, params)
+
+    async def find_repository_owners_and_admins_by_repository_id(
+        self, repository_id: int
+    ) -> List[User]:
+        query = """
+        SELECT u.*
+        FROM users u
+        INNER JOIN user_repositories ur ON ur.user_id = u.id
+        WHERE ur.repository_id = :repository_id AND ur.role IN ('Owner', 'Admin')
+        """
+        result = await session.execute(text(query), {"repository_id": repository_id})
+        return result.fetchall()

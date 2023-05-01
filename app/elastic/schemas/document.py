@@ -26,6 +26,10 @@ class ElasticDocumentIndexedResponse(BaseModel):
     primary_term: int = Field(..., description="Primary term", alias="_primary_term")
 
 
+class MessageResponseSchema(BaseModel):
+    message: str = Field(..., description="Message to be displayed")
+
+
 # ==============================================================================
 # Path parameters-related Schemas.
 # ==============================================================================

@@ -24,6 +24,14 @@ user_repositories = Table(
     Column("role", Unicode(255), nullable=False),
 )
 
+user_documents = Table(
+    "user_documents",
+    Base.metadata,
+    Column("user_id", BigInteger, ForeignKey("users.id"), primary_key=True),
+    Column("document_id", BigInteger, ForeignKey("documents.id"), primary_key=True),
+    Column("role", Unicode(255), default="Viewer", nullable=False),
+)
+
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
@@ -42,4 +50,7 @@ class User(Base, TimestampMixin):
     forgot_password_otp_valid_until = Column(DateTime)
     repositories: Mapped[List["Repository"]] = relationship(
         "Repository", secondary=user_repositories, back_populates="users"
+    )
+    documents: Mapped[List["Document"]] = relationship(
+        "Document", secondary=user_documents, back_populates="collaborators"
     )

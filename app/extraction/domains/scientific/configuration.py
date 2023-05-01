@@ -32,26 +32,26 @@ SCIENTIFIC_ENTITIES = [
 SCIENTIFIC_INFORMATION = [
     {
         "name": "title",
-        "type": "text",
+        "type": "semantic text",
     },
     {
         "name": "authors",
-        "type": "list",
-    },
-    {
-        "name": "affiliations",
-        "type": "list",
-    },
-    {
-        "name": "abstract",
         "type": "text",
     },
     {
+        "name": "affiliations",
+        "type": "text",
+    },
+    {
+        "name": "abstract",
+        "type": "semantic text",
+    },
+    {
         "name": "keywords",
-        "type": "list",
+        "type": "text",
     },
     {
         "name": "references",
-        "type": "list",
+        "type": "text",
     },
 ]

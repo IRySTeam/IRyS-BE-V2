@@ -26,12 +26,28 @@ class DocumentIndexing(BaseModel):
 
 class DocumentResponseSchema(BaseModel):
     id: int = Field(..., description="Document id")
+    title: str = Field(..., description="Document title")
+    file_url: str = Field(..., description="Document file url")
     elastic_doc_id: str = Field(None, description="Document id in Elasticsearch")
     elastic_index_name: str = Field(None, description="Elasticsearch index name")
-    title: str = Field(..., description="Document title")
-    doc_created_at: datetime = Field(None, description="Document's created at metadata")
-    doc_updated_at: datetime = Field(None, description="Document's updated at metadata")
+    created_at: datetime = Field(None, description="Document's created at metadata")
+    updated_at: datetime = Field(None, description="Document's updated at metadata")
     index: DocumentIndexing = Field(None, description="Document indexing status")
+
+    class Config:
+        orm_mode = True
+
+
+class MonitorDocumentResponseSchema(BaseModel):
+    id: int = Field(..., description="Document id")
+    title: str = Field(..., description="Document title")
+    updated_at: datetime = Field(None, description="Document's updated at")
+    index: DocumentIndexing = Field(None, description="Document indexing status")
+    title: str = Field(None, description="Document title")
+    created_at: datetime = Field(None, description="Document create time")
+    updated_at: datetime = Field(None, description="Document last update time")
+    file_url: str = Field(None, description="Document link on GCS")
+    is_public: bool = Field(None, description="Document visibility")
 
     class Config:
         orm_mode = True
@@ -44,8 +60,8 @@ class UploadDocumentBody(BaseModel):
         orm_mode = True
 
 
-class ReindexDocumentResponse(BaseModel):
-    status: bool = Field(..., description="Reindexing status")
+class MessageResponseSchema(BaseModel):
+    message: str = Field(..., description="Message")
 
 
 # ==============================================================================

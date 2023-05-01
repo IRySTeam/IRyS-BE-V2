@@ -18,4 +18,4 @@ if [ -z "$(ls -A /model)" ]; then
     cp -r $MODEL_NAME/* /model
 fi
 
-bert-serving-start -num_worker=1 -max_seq_len=256 -model_dir /model
+bert-serving-start -num_worker=1 -max_seq_len=512 -model_dir /model
