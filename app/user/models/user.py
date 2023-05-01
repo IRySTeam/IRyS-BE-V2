@@ -54,4 +54,6 @@ class User(Base, TimestampMixin):
     documents: Mapped[List["Document"]] = relationship(
         "Document", secondary=user_documents, back_populates="collaborators"
     )
-    uploaded_documents: Mapped[List["Document"]] = relationship(back_populates="users")
+    uploaded_documents: Mapped[List["Document"]] = relationship(
+        back_populates="uploader"
+    )

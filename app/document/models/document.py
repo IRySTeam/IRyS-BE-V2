@@ -26,7 +26,7 @@ class Document(Base, TimestampMixin):
     extension = Column(Unicode(255), nullable=True)
     size = Column(BigInteger, nullable=True)
     uploaded_by = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    uploader = relationship("User", back_populates="documents")
+    uploader = relationship("User", back_populates="uploaded_documents")
     collaborators: Mapped[List["User"]] = relationship(
         "User", secondary=user_documents, back_populates="documents"
     )
