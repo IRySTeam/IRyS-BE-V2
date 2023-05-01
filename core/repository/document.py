@@ -160,3 +160,21 @@ class DocumentRepo(BaseRepo[Document]):
             {"user_id": collaborator_id, "document_id": document_id},
         )
         return result.fetchone().count > 0
+
+    async def delete_by_repository_id(self, repository_id: int):
+        sql = """
+        DELETE FROM documents
+        WHERE repository_id = :repository_id
+        """
+        await session.execute(text(sql), {"repository_id": repository_id})
+
+    async def delete_user_documents_by_repository_id(self, repository_id: int):
+        sql = """
+        DELETE FROM user_documents
+        WHERE document_id IN (
+            SELECT d.id
+            FROM documents d
+            WHERE d.repository_id = :repository_id
+        )
+        """
+        await session.execute(text(sql), {"repository_id": repository_id})

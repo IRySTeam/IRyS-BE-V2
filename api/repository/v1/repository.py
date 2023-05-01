@@ -388,3 +388,17 @@ async def remove_document_collaborator(
     )
 
     return MessageResponseSchema(message="Successful")
+
+
+@repository_router.post(
+    "/{repository_id}/delete",
+    response_model=MessageResponseSchema,
+    responses={},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def delete_repository(request: Request, repository_id: int):
+    await RepositoryService().delete_repository(
+        user_id=request.user.id, repository_id=repository_id
+    )
+
+    return MessageResponseSchema(message="Successful")
