@@ -134,9 +134,8 @@ async def upload_document(
     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
 )
 async def search_repo(
-        request: Request,
-        path: RepoSearchPathParams,
-        body: SemanticSearchRequest
+        body: SemanticSearchRequest,
+        path: RepoSearchPathParams = Depends()
     ):
     doc_ids = await DocumentService().get_repo_accessible_documents(path.repository_id)
     result = ss.run_search(
