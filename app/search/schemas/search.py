@@ -35,3 +35,6 @@ class RepoSearchPathParams(BaseModel):
 class FileSearchPathParams(BaseModel):
     domain: DomainEnum = Field(..., description="Document domain of the search")
     repository_id: int = Field(..., description="Unique identifier of current repository")
+
+class PublicFileSearchPathParams(BaseModel):
+    domain: DomainEnum = Field(..., description="Document domain of the search")
