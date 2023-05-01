@@ -395,3 +395,17 @@ class RepositoryRepo(BaseRepo[Repository]):
         """
         result = await session.execute(text(query), {"repository_id": repository_id})
         return result.fetchall()
+
+    async def delete_by_id(self, repository_id: int) -> None:
+        sql = text(
+            """
+            DELETE FROM repositories
+            WHERE id = :repository_id
+        """
+        )
+        params = {
+            "repository_id": repository_id,
+        }
+
+        # Execute SQL query
+        await session.execute(sql, params)

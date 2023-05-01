@@ -1,11 +1,11 @@
 from typing import List, Optional
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import text
 
 from app.document.models import Document
-from app.user.models import User, user_documents
+from app.user.models import User
 from core.db.session import session
 from core.repository import BaseRepo
 
@@ -162,21 +162,19 @@ class DocumentRepo(BaseRepo[Document]):
         return result.fetchone().count > 0
 
     async def delete_by_repository_id(self, repository_id: int):
-        query = delete(Document).where(Document.repository_id == repository_id)
-        await session.execute(query)
+        sql = """
+        DELETE FROM documents
+        WHERE repository_id = :repository_id
+        """
+        await session.execute(text(sql), {"repository_id": repository_id})
 
-    async def delete_user_documents_by_repository_id(
-        self, repository_id: int, user_id: int
-    ):
-        query = (
-            delete(user_documents)
-            .where(user_documents.c.user_id == user_id)
-            .where(
-                user_documents.c.document_id.in_(
-                    session.query(Document.id).filter(
-                        Document.repository_id == repository_id
-                    )
-                )
-            )
+    async def delete_user_documents_by_repository_id(self, repository_id: int):
+        sql = """
+        DELETE FROM user_documents
+        WHERE document_id IN (
+            SELECT d.id
+            FROM documents d
+            WHERE d.repository_id = :repository_id
         )
-        await session.execute(query)
+        """
+        await session.execute(text(sql), {"repository_id": repository_id})

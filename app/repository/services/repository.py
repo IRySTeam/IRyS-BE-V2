@@ -23,12 +23,19 @@ from core.exceptions import (
     UserNotAllowedException,
     UserNotFoundException,
 )
-from core.repository import DocumentRepo, RepositoryRepo, UserRepo
+from core.repository import (
+    DocumentIndexRepo,
+    DocumentRepo,
+    RepositoryRepo,
+    UserRepo,
+)
 from core.utils.mailer import Mailer
 
 
 class RepositoryService:
     repository_repo = RepositoryRepo()
+    document_index_repo = DocumentIndexRepo()
+    document_repo = DocumentRepo()
 
     def __init__(self):
         ...
@@ -346,20 +353,36 @@ class RepositoryService:
             repository_id=repository_id, user_id=collaborator_id, role=role
         )
 
+    @Transactional()
     async def delete_repository(self, user_id: int, repository_id: int) -> None:
         if not await self.repository_repo.is_exist(repository_id):
             raise RepositoryNotFoundException
 
-        if not await self.repository_repo.is_user_id_owner_of_repository(
+        is_owner = await self.repository_repo.is_user_id_owner_of_repository(
             user_id, repository_id
-        ):
+        )
+        print("is_owner:", is_owner)
+        if not is_owner:
             raise UserNotAllowedException
 
+        # Delete all document_indexes
+        await self.document_index_repo.delete_by_repository_id(repository_id)
+        print("deleted document_indexes")
+
+        # Delete all user_documents
+        await self.document_repo.delete_user_documents_by_repository_id(repository_id)
+        print("deleted user_documents")
+
         # Delete all documents
-        await DocumentRepo().delete_by_repository_id(repository_id)
+        await self.document_repo.delete_by_repository_id(repository_id)
+        print("deleted documents")
 
         # Delete all collaborators
         await self.repository_repo.delete_user_repositories_by_repository_id(
             repository_id
         )
+        print("deleted collaborators")
+
+        # Delete repository
         await self.repository_repo.delete_by_id(repository_id)
+        print("deleted repository")
