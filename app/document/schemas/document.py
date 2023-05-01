@@ -34,6 +34,7 @@ class DocumentResponseSchema(BaseModel):
     updated_at: datetime = Field(None, description="Document's updated at metadata")
     is_public: bool = Field(None, description="Document visibility")
     mimetype: str = Field(None, description="Document format")
+    uploaded_by: str = Field(None, description="Document uploader")
 
 
     class Config:
