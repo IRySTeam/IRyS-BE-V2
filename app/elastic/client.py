@@ -274,24 +274,34 @@ class ElasticsearchClient:
         """
         try:
             bc = BertClient(ip="bertserving", output_fmt="list", timeout=5000)
-            query_vector = bc.encode([query])[0]
 
-            script_query = {
-                "bool": {
-                    "must": [
-                        {"terms": {"document_id": doc_ids}},
-                        {
-                            "script_score": {
-                                "query": {"match_all": {}},
-                                "script": {
-                                    "source": f'doc["{emb_vector}"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, "{emb_vector}") + 1.0',
-                                    "params": {"query_vector": query_vector},
-                                },
-                            }
-                        },
-                    ]
+            if (query == ""):
+                script_query = {
+                    "bool": {
+                        "must": [
+                            {"terms": {"document_id": doc_ids}},
+                            {"match_all": {}},
+                        ]
+                    }
                 }
-            }
+            else:
+                query_vector = bc.encode([query])[0]
+                script_query = {
+                    "bool": {
+                        "must": [
+                            {"terms": {"document_id": doc_ids}},
+                            {
+                                "script_score": {
+                                    "query": {"match_all": {}},
+                                    "script": {
+                                        "source": f'doc["{emb_vector}"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, "{emb_vector}") + 1.0',
+                                        "params": {"query_vector": query_vector},
+                                    },
+                                }
+                            },
+                        ]
+                    }
+                }
 
             return self.client.search(
                 index=index, size=size, query=script_query, source={"includes": source}

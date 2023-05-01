@@ -11,6 +11,7 @@ from app.search.schemas.search import (
     SemanticSearchResponseSchema,
     RepoSearchPathParams,
     FileSearchPathParams,
+    PublicFileSearchPathParams,
 )
 from core.exceptions import (
     EmailNotVerifiedException,
@@ -75,6 +76,50 @@ async def search_public(
     )
 
 @search_router.post(
+    "/public/file",
+    description="Fetch similar documents based on uploaded document",
+    response_model=SemanticSearchResponseSchema,
+    responses={
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            RepositoryNotFoundException, "Repository not found"
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def upload_document(
+        request: Request,
+        path: PublicFileSearchPathParams = Depends(),
+        file: UploadFile = File(...)):
+    doc_ids = await DocumentService().get_all_accessible_documents(request.user.id)
+
+    result = ss.run_file_search(file, path.domain, doc_ids)
+    retrieved_doc_ids = [doc.get("id") for doc in result]
+    retrieved_doc_ids = pd.Series(retrieved_doc_ids).drop_duplicates().tolist()
+    
+    result_list = []
+    if (retrieved_doc_ids):
+        retrieved_doc_details = await DocumentService().get_document_by_ids(
+            retrieved_doc_ids
+        )
+        for i in range(len(retrieved_doc_ids)):
+            result_list.append(
+                DocumentDetails(
+                    details=retrieved_doc_details[i].__dict__,
+                    preview=f"...{result[i].get('text')}...",
+                    highlights=[],
+                )
+            )
+
+    return SemanticSearchResponseSchema(
+        num_docs_retrieved=len(retrieved_doc_ids),
+        result=result_list,
+    )
+
+
+@search_router.post(
     "/repository/{repository_id}",
     description="Fetches relevant public documents",
     response_model=SemanticSearchResponseSchema,
@@ -120,7 +165,7 @@ async def search_repo(
     )
 
 @search_router.post(
-    "/file/{repository_id}",
+    "/repository/{repository_id}/file",
     description="Fetch similar documents based on uploaded document",
     response_model=SemanticSearchResponseSchema,
     responses={
