@@ -62,3 +62,4 @@ class MonitorAllDocumentQueryParams:
     status: IndexingStatus = Query(..., description="Type")
     page_no: int = Query(1, description="Page Number")
     page_size: int = Query(10, description="Page Size")
+    find_document: Optional[str] = Query(None, description="Find Document")

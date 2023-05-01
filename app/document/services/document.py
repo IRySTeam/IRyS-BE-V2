@@ -302,6 +302,7 @@ class DocumentService:
         status: str = None,
         page_size: int = 10,
         page_no: int = 1,
+        find_document: str = None,
     ) -> dict:
         """
         Monitor all documents in a repository.
@@ -311,6 +312,7 @@ class DocumentService:
             status: str = None -> Indexing status.
             page_size: int = 10 -> Page size.
             page_no: int = 1 -> Page number.
+            find_document: str = None -> Find document by title.
         [Returns]
             List[Document] -> List of documents with indexing status.
         """
@@ -768,9 +770,7 @@ class DocumentService:
 
         await self.document_repo.delete_collaborator(document_id, collaborator_id)
 
-    async def get_all_accessible_documents(
-        self, user_id: int
-    ) -> List[int]:
+    async def get_all_accessible_documents(self, user_id: int) -> List[int]:
         """
         Get all document ids that a user has access to, either in their repositories or public documents.
         [Parameters]
@@ -778,14 +778,14 @@ class DocumentService:
         [Returns]
             List[int] -> List[int].
         """
-        data = await self.document_repo.get_all_accessible_documents(collaborator_id=user_id)
+        data = await self.document_repo.get_all_accessible_documents(
+            collaborator_id=user_id
+        )
         if not data:
             raise NotFoundException("No accessible documents found")
         return data
-    
-    async def get_repo_accessible_documents(
-        self, repository_id: int
-    ) -> List[int]:
+
+    async def get_repo_accessible_documents(self, repository_id: int) -> List[int]:
         """
         Get all document ids within a specific repository.
         [Parameters]
@@ -793,7 +793,9 @@ class DocumentService:
         [Returns]
             List[int] -> List[int].
         """
-        data = await self.document_repo.get_repo_accessible_documents(repository_id=repository_id)
+        data = await self.document_repo.get_repo_accessible_documents(
+            repository_id=repository_id
+        )
         if not data:
             raise NotFoundException("No accessible documents found")
         return data
