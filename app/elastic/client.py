@@ -47,6 +47,7 @@ class ElasticsearchClient:
             )
 
         self.indices_client = IndicesClient(self.client)
+        self.bc = BertClient(ip="bertserving", output_fmt="list", timeout=60000)
 
     def info(self) -> ElasticInfo:
         """
@@ -273,8 +274,6 @@ class ElasticsearchClient:
           index_name: str -> Name of index that will be the base of the search
         """
         try:
-            bc = BertClient(ip="bertserving", output_fmt="list", timeout=5000)
-
             if (query == ""):
                 script_query = {
                     "bool": {
@@ -285,7 +284,7 @@ class ElasticsearchClient:
                     }
                 }
             else:
-                query_vector = bc.encode([query])[0]
+                query_vector = self.bc.encode([query])[0]
                 script_query = {
                     "bool": {
                         "must": [
