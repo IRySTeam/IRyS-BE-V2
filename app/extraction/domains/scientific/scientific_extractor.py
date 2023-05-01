@@ -292,7 +292,7 @@ class ScientificExtractor(GeneralExtractor):
 
         # Extract authors
         scientific_information["authors"] = self.__classify_authors(
-            page_lines, breakpoint_line
+            page_lines, breakpoint_line, True
         )
 
         # Extract references
