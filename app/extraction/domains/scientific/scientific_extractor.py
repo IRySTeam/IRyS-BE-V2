@@ -658,11 +658,15 @@ class ScientificExtractor(GeneralExtractor):
         }
 
         if use_characteristic:
-            result["same_characteristic_prev"] = int(
-                prev["flags"] == flags and prev["font_size"] == font_size
+            result["same_characteristic_prev"] = (
+                int(prev["flags"] == flags and prev["font_size"] == font_size)
+                if prev
+                else 0
             )
-            result["same_characteristic_next"] = int(
-                next["flags"] == flags and next["font_size"] == font_size
+            result["same_characteristic_next"] = (
+                int(next["flags"] == flags and next["font_size"] == font_size)
+                if next
+                else 0
             )
 
         return result
