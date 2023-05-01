@@ -23,7 +23,7 @@ from core.exceptions import (
     UserNotAllowedException,
     UserNotFoundException,
 )
-from core.repository import RepositoryRepo, UserRepo
+from core.repository import DocumentRepo, RepositoryRepo, UserRepo
 from core.utils.mailer import Mailer
 
 
@@ -332,3 +332,21 @@ class RepositoryService:
         await self.repository_repo.update_user_repository_role(
             repository_id=repository_id, user_id=collaborator_id, role=role
         )
+
+    async def delete_repository(self, user_id: int, repository_id: int) -> None:
+        if not await self.repository_repo.is_exist(repository_id):
+            raise RepositoryNotFoundException
+
+        if not await self.repository_repo.is_user_id_owner_of_repository(
+            user_id, repository_id
+        ):
+            raise UserNotAllowedException
+
+        # Delete all documents
+        await DocumentRepo().delete_by_repository_id(repository_id)
+
+        # Delete all collaborators
+        await self.repository_repo.delete_user_repositories_by_repository_id(
+            repository_id
+        )
+        await self.repository_repo.delete_by_id(repository_id)

@@ -358,3 +358,17 @@ class RepositoryRepo(BaseRepo[Repository]):
         if result.rowcount == 0:
             return None
         return result.fetchone().role
+
+    async def delete_user_repositories_by_repository_id(self, repository_id: int):
+        sql = text(
+            """
+            DELETE FROM user_repositories
+            WHERE repository_id = :repository_id
+        """
+        )
+        params = {
+            "repository_id": repository_id,
+        }
+
+        # Execute SQL query
+        await session.execute(sql, params)

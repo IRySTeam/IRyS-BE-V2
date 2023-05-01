@@ -1,6 +1,6 @@
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 
-from app.document.models import DocumentIndex
+from app.document.models import Document, DocumentIndex
 from core.db.session import session
 from core.repository import BaseRepo
 from core.repository.enum import SynchronizeSessionEnum
@@ -27,4 +27,15 @@ class DocumentIndexRepo(BaseRepo[DocumentIndex]):
             .values(**params)
             .execution_options(synchronize_session=synchronize_session)
         )
+        await session.execute(query)
+
+    async def delete_by_repository_id(self, repository_id: int):
+        query = delete(self.model).where(
+            self.model.doc_id.in_(
+                session.query(Document.id).filter(
+                    Document.repository_id == repository_id
+                )
+            )
+        )
+
         await session.execute(query)
