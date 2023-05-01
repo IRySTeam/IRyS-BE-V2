@@ -53,7 +53,7 @@ RESUME_SECTIONS_KEYWORDS = {
         "course details",
         "related courses",
         "related course",
-        "study",
+        "studies",
         "workshops",
         "workshop",
     ],
@@ -110,7 +110,8 @@ RESUME_HEADERS_REGEX = re.compile(
 
 INSTITUTION_KEYWORDS = [
     "university",
-    "universitas" "department",
+    "universitas",
+    "department",
     "school",
     "institut",
     "institute",
