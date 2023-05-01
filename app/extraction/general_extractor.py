@@ -44,16 +44,22 @@ class GeneralExtractor:
 
         return text
 
-    def extract(self, file: bytes) -> Dict[str, Any]:
+    def extract(
+        self,
+        file: bytes,
+        file_text: str = None,
+    ) -> Dict[str, Any]:
         """
         Extract entities and information from file
 
         [Arguments]
             file: bytes -> File to extract metadata from
+            file_text: str -> Text of file to extract entities from (optional), used when
+                file is scanned PDF
         [Returns]
             Dict[str, Any] -> Dictionary containing extracted information and entities
         """
-        file_text: str = parser.from_buffer(file)["content"].strip()
+        file_text = file_text or parser.from_buffer(file)["content"].strip()
 
         # Extract general information
         result = self.extract_general_information(file, file_text)

@@ -87,29 +87,35 @@ class ScientificExtractor(GeneralExtractor):
 
         return preprocessed
 
-    def extract(self, file: bytes) -> Dict[str, Any]:
+    def extract(
+        self,
+        file: bytes,
+        file_text: str = None,
+    ) -> Dict[str, Any]:
         """
         Extract information from a paper file
 
         [Arguments]
             file: bytes -> File bytes to extract information from
+            file_text: str -> Text of file to extract entities from (optional), used when
+                file is scanned PDF
         [Returns]
             Dict -> Dictionary containing extracted information
         """
 
-        result = super().extract(file)
+        result = super().extract(file, file_text)
 
         if result["extension"] == ".doc" or result["extension"] == ".docx":
             file = self.file_converter.doc_to_pdf(file, result["extension"])
 
         if (
-            result["extension"] == ".pdf"
+            (result["extension"] == ".pdf" and not file_text)
             or result["extension"] == ".doc"
             or result["extension"] == ".docx"
         ):
             metadata = self.extract_scientific_information(file)
         else:
-            metadata = self.extract_scientific_information_txt(file)
+            metadata = self.extract_scientific_information_txt(file, file_text)
         result = result | metadata
 
         return result
@@ -297,12 +303,18 @@ class ScientificExtractor(GeneralExtractor):
         # Post process
         return self.__post_process(scientific_information)
 
-    def extract_scientific_information_txt(self, file: bytes) -> Dict[str, Any]:
+    def extract_scientific_information_txt(
+        self,
+        file: bytes,
+        file_text: str = None,
+    ) -> Dict[str, Any]:
         """
         Extract information from a txt file
 
         [Arguments]
             file: bytes -> File bytes to extract information from
+            file_text: str -> Text of file to extract entities from (optional), used when
+                file is scanned PDF
         [Returns]
             Dict -> Dictionary containing extracted information
         """
@@ -316,7 +328,7 @@ class ScientificExtractor(GeneralExtractor):
             "references": [],
         }
 
-        file_text: str = parser.from_buffer(file)["content"].strip()
+        file_text = file_text or parser.from_buffer(file)["content"].strip()
 
         # Split lines and remove empty
         lines = [

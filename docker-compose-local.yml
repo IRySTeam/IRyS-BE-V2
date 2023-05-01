@@ -22,7 +22,7 @@ services:
   celery_worker:
     build:
       context: .
-      dockerfile: ./celery_app/Dockerfile
+      dockerfile: ./celery_app/Dockerfile.local
     command: /start-celeryworker
     volumes:
       - .:/app
@@ -36,7 +36,7 @@ services:
   celery_beat:
     build:
       context: .
-      dockerfile: ./celery_app/Dockerfile
+      dockerfile: ./celery_app/Dockerfile.local
     command: /start-celerybeat
     volumes:
       - .:/app
@@ -48,7 +48,7 @@ services:
   flower:
     build:
       context: .
-      dockerfile: ./celery_app/Dockerfile
+      dockerfile: ./celery_app/Dockerfile.local
     command: /start-flower
     volumes:
       - .:/app

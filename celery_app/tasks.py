@@ -30,6 +30,7 @@ def parsing(
     document_id: int,
     document_title: str,
     document_url: str,
+    document_label: str = None,
 ) -> bool:
     """
     Celery task for parsing document. The parsing task will be split into 2 subtasks:
@@ -39,10 +40,17 @@ def parsing(
         document_id: int -> Document id.
         document_title: str -> Document title.
         document_url: str -> Document url.
+        document_label: str -> Document predefined label, used when manually changing label.
     [Returns]
         bool -> True if parsing is successful.
     """
     try:
+        # Check if provided document label is valid.
+        if document_label and document_label not in set(
+            enum.value for enum in Classifier.LabelEnum
+        ):
+            raise Exception("Invalid document label")
+
         # Update indexing status.
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
@@ -78,6 +86,7 @@ def parsing(
             document_url=document_url,
             file_raw_text=file_text,
             file_preprocessed_text=preprocessed_file_text,
+            document_label=document_label,
         )
         return True
     except Exception as e:
@@ -99,8 +108,10 @@ def extraction(
     document_id: int,
     document_title: str,
     document_url: str,
-    file_raw_text: str,
-    file_preprocessed_text: List[str],
+    document_label: str = None,
+    with_ocr: bool = False,
+    file_raw_text: str = "",
+    file_preprocessed_text: List[str] = [],
 ) -> bool:
     """
     Celery task for extracting information from document. The extraction task will be split into 2
@@ -113,6 +124,7 @@ def extraction(
         document_url: str -> Document url.
         file_raw_text: str -> Raw text from document.
         file_preprocessed_text: List[str] -> Preprocessed text from document.
+        with_ocr: bool -> Whether document is parsed with OCR or not.
     [Returns]
         bool -> True if extraction is successful
     """
@@ -128,29 +140,32 @@ def extraction(
         )
         file_bytes = GCStorage().get_file(document_url)
 
-        # Classify document type and extract information from document.
+        # Classify document type and extract general information from document.
         extractor = InformationExtractor(domain="general")
-        general_document_metadata = extractor.extract(file_bytes)
+        general_document_metadata = extractor.extract(file_bytes, file_raw_text)
         document_metadata = {}
-        document_label = Classifier.classify(texts=file_preprocessed_text)
+        document_label = document_label or Classifier.classify(
+            texts=file_preprocessed_text
+        )
+
+        # Extract information on domain-specific document.
+        domain = None
         if document_label == Classifier.LabelEnum.RESUME.value:
-            extractor = InformationExtractor(domain="recruitment")
-            document_metadata = extractor.extract(file_bytes)
+            domain = "recruitment"
         elif document_label == Classifier.LabelEnum.PAPER.value:
-            extractor = InformationExtractor(domain="scientific")
-            document_metadata = extractor.extract(file_bytes)
+            domain = "scientific"
+        if domain:
+            extractor = InformationExtractor(domain=domain)
+            if with_ocr:
+                document_metadata = extractor.extract(file_bytes, file_raw_text)
+            else:
+                document_metadata = extractor.extract(file_bytes)
 
         # Update document metadata on database.
         mimetype = document_metadata.get("mimetype", None)
         extension = document_metadata.get("extension", None)
         size = document_metadata.get("size", None)
         document_title = document_metadata.get("title", None) or document_title
-
-        # Get dates from extracted metadata.
-        print("GENERAL METADATA")
-        print(general_document_metadata.get("dates", ""))
-        print("DOCUMENT METADATA")
-        print(document_metadata.get("dates", ""))
 
         # Update document in database according to extracted metadata and do indexing.
         async_to_sync(document_service.update_document_celery)(
@@ -190,11 +205,11 @@ def indexing(
     self,
     document_id: int,
     document_title: str,
-    file_raw_text: str,
-    file_preprocessed_text: List[str],
     document_label: str,
     document_metadata: Dict[str, Any] = {},
     general_document_metadata: Dict[str, Any] = {},
+    file_raw_text: str = "",
+    file_preprocessed_text: List[str] = [],
 ) -> bool:
     """
     Celelry task for indexing document. The indexing task will be split into 2 subtasks:
