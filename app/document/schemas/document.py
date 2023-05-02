@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, Literal
 
 from fastapi import Path, Query
 from pydantic import BaseModel, Field
@@ -32,7 +33,36 @@ class DocumentResponseSchema(BaseModel):
     elastic_index_name: str = Field(None, description="Elasticsearch index name")
     created_at: datetime = Field(None, description="Document's created at metadata")
     updated_at: datetime = Field(None, description="Document's updated at metadata")
-    index: DocumentIndexing = Field(None, description="Document indexing status")
+    is_public: bool = Field(None, description="Document visibility")
+    mimetype: str = Field(None, description="Document format")
+    uploaded_by: str = Field(None, description="Document uploader")
+
+    class Config:
+        orm_mode = True
+
+
+class DocumentElasticDetail(BaseModel):
+    doc_metadata: Dict[str, Any] = Field(None, description="Document metadata")
+    doc_entities: Dict[str, Any] = Field(None, description="Document entities")
+
+
+class DocumentDetailResponseSchema(BaseModel):
+    id: int = Field(..., description="Document id")
+    title: str = Field(..., description="Document title")
+    file_url: str = Field(..., description="Document file url")
+    doc_detail: DocumentElasticDetail = Field(None, description="Document detail")
+
+    class Config:
+        orm_mode = True
+
+
+class DocumentDatabaseResponseSchema(BaseModel):
+    id: int = Field(..., description="Document id")
+    title: str = Field(..., description="Document title")
+    is_public: bool = Field(..., description="Document visibility")
+    category: Literal[
+        "Determining....", "General", "Scientific", "Recruitment"
+    ] = Field("Determining....", description="Document category")
 
     class Config:
         orm_mode = True

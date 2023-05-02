@@ -38,6 +38,8 @@ class SearchService:
         [Output]
           - preprocessed query: str
         """
+        if (query == ""):
+            return ""
         if (should_expand) and (domain == DomainEnum.RECRUITMENT):
             query = self.recruitment_expander.expansion_method[expansion_method](query)
         if (should_expand) and (domain == DomainEnum.SCIENTIFIC):

@@ -16,7 +16,6 @@ class SemanticSearchRequest(BaseModel):
         ..., description="Additional entity based filters"
     )
 
-
 class DocumentDetails(BaseModel):
     details: DocumentResponseSchema = Field(
         ..., description="Document details from database"
@@ -26,7 +25,16 @@ class DocumentDetails(BaseModel):
         ..., description="List of texts that will be highlighted in preview"
     )
 
-
 class SemanticSearchResponseSchema(BaseModel):
-    message: str = Field(..., description="Response message")
+    num_docs_retrieved: int = Field(..., description="Number of matched documents")
     result: List[DocumentDetails] = Field(..., description="List of matched documents")
+
+class RepoSearchPathParams(BaseModel):
+    repository_id: int = Field(..., description="Unique identifier of current repository")
+
+class FileSearchPathParams(BaseModel):
+    domain: DomainEnum = Field(..., description="Document domain of the search")
+    repository_id: int = Field(..., description="Unique identifier of current repository")
+
+class PublicFileSearchPathParams(BaseModel):
+    domain: DomainEnum = Field(..., description="Document domain of the search")

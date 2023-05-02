@@ -47,6 +47,7 @@ class ElasticsearchClient:
             )
 
         self.indices_client = IndicesClient(self.client)
+        self.bc = BertClient(ip="bertserving", output_fmt="list", timeout=60000)
 
     def info(self) -> ElasticInfo:
         """
@@ -189,6 +190,22 @@ class ElasticsearchClient:
         except Exception as e:
             raise FailedDependencyException(e)
 
+    def get_doc(self, index: str, doc_id: str) -> dict:
+        """
+        Get a document in Elasticsearch.
+        [Parameters]
+            index: str -> Name of the index.
+            doc_id: str -> ID of the document to be retrieved.
+        [Returns]
+            dict: Document retrieved.
+        """
+        try:
+            return self.client.get(index=index, id=doc_id)
+        except ApiError as e:
+            raise classify_error(e)
+        except Exception as e:
+            raise FailedDependencyException(e)
+
     def safe_delete_doc(self, index_name: str, doc_id: str) -> ObjectApiResponse[Any]:
         """
         Delete a document from an Elasticsearch index, but ignore if document does not exist.
@@ -273,25 +290,33 @@ class ElasticsearchClient:
           index_name: str -> Name of index that will be the base of the search
         """
         try:
-            bc = BertClient(ip="bertserving", output_fmt="list", timeout=5000)
-            query_vector = bc.encode([query])[0]
-
-            script_query = {
-                "bool": {
-                    "must": [
-                        {"terms": {"document_id": doc_ids}},
-                        {
-                            "script_score": {
-                                "query": {"match_all": {}},
-                                "script": {
-                                    "source": f'doc["{emb_vector}"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, "{emb_vector}") + 1.0',
-                                    "params": {"query_vector": query_vector},
-                                },
-                            }
-                        },
-                    ]
+            if query == "":
+                script_query = {
+                    "bool": {
+                        "must": [
+                            {"terms": {"document_id": doc_ids}},
+                            {"match_all": {}},
+                        ]
+                    }
                 }
-            }
+            else:
+                query_vector = self.bc.encode([query])[0]
+                script_query = {
+                    "bool": {
+                        "must": [
+                            {"terms": {"document_id": doc_ids}},
+                            {
+                                "script_score": {
+                                    "query": {"match_all": {}},
+                                    "script": {
+                                        "source": f'doc["{emb_vector}"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, "{emb_vector}") + 1.0',
+                                        "params": {"query_vector": query_vector},
+                                    },
+                                }
+                            },
+                        ]
+                    }
+                }
 
             return self.client.search(
                 index=index, size=size, query=script_query, source={"includes": source}

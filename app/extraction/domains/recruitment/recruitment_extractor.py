@@ -1,3 +1,4 @@
+import os
 import re
 from collections import defaultdict
 from typing import Any, Dict, List
@@ -6,6 +7,7 @@ import fitz
 from tika import parser
 from transformers import pipeline
 
+from app.extraction.domains.general import GeneralExtractor
 from app.extraction.domains.recruitment.configuration import (
     RECRUITMENT_ENTITIES,
 )
@@ -18,8 +20,9 @@ from app.extraction.domains.recruitment.constants import (
     RESUME_SECTIONS_KEYWORDS_INV,
     SKILLS_REGEX,
 )
-from app.extraction.general_extractor import GeneralExtractor
 from app.extraction.ner_result import NERResult
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
 class RecruitmentExtractor(GeneralExtractor):
@@ -31,9 +34,10 @@ class RecruitmentExtractor(GeneralExtractor):
         """
         Constructor of RecruitmentExtractor class
         """
-
         self.pipeline = pipeline(
-            "ner", model="topmas/IRyS-NER-Recruitment", aggregation_strategy="simple"
+            "ner",
+            model=os.path.join(dir_path, "ner_model"),
+            aggregation_strategy="simple",
         )
         self.entity_list = RECRUITMENT_ENTITIES
 
@@ -47,17 +51,23 @@ class RecruitmentExtractor(GeneralExtractor):
 
         return text.split("[SEGMENT]")
 
-    def extract(self, file: bytes) -> Dict[str, Any]:
+    def extract(
+        self,
+        file: bytes,
+        file_text: str = None,
+    ) -> Dict[str, Any]:
         """
         Extract information from a paper file
 
         [Arguments]
             file: bytes -> File bytes to extract information from
+            file_text: str -> Text of file to extract entities from (optional), used when
+                file is a scanned PDF file
         [Returns]
             Dict -> Dictionary containing extracted information
         """
 
-        result = super().extract_general_information(file)
+        result = super().extract_general_information(file, file_text)
 
         is_pdf = result["extension"] == ".pdf"
 
@@ -66,7 +76,9 @@ class RecruitmentExtractor(GeneralExtractor):
             is_pdf = True
 
         # Get resume segments and text
-        resume_segments_and_text = self.__get_resume_segments_and_text(file, is_pdf)
+        resume_segments_and_text = self.__get_resume_segments_and_text(
+            file, is_pdf, file_text
+        )
 
         # Join text for every segment
         segmented_text = [
@@ -195,13 +207,18 @@ class RecruitmentExtractor(GeneralExtractor):
         return recruitment_information
 
     def __get_resume_segments_and_text(
-        self, file: bytes, is_pdf: bool
+        self,
+        file: bytes,
+        is_pdf: bool,
+        file_text: str = None,
     ) -> Dict[str, Any]:
         """
         Get resume segments and text from resume file
 
         [Arguments]
             file: bytes -> File bytes to extract information from
+            file_text: str -> Text of file to extract entities from (optional), used when
+                file is a scanned PDF file
         [Returns]
             Dict -> Dictionary of resume segments and text
         """
@@ -272,7 +289,7 @@ class RecruitmentExtractor(GeneralExtractor):
 
             header_font_size = max(possible_header_sizes)
         else:  # txt file
-            resume_text: str = parser.from_buffer(file)["content"].strip()
+            resume_text = file_text or parser.from_buffer(file)["content"].strip()
             page_lines = [
                 {"text": line.strip(), "label": "unknown"}
                 for line in resume_text.splitlines()

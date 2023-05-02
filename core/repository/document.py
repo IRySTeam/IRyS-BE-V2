@@ -46,20 +46,25 @@ class DocumentRepo(BaseRepo[Document]):
         result = await session.execute(query)
         return result.scalars().all()
 
-    async def monitor_all_documents(
+    async def get_all_documents_in_repo(
         self,
         repository_id: int,
         status: str = "ALL",
         page_size: int = 10,
         page_no: int = 1,
+        find_document: str = None,
+        include_index: bool = True,
     ) -> dict:
-        query = (
-            select(Document)
-            .where(Document.repository_id == repository_id)
-            .options(selectinload(Document.index))
-        )
+        query = select(Document).where(Document.repository_id == repository_id)
+
+        if include_index:
+            query = query.options(selectinload(Document.index))
+
         if status != "ALL":
             query = query.where(Document.index.has(status=status))
+
+        if find_document:
+            query = query.where(Document.title.ilike(f"%{find_document}%"))
 
         result = await session.execute(query)
         full_items = result.fetchall()
@@ -161,12 +166,46 @@ class DocumentRepo(BaseRepo[Document]):
         )
         return result.fetchone().count > 0
 
+    async def get_all_accessible_documents(self, collaborator_id: int) -> List[int]:
+        query = """
+        SELECT d.id FROM documents d
+        INNER JOIN user_documents ud ON d.id = ud.document_id
+        WHERE user_id = :user_id
+        UNION
+        SELECT d.id FROM documents d
+        INNER JOIN repositories r ON d.repository_id = r.id
+        INNER JOIN user_repositories ur ON r.id = ur.repository_id
+        WHERE ur.user_id = :user_id
+        UNION
+        SELECT d.id FROM documents d
+        WHERE d.is_public IS true;
+        """
+        result = await session.execute(text(query), {"user_id": collaborator_id})
+        return [r.id for r in result.fetchall()]
+
+    async def get_repo_accessible_documents(self, repository_id: int) -> List[int]:
+        query = """
+        SELECT d.id FROM documents d
+        INNER JOIN repositories r ON d.repository_id = r.id
+        INNER JOIN user_repositories ur ON r.id = ur.repository_id
+        WHERE r.id = :repository_id;
+        """
+        result = await session.execute(text(query), {"repository_id": repository_id})
+        return [r.id for r in result.fetchall()]
+
     async def delete_by_repository_id(self, repository_id: int):
         sql = """
         DELETE FROM documents
         WHERE repository_id = :repository_id
         """
         await session.execute(text(sql), {"repository_id": repository_id})
+
+    async def delete_user_documents_by_document_id(self, document_id: int):
+        sql = """
+        DELETE FROM user_documents
+        WHERE document_id = :document_id
+        """
+        await session.execute(text(sql), {"document_id": document_id})
 
     async def delete_user_documents_by_repository_id(self, repository_id: int):
         sql = """
