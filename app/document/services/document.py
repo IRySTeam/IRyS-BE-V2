@@ -114,9 +114,10 @@ class DocumentService:
                     document_id=doc_id,
                     collaborator_id=user_id,
                 )
-                doc_role = DocumentRole[doc_role.upper()]
-                if doc_role >= DocumentRole.VIEWER:
-                    allowed_to_access = True
+                if doc_role:
+                    doc_role = DocumentRole[doc_role.upper()]
+                    if doc_role >= DocumentRole.VIEWER:
+                        allowed_to_access = True
 
         if not allowed_to_access:
             raise UserNotAllowedException(
