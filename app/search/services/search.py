@@ -46,7 +46,7 @@ class SearchService:
             query = self.recruitment_expander.expansion_method[expansion_method](query)
         return " ".join(PreprocessUtil().preprocess(query))
 
-    def normalize_search_result(self, data):
+    def normalize_search_result(self, data, min_score=1):
         search_result = SearchResult(result=[])
         for hit in data["hits"]["hits"]:
             matched_document = MatchedDocument(
@@ -57,7 +57,8 @@ class SearchService:
                 preprocessed_text=hit["_source"]["preprocessed_text"],
                 document_metadata=hit["_source"]["document_metadata"],
             )
-            search_result.result.append(matched_document)
+            if (matched_document.score >= min_score):
+                search_result.result.append(matched_document)
         return search_result
 
     def elastic_keyword_search(
@@ -73,7 +74,7 @@ class SearchService:
         data = ElasticsearchClient().search_semantic(
             query=query,
             index=f"{domain.value}-0001",
-            size=5,
+            size=1000,
             source=["document_id", "title", "preprocessed_text", "document_metadata"],
             emb_vector="text_vector",
             doc_ids=doc_ids,

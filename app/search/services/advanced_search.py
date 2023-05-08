@@ -5,7 +5,7 @@ from typing import List
 from app.elastic.client import ElasticsearchClient
 from app.search.enums.search import DomainEnum
 from app.search.schemas.advanced_search import AdvancedFilterConditions
-from app.search.schemas.elastic import MatchedDocument
+from app.search.schemas.elastic import MatchedDocument, SearchResult
 
 
 class AdvancedSearchService:
@@ -132,7 +132,8 @@ class AdvancedSearchService:
           MatchedDocument
         """
         if re.search(r"^date", filter.data_type) is not None:
-            datetime_fmt = re.findall(r"^date: (.*)", filter.data_type)[0]
+            # datetime_fmt = re.findall(r"^date: (.*)", filter.data_type)[0]
+            datetime_fmt = "%Y-%m-%d"
             filter.value = datetime.strptime(filter.value, datetime_fmt)
             return [
                 d
@@ -140,9 +141,10 @@ class AdvancedSearchService:
                 if d.document_metadata.get(filter.key) is not None
                 and self.eval_basic(
                     filter.value,
-                    datetime.strptime(
-                        d.document_metadata.get(filter.key), datetime_fmt
-                    ),
+                    [
+                        datetime.strptime(x, datetime_fmt) 
+                        for x in d.document_metadata.get(filter.key)
+                    ],
                     ">",
                 )
             ]
@@ -169,7 +171,8 @@ class AdvancedSearchService:
           MatchedDocument
         """
         if re.search(r"^date", filter.data_type) is not None:
-            datetime_fmt = re.findall(r"^date: (.*)", filter.data_type)[0]
+            # datetime_fmt = re.findall(r"^date: (.*)", filter.data_type)[0]
+            datetime_fmt = "%Y-%m-%d"
             filter.value = datetime.strptime(filter.value, datetime_fmt)
             return [
                 d
@@ -177,9 +180,10 @@ class AdvancedSearchService:
                 if d.document_metadata.get(filter.key) is not None
                 and self.eval_basic(
                     filter.value,
-                    datetime.strptime(
-                        d.document_metadata.get(filter.key), datetime_fmt
-                    ),
+                    [
+                        datetime.strptime(x, datetime_fmt) 
+                        for x in d.document_metadata.get(filter.key)
+                    ],
                     "<",
                 )
             ]
@@ -206,7 +210,8 @@ class AdvancedSearchService:
           MatchedDocument
         """
         if re.search(r"^date", filter.data_type) is not None:
-            datetime_fmt = re.findall(r"^date: (.*)", filter.data_type)[0]
+            # datetime_fmt = re.findall(r"^date: (.*)", filter.data_type)[0]
+            datetime_fmt = "%Y-%m-%d"
             filter.value = datetime.strptime(filter.value, datetime_fmt)
             return [
                 d
@@ -214,9 +219,10 @@ class AdvancedSearchService:
                 if d.document_metadata.get(filter.key) is not None
                 and self.eval_basic(
                     filter.value,
-                    datetime.strptime(
-                        d.document_metadata.get(filter.key), datetime_fmt
-                    ),
+                    [
+                        datetime.strptime(x, datetime_fmt) 
+                        for x in d.document_metadata.get(filter.key)
+                    ],                    
                     ">=",
                 )
             ]
@@ -243,7 +249,8 @@ class AdvancedSearchService:
           MatchedDocument
         """
         if re.search(r"^date", filter.data_type) is not None:
-            datetime_fmt = re.findall(r"^date: (.*)", filter.data_type)[0]
+            # datetime_fmt = re.findall(r"^date: (.*)", filter.data_type)[0]
+            datetime_fmt = "%Y-%m-%d"
             filter.value = datetime.strptime(filter.value, datetime_fmt)
             return [
                 d
@@ -251,9 +258,10 @@ class AdvancedSearchService:
                 if d.document_metadata.get(filter.key) is not None
                 and self.eval_basic(
                     filter.value,
-                    datetime.strptime(
-                        d.document_metadata.get(filter.key), datetime_fmt
-                    ),
+                    [
+                        datetime.strptime(x, datetime_fmt) 
+                        for x in d.document_metadata.get(filter.key)
+                    ],
                     "<=",
                 )
             ]
@@ -338,14 +346,17 @@ class AdvancedSearchService:
         [Returns]
           MatchedDocument
         """
+        # print(type(search_result[0]))
         data = ElasticsearchClient().search_semantic(
             query=filter.value,
-            index=f"{domain}-0001",
+            index=f"{domain.value}-0001",
             size=filter.top_n,
-            source=["title", "preprocessed_text", "document_metadata"],
-            emb_vector=f"{filter.key}_vector",
+            source=["document_id", "title", "preprocessed_text", "document_metadata"],
+            emb_vector=f'document_metadata.{filter.key}.text_vector',
+            doc_ids=[x.doc_id for x in search_result.result],
         )
-        return search_result
+        return self.normalize_search_result(data, filter.score_threshold).result
+        
 
     def generalize_type(self, value, source):
         if type(value) != list and type(value) != dict:
@@ -404,3 +415,18 @@ class AdvancedSearchService:
         value, source = self.generalize_type(value, source)
         intersection = [x for x in value if x in source]
         return bool(intersection)
+    
+    def normalize_search_result(self, data, min_score=1):
+        search_result = SearchResult(result=[])
+        for hit in data["hits"]["hits"]:
+            matched_document = MatchedDocument(
+                doc_id=hit["_source"]["document_id"],
+                id=hit["_id"],
+                score=hit["_score"],
+                title=hit["_source"]["title"],
+                preprocessed_text=hit["_source"]["preprocessed_text"],
+                document_metadata=hit["_source"]["document_metadata"],
+            )
+            if (matched_document.score >= min_score):
+                search_result.result.append(matched_document)
+        return search_result
