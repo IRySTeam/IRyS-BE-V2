@@ -6,9 +6,11 @@ from app.elastic.client import ElasticsearchClient
 from app.search.enums.search import DomainEnum
 from app.search.schemas.advanced_search import AdvancedFilterConditions
 from app.search.schemas.elastic import MatchedDocument, SearchResult
+from app.preprocess.preprocess import PreprocessUtil
 
 
 class AdvancedSearchService:
+
     def evaluate_in_filter(
         self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions
     ):
@@ -346,7 +348,6 @@ class AdvancedSearchService:
         [Returns]
           MatchedDocument
         """
-        # print(type(search_result[0]))
         data = ElasticsearchClient().search_semantic(
             query=filter.value,
             index=f"{domain.value}-0001",
@@ -356,7 +357,28 @@ class AdvancedSearchService:
             doc_ids=[x.doc_id for x in search_result.result],
         )
         return self.normalize_search_result(data, filter.score_threshold).result
+    
+    def preprocess_filter(self, value, source):
+        pu = PreprocessUtil()
         
+        clean_value = value
+        clean_source = source
+        
+        # Preprocess value
+        if type(value) == str:
+            clean_value = ' '.join(pu.preprocess(value))
+        elif type(value) == list:
+            clean_value = [' '.join(pu.preprocess(x)) for x in value]
+
+        # Preprocess source
+        if type(source) == str:
+            clean_source = ' '.join(pu.preprocess(source))
+        elif type(source) == list:
+            clean_source = [' '.join(pu.preprocess(x)) for x in source]
+        elif type(source) == dict:
+            clean_source = [' '.join(pu.preprocess(source.get('text')[0]))]
+        
+        return clean_value, clean_source
 
     def generalize_type(self, value, source):
         if type(value) != list and type(value) != dict:
@@ -368,6 +390,7 @@ class AdvancedSearchService:
         return value, source
 
     def find_contains(self, value, source):
+        value, source = self.preprocess_filter(value, source)
         value, source = self.generalize_type(value, source)
         for val in value:
             for source_val in source:
@@ -412,6 +435,7 @@ class AdvancedSearchService:
         return False
 
     def any_intersection(self, value, source):
+        value, source = self.preprocess_filter(value, source)
         value, source = self.generalize_type(value, source)
         intersection = [x for x in value if x in source]
         return bool(intersection)

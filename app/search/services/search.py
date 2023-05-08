@@ -7,6 +7,7 @@ from binascii import a2b_base64, b2a_base64
 from fastapi import UploadFile
 from tika import parser
 
+from app.search.constants.search import FIELD_WEIGHTS
 from app.search.enums.search import DomainEnum, FilterOperatorEnum
 from app.search.schemas.advanced_search import AdvancedFilterConditions
 from app.search.schemas.elastic import MatchedDocument, SearchResult
@@ -59,6 +60,12 @@ class SearchService:
             )
             if (matched_document.score >= min_score):
                 search_result.result.append(matched_document)
+            
+            #---------------------------
+            print(matched_document.doc_id)
+            print(matched_document.title)
+            print(matched_document.score)
+            print('---------------------------')
         return search_result
 
     def elastic_keyword_search(
@@ -78,6 +85,7 @@ class SearchService:
             source=["document_id", "title", "preprocessed_text", "document_metadata"],
             emb_vector="text_vector",
             doc_ids=doc_ids,
+            fields=FIELD_WEIGHTS.get(domain)
         )
         return self.normalize_search_result(data)
 
