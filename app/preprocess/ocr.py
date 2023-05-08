@@ -149,7 +149,7 @@ class OCRUtil:
             ret, cv2img = cv2.threshold(
                 cv2img, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV
             )
-            rectangular_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 60))
+            rectangular_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 60))
             dilated_image = cv2.dilate(cv2img, rectangular_kernel, iterations=1)
             contours, hierarchy = cv2.findContours(
                 dilated_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
@@ -228,6 +228,6 @@ class OCRUtil:
 
 if __name__ == "__main__":
     # Read PDF file.
-    with open("./tests/data/sc_2col_title_middle_full-pages_1.pdf", "rb") as f:
+    with open("./tests/data/cv_1col_blackwhite.pdf", "rb") as f:
         ocr_text = OCRUtil.ocr(f.read())
         print(ocr_text)
