@@ -291,7 +291,7 @@ def indexing(
                         "text": metadata_value,
                         "text_vector": metadata_embedding[0],
                     }
-                else:
+                elif not preprocessed_metadata and type == "semantic text":
                     doc["document_metadata"][name] = {"text": "", "text_vector": []}
 
             res = EsClient.index_doc(
