@@ -1,11 +1,13 @@
 import cv2
 import fitz
+import imutils
 import numpy as np
 import pytesseract
 from pdf2image import convert_from_bytes
 
 # import matplotlib.pyplot as plt
 from PIL import Image
+from pytesseract import Output
 
 
 class OCRUtil:
@@ -85,6 +87,9 @@ class OCRUtil:
         [Returns]
             np.ndarray: The deskewed image.
         """
+        results = pytesseract.image_to_osd(cvImage, output_type=Output.DICT)
+        rotated = imutils.rotate_bound(cvImage, angle=results["rotate"])
+        return rotated
         angle = cls.get_skew_angle(cvImage)
         return cls.rotate_image(cvImage, -1.0 * angle)
 
@@ -140,7 +145,7 @@ class OCRUtil:
         for img in images:
             # Image preprocessing.
             cv2img = cls.pil2cv(img)
-            # cv2img = cls.deskew(cv2img)
+            cv2img = cls.deskew(cv2img)
             original_image = cv2img.copy()
             cv2img = cv2.cvtColor(cv2img, cv2.COLOR_BGR2GRAY)
             # cv2img = cv2.fastNlMeansDenoising(cv2img, None, 10, 7, 21)
