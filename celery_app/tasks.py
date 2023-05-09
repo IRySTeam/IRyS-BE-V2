@@ -292,7 +292,10 @@ def indexing(
                         "text_vector": metadata_embedding[0],
                     }
                 elif not preprocessed_metadata and type == "semantic text":
-                    doc["document_metadata"][name] = {"text": "", "text_vector": []}
+                    doc["document_metadata"][name] = {
+                        "text": "",
+                        "text_vector": [0.0 for _ in range(768)],
+                    }
 
             res = EsClient.index_doc(
                 index=SCIENTIFIC_ELASTICSEARCH_INDEX_NAME

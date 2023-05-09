@@ -47,7 +47,9 @@ class ElasticsearchClient:
             )
 
         self.indices_client = IndicesClient(self.client)
-        self.bc = BertClient(ip="bertserving", output_fmt="list", timeout=60000)
+        self.bc = BertClient(
+            ip=config.BERT_SERVER_IP or "bertserving", output_fmt="list", timeout=60000
+        )
 
     def info(self) -> ElasticInfo:
         """
@@ -282,7 +284,7 @@ class ElasticsearchClient:
         source: List[str],
         emb_vector: str,
         doc_ids: List[int],
-        fields: List[str] = None
+        fields: List[str] = None,
     ):
         """
         Retrieve documents from an Elasticsearch index based on an input query
@@ -300,7 +302,7 @@ class ElasticsearchClient:
                         ]
                     }
                 }
-                body = {'query': script_query}
+                body = {"query": script_query}
             elif fields is None:
                 query_vector = self.bc.encode([query])[0]
                 script_query = {
@@ -319,20 +321,13 @@ class ElasticsearchClient:
                         ]
                     }
                 }
-                body = {'query': script_query}
+                body = {"query": script_query}
             else:
-                script_query = {
-                    'multi_match': {
-                        'query': query,
-                        'fields': fields
-                    }
-                }
+                script_query = {"multi_match": {"query": query, "fields": fields}}
                 body = {
-                    'query': script_query,
-                    'sort': [
-                        {'_score': {'order': 'desc'}}
-                    ],
-                    'search_type': 'dfs_query_then_fetch'
+                    "query": script_query,
+                    "sort": [{"_score": {"order": "desc"}}],
+                    "search_type": "dfs_query_then_fetch",
                 }
 
             return self.client.search(
