@@ -282,6 +282,7 @@ class ElasticsearchClient:
         source: List[str],
         emb_vector: str,
         doc_ids: List[int],
+        fields: List[str] = None
     ):
         """
         Retrieve documents from an Elasticsearch index based on an input query
@@ -299,7 +300,8 @@ class ElasticsearchClient:
                         ]
                     }
                 }
-            else:
+                body = {'query': script_query}
+            elif fields is None:
                 query_vector = self.bc.encode([query])[0]
                 script_query = {
                     "bool": {
@@ -309,7 +311,7 @@ class ElasticsearchClient:
                                 "script_score": {
                                     "query": {"match_all": {}},
                                     "script": {
-                                        "source": f'doc["{emb_vector}"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, "{emb_vector}") + 1.0',
+                                        "source": f'cosineSimilarity(params.query_vector, "{emb_vector}")',
                                         "params": {"query_vector": query_vector},
                                     },
                                 }
@@ -317,9 +319,24 @@ class ElasticsearchClient:
                         ]
                     }
                 }
+                body = {'query': script_query}
+            else:
+                script_query = {
+                    'multi_match': {
+                        'query': query,
+                        'fields': fields
+                    }
+                }
+                body = {
+                    'query': script_query,
+                    'sort': [
+                        {'_score': {'order': 'desc'}}
+                    ],
+                    'search_type': 'dfs_query_then_fetch'
+                }
 
             return self.client.search(
-                index=index, size=size, query=script_query, source={"includes": source}
+                index=index, size=size, body=body, source={"includes": source}
             )
 
         except TimeoutError as e:
