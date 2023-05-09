@@ -291,6 +291,8 @@ def indexing(
                         "text": metadata_value,
                         "text_vector": metadata_embedding[0],
                     }
+                else:
+                    doc["document_metadata"][name] = {"text": "", "text_vector": []}
 
             res = EsClient.index_doc(
                 index=SCIENTIFIC_ELASTICSEARCH_INDEX_NAME
