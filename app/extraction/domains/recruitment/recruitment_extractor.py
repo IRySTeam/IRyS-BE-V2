@@ -69,7 +69,7 @@ class RecruitmentExtractor(GeneralExtractor):
 
         result = super().extract_general_information(file, file_text)
 
-        is_pdf = result["extension"] == ".pdf"
+        is_pdf = result["extension"] == ".pdf" and file_text is None
 
         if result["extension"] == ".doc" or result["extension"] == ".docx":
             file = self.file_converter.doc_to_pdf(file, result["extension"])

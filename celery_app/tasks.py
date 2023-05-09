@@ -87,6 +87,7 @@ def parsing(
             file_raw_text=file_text,
             file_preprocessed_text=preprocessed_file_text,
             document_label=document_label,
+            with_ocr=with_ocr,
         )
         return True
     except Exception as e:

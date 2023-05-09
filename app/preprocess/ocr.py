@@ -228,6 +228,8 @@ class OCRUtil:
                 text_area = text_area + abs(r)
             total_text_area = total_text_area + text_area
         doc.close()
+        if total_page_area == total_text_area:
+            return OCRUtil.TEXT_PERCENTAGE_THRESHOLD - 0.0001
         return total_text_area / total_page_area
 
 
