@@ -34,8 +34,7 @@ jobs:
       - name: Push image celery
         run: docker push ghcr.io/irysteam/irys-celery:latest
 
-
-  deploy:
+  deploy-be:
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -49,6 +48,52 @@ jobs:
           host: ${{ secrets.GCP_HOST }}
           username: ${{ secrets.GCP_USERNAME }}
           key: ${{ secrets.GCP_PRIVATE_KEY }}
+          command_timeout: 60m
+          port: 22
+          script: |
+            cd ~
+            sudo docker login ghcr.io -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
+            sudo docker-compose down
+            sudo docker rmi -f $(sudo docker images -aq)
+            sudo docker-compose up -d
+
+  deploy-bertserving:
+    needs: deploy-be
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+
+      - name: Deploy Using ssh
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.BERTSERVING_HOST }}
+          username: ${{ secrets.BERTSERVING_USERNAME }}
+          key: ${{ secrets.BERTSERVING_PRIVATE_KEY }}
+          command_timeout: 60m
+          port: 22
+          script: |
+            cd ~
+            sudo docker login ghcr.io -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
+            sudo docker-compose down
+            sudo docker rmi -f $(sudo docker images -aq)
+            sudo docker-compose up -d
+
+  deploy-celery:
+    needs: deploy-be
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+
+      - name: Deploy Using ssh
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.CELERY_HOST }}
+          username: ${{ secrets.CELERY_USERNAME }}
+          key: ${{ secrets.CELERY_PRIVATE_KEY }}
           command_timeout: 60m
           port: 22
           script: |
