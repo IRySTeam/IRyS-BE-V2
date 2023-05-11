@@ -57,6 +57,7 @@ class BaseRepo(Generic[ModelType]):
 
     async def is_exist(self, id: int) -> bool:
         row = await session.get(self.model, id)
+
         if row:
             return True
         else:
