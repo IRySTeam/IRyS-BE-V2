@@ -510,8 +510,15 @@ class RecruitmentExtractor(GeneralExtractor):
                         ]
                     )
 
-                    job_title = experiences_segment[job_title_idxs[idx]]["text"]
-                    company = experiences_segment[company_idxs[idx]]["text"]
+                    if job_title_idxs[idx] < len(experiences_segment):
+                        job_title = experiences_segment[job_title_idxs[idx]]["text"]
+                    else:
+                        job_title = ""
+
+                    if company_idxs[idx] < len(experiences_segment):
+                        company = experiences_segment[company_idxs[idx]]["text"]
+                    else:
+                        company = ""
 
                     experiences.append(
                         {
@@ -640,8 +647,15 @@ class RecruitmentExtractor(GeneralExtractor):
                         ]
                     )
 
-                    institution = educations_segment[institutions_idxs[idx]]["text"]
-                    degree = educations_segment[degree_idxs[idx]]["text"]
+                    if institutions_idxs[idx] < len(educations_segment):
+                        institution = educations_segment[institutions_idxs[idx]]["text"]
+                    else:
+                        institution = ""
+
+                    if degree_idxs[idx] < len(educations_segment):
+                        degree = educations_segment[degree_idxs[idx]]["text"]
+                    else:
+                        degree = ""
 
                     educations.append(
                         {
