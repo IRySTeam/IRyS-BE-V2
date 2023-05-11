@@ -199,6 +199,7 @@ class RepositoryRepo(BaseRepo[Repository]):
         FROM users u
         INNER JOIN user_repositories ur ON ur.user_id = u.id
         WHERE ur.repository_id = :repository_id
+        ORDER BY array_position(array['Owner', 'Admin', 'Uploader', 'Viewer'], ur.role)
         """
         results = await session.execute(text(query), {"repository_id": repository_id})
         return results.fetchall()
