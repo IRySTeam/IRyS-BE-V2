@@ -302,14 +302,16 @@ class RecruitmentExtractor(GeneralExtractor):
         current_label = "profile"
         resume_segments = defaultdict(list)
         resume_segments_list = []
+        font_size_match = True
+
         while i < len(page_lines):
             # Match line text with resume header regex and font size
             match = re.match(RESUME_HEADERS_REGEX, page_lines[i]["text"].lower())
 
             if is_pdf:
-                match = match and page_lines[i]["size"] == header_font_size
+                font_size_match = page_lines[i]["size"] == header_font_size
 
-            while not match:
+            while not (match and font_size_match):
                 resume_segment.append(page_lines[i])
                 current_text += page_lines[i]["text"] + "\n"
                 page_lines[i]["label"] = current_label
@@ -318,11 +320,14 @@ class RecruitmentExtractor(GeneralExtractor):
                     break
                 match = re.match(RESUME_HEADERS_REGEX, page_lines[i]["text"].lower())
 
+                if is_pdf:
+                    font_size_match = page_lines[i]["size"] == header_font_size
+
             resume_segments[current_label] += resume_segment
             resume_segments_list.append(resume_segment)
 
             if i < len(page_lines):
-                if match:
+                if match and font_size_match:
                     current_label = RESUME_SECTIONS_KEYWORDS_INV[match.group()]
                     page_lines[i]["label"] = current_label
                 else:
@@ -417,19 +422,18 @@ class RecruitmentExtractor(GeneralExtractor):
         job_titles = []
         dates = []
         dates_idxs = []
-        first_date_idx = -1
-        first_job_title_idx = -1
+        job_title_idxs = []
         current_length = 0
         first_type = ""
 
         # Try to get first type after the header (dates, job title, or company)
-        for idx, line in enumerate(experiences_segment):
+        for idx, line in enumerate(experiences_segment[1:]):
+            line["type"] = "unknown"
 
             # Get regex match for job title
             match = re.match(JOB_TITLES_REGEX, line["text"].strip())
             if match:
-                if first_job_title_idx == -1:
-                    first_job_title_idx = idx
+                job_title_idxs.append(idx + 1)
                 span = match.span()
                 job_titles.append(
                     {
@@ -437,13 +441,14 @@ class RecruitmentExtractor(GeneralExtractor):
                         "span": (current_length + span[0], current_length + span[1]),
                     }
                 )
+                line["type"] = "job_title"
+
             # Get experience date range
             match = re.match(DATE_RANGE_REGEX, line["text"].strip())
             if match:
-                if first_date_idx == -1:
-                    first_date_idx = idx
                 dates.append((match.group("start_date"), match.group("end_date")))
-                dates_idxs.append(idx)
+                dates_idxs.append(idx + 1)
+                line["type"] = "dates"
 
             current_length += len(line["text"]) + 1
 
@@ -452,43 +457,55 @@ class RecruitmentExtractor(GeneralExtractor):
         job_titles_out = []
         companies_out = []
         descriptions_out = []
+
         if len(dates_idxs) > 0:
-            if first_job_title_idx != -1:
+            if job_title_idxs != []:
+                current_job_title_idx = 0
+                first_job_title_idx = job_title_idxs[current_job_title_idx]
                 closest_date = min(
                     dates_idxs, key=lambda x: abs(x - first_job_title_idx)
                 )
                 date_to_job_title = first_job_title_idx - closest_date
+
+                # Repeat until date_to_job_title is less than 3
+                while (
+                    current_job_title_idx < len(job_title_idxs)
+                    and abs(date_to_job_title) > 2
+                ):
+                    current_job_title_idx += 1
+                    first_job_title_idx = job_title_idxs[current_job_title_idx]
+                    closest_date = min(
+                        dates_idxs, key=lambda x: abs(x - first_job_title_idx)
+                    )
+                    date_to_job_title = first_job_title_idx - closest_date
                 job_title_idxs = [idx + date_to_job_title for idx in dates_idxs]
 
-                if 1 in dates_idxs:
-                    first_type = "date"
-                elif 1 in job_title_idxs:
-                    first_type = "job_title"
-                else:
-                    first_type = "unknown"
+                first_type = experiences_segment[1]["type"]
 
                 # Assume if type is unknown, then it is company
                 if first_type == "unknown":
                     first_type = "company"
 
-                    date_to_company = 1 - dates_idxs[0]
-                elif first_type == "date":
-                    is_job_title_second = job_title_idxs[0] == 2
-                    if is_job_title_second:
-                        date_to_company = 3 - dates_idxs[0]
-                    else:  # Company is second
-                        date_to_company = 2 - dates_idxs[0]
-                else:  # First type is job title
-                    is_date_second = dates_idxs[0] == 2
-                    if is_date_second:
-                        date_to_company = 3 - dates_idxs[0]
+                    if job_title_idxs[0] < dates_idxs[0]:
+                        date_to_company = -2
                     else:
-                        date_to_company = 2 - dates_idxs[0]
+                        date_to_company = -1
+                elif first_type == "dates":
+                    is_job_title_second = job_title_idxs[0] == dates_idxs[0] + 1
+                    if is_job_title_second:
+                        date_to_company = 2
+                    else:  # Company is second
+                        date_to_company = 1
+                else:  # First type is job title
+                    is_date_second = dates_idxs[0] == job_title_idxs[0] + 1
+                    if is_date_second:
+                        date_to_company = 1
+                    else:
+                        date_to_company = -1
 
                 company_idxs = [idx + date_to_company for idx in dates_idxs]
 
-                start_offset = first_date_idx - 1
-                exp_start_idxs = [idx - start_offset for idx in dates_idxs]
+                exp_start_idxs = eval(f"{first_type}_idxs")
 
                 for idx, start_idx in enumerate(exp_start_idxs):
                     end_idx = (
@@ -558,18 +575,17 @@ class RecruitmentExtractor(GeneralExtractor):
         institutions = []
         dates = []
         dates_idxs = []
-        first_institution_idx = -1
-        first_date_idx = -1
+        institution_idxs = []
         current_length = 0
         first_type = ""
-        for idx, line in enumerate(educations_segment):
-            type = "unknown"
+
+        for idx, line in enumerate(educations_segment[1:]):
+            line["type"] = "unknown"
 
             # Get regex match for institution/school name
             match = re.search(INSTITUTION_REGEX, line["text"].strip())
             if match:
-                if first_institution_idx == -1:
-                    first_institution_idx = idx
+                institution_idxs.append(idx + 1)
                 span = match.span()
                 institutions.append(
                     {
@@ -577,19 +593,14 @@ class RecruitmentExtractor(GeneralExtractor):
                         "span": (current_length + span[0], current_length + span[1]),
                     }
                 )
-                type = "institution"
+                line["type"] = "institution"
 
             # Get education date range
             match = re.match(DATE_RANGE_REGEX, line["text"].strip())
             if match:
-                if first_date_idx == -1:
-                    first_date_idx = idx
                 dates.append((match.group("start_date"), match.group("end_date")))
-                dates_idxs.append(idx)
-                type = "date"
-
-            if idx == 1 and first_type == "":
-                first_type = type
+                dates_idxs.append(idx + 1)
+                line["type"] = "dates"
 
             current_length += len(line["text"]) + 1
 
@@ -599,33 +610,52 @@ class RecruitmentExtractor(GeneralExtractor):
         descriptions_out = []
 
         if len(dates_idxs) > 0:
-            if first_institution_idx != -1:
+            if institution_idxs != []:
+                current_institution_idx = 0
+                first_institution_idx = institution_idxs[current_institution_idx]
                 closest_date = min(
                     dates_idxs, key=lambda x: abs(x - first_institution_idx)
                 )
                 date_to_institution = first_institution_idx - closest_date
-                institutions_idxs = [idx + date_to_institution for idx in dates_idxs]
+
+                # Repeat until date_to_institution is less than 3
+                while (
+                    current_institution_idx < len(institution_idxs)
+                    and abs(date_to_institution) > 2
+                ):
+                    current_institution_idx += 1
+                    first_institution_idx = institution_idxs[current_institution_idx]
+                    closest_date = min(
+                        dates_idxs, key=lambda x: abs(x - first_institution_idx)
+                    )
+                    date_to_institution = first_institution_idx - closest_date
+                institution_idxs = [idx + date_to_institution for idx in dates_idxs]
+
+                first_type = educations_segment[1]["type"]
 
                 if first_type == "unknown":
                     first_type = "degree"
 
-                    degree_to_date = 1 - dates_idxs[0]
-                elif first_type == "date":
-                    second_jobtitle = institutions_idxs[0] == 2
-                    if second_jobtitle:
-                        degree_to_date = 3 - dates_idxs[0]
+                    if institution_idxs[0] < dates_idxs[0]:
+                        date_to_degree = -2
                     else:
-                        degree_to_date = 2 - dates_idxs[0]
+                        date_to_degree = -1
+                elif first_type == "dates":
+                    is_institution_second = institution_idxs[0] == dates_idxs[0] + 1
+                    if is_institution_second:
+                        date_to_degree = 2
+                    else:
+                        date_to_degree = 1
                 else:
-                    second_date = dates_idxs[0] == 2
-                    if second_date:
-                        degree_to_date = 3 - dates_idxs[0]
+                    is_date_second = dates_idxs[0] == institution_idxs[0] + 1
+                    if is_date_second:
+                        date_to_degree = 1
                     else:
-                        degree_to_date = 2 - dates_idxs[0]
+                        date_to_degree = -1
 
-                degree_idxs = [idx + degree_to_date for idx in dates_idxs]
-                start_red = first_date_idx - 1
-                edu_start_idxs = [idx - start_red for idx in dates_idxs]
+                degree_idxs = [idx + date_to_degree for idx in dates_idxs]
+
+                edu_start_idxs = eval(f"{first_type}_idxs")
 
                 for idx, start_idx in enumerate(edu_start_idxs):
                     end_idx = (
@@ -635,7 +665,7 @@ class RecruitmentExtractor(GeneralExtractor):
                     )
                     current_education = educations_segment[start_idx:end_idx]
                     non_desc_edu_idxs = [
-                        institutions_idxs[idx] - start_idx,
+                        institution_idxs[idx] - start_idx,
                         degree_idxs[idx] - start_idx,
                         dates_idxs[idx] - start_idx,
                     ]
@@ -647,8 +677,8 @@ class RecruitmentExtractor(GeneralExtractor):
                         ]
                     )
 
-                    if institutions_idxs[idx] < len(educations_segment):
-                        institution = educations_segment[institutions_idxs[idx]]["text"]
+                    if institution_idxs[idx] < len(educations_segment):
+                        institution = educations_segment[institution_idxs[idx]]["text"]
                     else:
                         institution = ""
 
