@@ -168,3 +168,5 @@ bertserving/uncased_*
 !app/classification/dump/.gitkeep
 
 commands.txt
+
+app/extraction/domains/*/ner_model/*

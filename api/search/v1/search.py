@@ -54,21 +54,22 @@ async def search_public(
         body.query, body.domain, body.advanced_filter, doc_ids
     )
     retrieved_doc_ids = [doc.get("id") for doc in result]
-    retrieved_doc_ids = pd.Series(retrieved_doc_ids).drop_duplicates().tolist()
     
     result_list = []
+
     if (retrieved_doc_ids):
-        retrieved_doc_details = await DocumentService().get_document_by_ids(
-            retrieved_doc_ids
-        )
         for i in range(len(retrieved_doc_ids)):
+            doc_detail = await DocumentService().get_document_by_ids(
+                [retrieved_doc_ids[i]]
+            )
             result_list.append(
                 DocumentDetails(
-                    details=retrieved_doc_details[i].__dict__,
+                    details=doc_detail[0].__dict__,
                     preview=f"...{result[i].get('text')}...",
                     highlights=PreprocessUtil().preprocess(body.query),
                 )
             )
+
 
     return SemanticSearchResponseSchema(
         num_docs_retrieved=len(retrieved_doc_ids),
@@ -97,17 +98,17 @@ async def upload_document(
 
     result = ss.run_file_search(file, path.domain, doc_ids)
     retrieved_doc_ids = [doc.get("id") for doc in result]
-    retrieved_doc_ids = pd.Series(retrieved_doc_ids).drop_duplicates().tolist()
     
     result_list = []
+
     if (retrieved_doc_ids):
-        retrieved_doc_details = await DocumentService().get_document_by_ids(
-            retrieved_doc_ids
-        )
         for i in range(len(retrieved_doc_ids)):
+            doc_detail = await DocumentService().get_document_by_ids(
+                [retrieved_doc_ids[i]]
+            )
             result_list.append(
                 DocumentDetails(
-                    details=retrieved_doc_details[i].__dict__,
+                    details=doc_detail[0].__dict__,
                     preview=f"...{result[i].get('text')}...",
                     highlights=[],
                 )
@@ -142,17 +143,17 @@ async def search_repo(
         body.query, body.domain, body.advanced_filter, doc_ids
     )
     retrieved_doc_ids = [doc.get("id") for doc in result]
-    retrieved_doc_ids = pd.Series(retrieved_doc_ids).drop_duplicates().tolist()
     
     result_list = []
+
     if (retrieved_doc_ids):
-        retrieved_doc_details = await DocumentService().get_document_by_ids(
-            retrieved_doc_ids
-        )
         for i in range(len(retrieved_doc_ids)):
+            doc_detail = await DocumentService().get_document_by_ids(
+                [retrieved_doc_ids[i]]
+            )
             result_list.append(
                 DocumentDetails(
-                    details=retrieved_doc_details[i].__dict__,
+                    details=doc_detail[0].__dict__,
                     preview=f"...{result[i].get('text')}...",
                     highlights=PreprocessUtil().preprocess(body.query),
                 )
@@ -185,17 +186,17 @@ async def upload_document(
 
     result = ss.run_file_search(file, path.domain, doc_ids)
     retrieved_doc_ids = [doc.get("id") for doc in result]
-    retrieved_doc_ids = pd.Series(retrieved_doc_ids).drop_duplicates().tolist()
     
     result_list = []
+    
     if (retrieved_doc_ids):
-        retrieved_doc_details = await DocumentService().get_document_by_ids(
-            retrieved_doc_ids
-        )
         for i in range(len(retrieved_doc_ids)):
+            doc_detail = await DocumentService().get_document_by_ids(
+                [retrieved_doc_ids[i]]
+            )
             result_list.append(
                 DocumentDetails(
-                    details=retrieved_doc_details[i].__dict__,
+                    details=doc_detail[0].__dict__,
                     preview=f"...{result[i].get('text')}...",
                     highlights=[],
                 )

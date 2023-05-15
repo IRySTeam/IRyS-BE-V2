@@ -1,9 +1,13 @@
 import cv2
 import fitz
+import imutils
 import numpy as np
 import pytesseract
 from pdf2image import convert_from_bytes
+
+# import matplotlib.pyplot as plt
 from PIL import Image
+from pytesseract import Output
 
 
 class OCRUtil:
@@ -34,7 +38,7 @@ class OCRUtil:
         # Apply dilate to merge text into meaningful lines/paragraphs.
         # Use larger kernel on X axis to merge characters into single line, cancelling out any spaces.
         # But use smaller kernel on Y axis to separate between different blocks of text
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 5))
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (18, 3))
         dilate = cv2.dilate(thresh, kernel, iterations=2)
 
         # Find all contours
@@ -83,6 +87,9 @@ class OCRUtil:
         [Returns]
             np.ndarray: The deskewed image.
         """
+        results = pytesseract.image_to_osd(cvImage, output_type=Output.DICT)
+        rotated = imutils.rotate_bound(cvImage, angle=results["rotate"])
+        return rotated
         angle = cls.get_skew_angle(cvImage)
         return cls.rotate_image(cvImage, -1.0 * angle)
 
@@ -109,6 +116,21 @@ class OCRUtil:
         return Image.fromarray(cv2.cvtColor(cvImage, cv2.COLOR_BGR2RGB))
 
     @classmethod
+    def show_image(cls, cvImage: np.ndarray):
+        """
+        Function to show the image using OpenCV.
+        [Parameters]
+            cvImage: np.ndarray -> The image to be processed.
+        """
+        # cv2.imshow("Image", cvImage)
+        # cv2.waitKey(0)
+        # #
+        cv2.namedWindow("output", cv2.WINDOW_NORMAL)
+        cv2.imshow("output", cvImage)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    @classmethod
     def ocr(cls, pdf_file: bytes) -> str:
         """
         Function to convert PDF file to text using OCR.
@@ -119,20 +141,65 @@ class OCRUtil:
         """
         images = convert_from_bytes(pdf_file)
         ocr_texts = []
+
         for img in images:
             # Image preprocessing.
             cv2img = cls.pil2cv(img)
             cv2img = cls.deskew(cv2img)
+            original_image = cv2img.copy()
             cv2img = cv2.cvtColor(cv2img, cv2.COLOR_BGR2GRAY)
-            cv2img = cv2.adaptiveThreshold(
-                cv2img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, 10
+            # cv2img = cv2.fastNlMeansDenoising(cv2img, None, 10, 7, 21)
+
+            copied_image = original_image.copy()
+            ret, cv2img = cv2.threshold(
+                cv2img, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV
             )
-            cv2img = cv2.fastNlMeansDenoising(cv2img, None, 10, 7, 21)
+            rectangular_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 60))
+            dilated_image = cv2.dilate(cv2img, rectangular_kernel, iterations=1)
+            contours, hierarchy = cv2.findContours(
+                dilated_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+            )
+
+            # Assume there are 2 columns in the PDF file.
+            # Separate contours based on their x-axis value.
+            contours_1 = [
+                cnt
+                for cnt in contours
+                if cv2.boundingRect(cnt)[0] < original_image.shape[1] / 2
+            ]
+            contours_2 = [
+                cnt
+                for cnt in contours
+                if cv2.boundingRect(cnt)[0] >= original_image.shape[1] / 2
+            ]
+            # Sort contour based on their y-axis value
+            contours_1 = sorted(contours_1, key=lambda cnt: cv2.boundingRect(cnt)[1])
+            contours_2 = sorted(contours_2, key=lambda cnt: cv2.boundingRect(cnt)[1])
+            # Combine contours into
+            contours = contours_1 + contours_2
+
+            mask = np.zeros(original_image.shape, np.uint8)
+            for cnt in contours:
+                x, y, w, h = cv2.boundingRect(cnt)
+
+                # Cropping the text block for giving input to OCR
+                cropped = copied_image[y : y + h, x : x + w]
+
+                # Apply OCR on the cropped image
+                text = pytesseract.image_to_string(cropped, config="--oem 3 --psm 1")
+                ocr_texts.append(text)
+
+                masked = cv2.drawContours(mask, [cnt], 0, (255, 255, 255), -1)
+
+            # OCRUtil.show_image(masked)
+            # plt.figure(figsize=(25, 15))
+            # plt.imshow(masked, cmap='gray')
+            # plt.show()
 
             # OCR.
-            img_rgb = cv2.cvtColor(cv2img, cv2.COLOR_BGR2RGB)
-            ocr_text = pytesseract.image_to_string(img_rgb)
-            ocr_texts.append(ocr_text)
+            # cv2img = cv2.cvtColor(cv2img, cv2.COLOR_BGR2RGB)
+            # ocr_text = pytesseract.image_to_string(cv2img)
+            # ocr_texts.append(ocr_text)
         return " ".join(ocr_texts)
 
     @classmethod
@@ -161,4 +228,13 @@ class OCRUtil:
                 text_area = text_area + abs(r)
             total_text_area = total_text_area + text_area
         doc.close()
+        if total_page_area == total_text_area:
+            return OCRUtil.TEXT_PERCENTAGE_THRESHOLD - 0.0001
         return total_text_area / total_page_area
+
+
+if __name__ == "__main__":
+    # Read PDF file.
+    with open("./tests/data/cv_1col_blackwhite.pdf", "rb") as f:
+        ocr_text = OCRUtil.ocr(f.read())
+        print(ocr_text)

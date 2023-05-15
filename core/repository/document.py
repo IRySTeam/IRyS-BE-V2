@@ -101,7 +101,8 @@ class DocumentRepo(BaseRepo[Document]):
         self, document_id: int, repository_id: int
     ) -> List[User]:
         sql = """
-        SELECT u.*, 'Owner' AS role
+        SELECT * FROM
+        (SELECT u.*, 'Owner' AS role
         FROM users u
         INNER JOIN user_repositories ur ON ur.user_id = u.id
         WHERE ur.repository_id = :repository_id AND ur.role IN ('Owner', 'Admin')
@@ -109,7 +110,8 @@ class DocumentRepo(BaseRepo[Document]):
         SELECT u.*, ud.role
         FROM users u
         JOIN user_documents ud ON ud.user_id = u.id
-        WHERE ud.document_id = :document_id
+        WHERE ud.document_id = :document_id) AS data
+        ORDER BY array_position(array['Owner', 'Editor', 'Viewer'], data.role)
         """
         result = await session.execute(
             text(sql), {"document_id": document_id, "repository_id": repository_id}

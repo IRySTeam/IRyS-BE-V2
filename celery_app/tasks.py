@@ -87,6 +87,7 @@ def parsing(
             file_raw_text=file_text,
             file_preprocessed_text=preprocessed_file_text,
             document_label=document_label,
+            with_ocr=with_ocr,
         )
         return True
     except Exception as e:
@@ -290,6 +291,11 @@ def indexing(
                     doc["document_metadata"][name] = {
                         "text": metadata_value,
                         "text_vector": metadata_embedding[0],
+                    }
+                elif not preprocessed_metadata and type == "semantic text":
+                    doc["document_metadata"][name] = {
+                        "text": "",
+                        "text_vector": [0.0 for _ in range(768)],
                     }
 
             res = EsClient.index_doc(

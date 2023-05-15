@@ -42,6 +42,7 @@ RESUME_SECTIONS_KEYWORDS = {
         "project summary",
         "project title",
         "project work",
+        "notable projects",
     ],
     "education": [
         "education",

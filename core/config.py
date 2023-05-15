@@ -33,7 +33,7 @@ class Config(BaseSettings):
     ELASTICSEARCH_SCHEME: Optional[str]
     ELASTICSEARCH_HOST: Optional[str]
     ELASTICSEARCH_PORT: Optional[int]
-    BERT_SERVER_IP: Optional[str]
+    BERT_SERVER_IP: Optional[str] = "bertserving"
     BERT_SERVER_PORT: Optional[int]
     BERT_SERVER_PORT_OUT: Optional[int]
     GCS_BUCKET_NAME: str
