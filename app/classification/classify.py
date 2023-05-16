@@ -1,6 +1,5 @@
 import os
 import pickle
-from enum import Enum
 from typing import List
 
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -25,11 +24,6 @@ class Classifier:
         open(os.path.join(path, tfidf_vect_name), "rb")
     )
     svm: SVC = pickle.load(open(os.path.join(path, svm_name), "rb"))
-
-    class LabelEnum(Enum):
-        OTHER = "__other__"
-        RESUME = "__resume__"
-        PAPER = "__paper__"
 
     @classmethod
     def classify(cls, texts: List[str]) -> str:

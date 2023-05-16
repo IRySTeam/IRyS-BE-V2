@@ -1,5 +1,6 @@
 from typing import List
 
+from app.document.enums.document import IndexingStatusEnum
 from app.document.models import Document
 from app.document.services import document_service
 from app.repository.constants import GRANTABLE_ROLES
@@ -152,6 +153,14 @@ class RepositoryService:
         if not repository:
             raise NotFoundException("Repository with specified id not found")
         documents: List[Document] = repository.documents
+        # Filter for all documents that indexing status is not completed.
+        documents = [
+            document
+            for document in documents
+            if not document.index.status != IndexingStatusEnum.SUCCESS.value
+        ]
+        print(f"Reindexing {len(documents)} documents")
+
         for document in documents:
             await document_service.reindex(document)
 

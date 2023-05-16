@@ -21,6 +21,14 @@ class DocumentRepo(BaseRepo[Document]):
         result = await session.execute(query)
         return result.scalars().all()
 
+    async def get_repository_documents_count(
+        self,
+        repository_id: int,
+    ) -> int:
+        query = select(self.model).where(self.model.repository_id == repository_id)
+        result = await session.execute(query)
+        return len(result.scalars().all())
+
     async def get_by_id(self, id: int, include_index: bool = False) -> Document:
         query = select(self.model).where(self.model.id == id)
         if include_index:
@@ -219,3 +227,10 @@ class DocumentRepo(BaseRepo[Document]):
         )
         """
         await session.execute(text(sql), {"repository_id": repository_id})
+
+    async def delete_user_documents_viewer_by_document_id(self, document_id: int):
+        sql = """
+        DELETE FROM user_documents
+        WHERE document_id = :document_id AND role = 'Viewer'
+        """
+        await session.execute(text(sql), {"document_id": document_id})

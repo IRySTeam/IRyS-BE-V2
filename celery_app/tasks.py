@@ -6,7 +6,7 @@ from asgiref.sync import async_to_sync
 from bert_serving.client import BertClient
 from tika import parser
 
-from app.classification import Classifier
+from app.classification import Classifier, LabelEnum
 from app.document.enums.document import IndexingStatusEnum
 from app.document.services import document_index_service, document_service
 from app.elastic import (
@@ -24,13 +24,18 @@ from core.config import config
 from core.utils import GCStorage
 
 
-@celery.task(name="parsing", bind=True)
+@celery.task(
+    name="parsing",
+    bind=True,
+    rate_limit="2/s",
+)
 def parsing(
     self,
     document_id: int,
     document_title: str,
     document_url: str,
     document_label: str = None,
+    document_title_fixed: bool = False,
 ) -> bool:
     """
     Celery task for parsing document. The parsing task will be split into 2 subtasks:
@@ -47,7 +52,7 @@ def parsing(
     try:
         # Check if provided document label is valid.
         if document_label and document_label not in set(
-            enum.value for enum in Classifier.LabelEnum
+            enum.value for enum in LabelEnum
         ):
             raise Exception("Invalid document label")
 
@@ -70,7 +75,6 @@ def parsing(
             raise Exception("Unsupported file type")
         file_text: str = parser.from_buffer(file_bytes)["content"]
 
-        # TODO: Add check duplicate.
         with_ocr = False
         text_percentage = OCRUtil.get_text_percentage(file_bytes)
         if text_percentage < OCRUtil.TEXT_PERCENTAGE_THRESHOLD:
@@ -84,10 +88,11 @@ def parsing(
             document_id=document_id,
             document_title=document_title,
             document_url=document_url,
+            document_label=document_label,
+            document_title_fixed=document_title_fixed,
+            with_ocr=with_ocr,
             file_raw_text=file_text,
             file_preprocessed_text=preprocessed_file_text,
-            document_label=document_label,
-            with_ocr=with_ocr,
         )
         return True
     except Exception as e:
@@ -103,13 +108,18 @@ def parsing(
         raise e
 
 
-@celery.task(name="extraction", bind=True)
+@celery.task(
+    name="extraction",
+    bind=True,
+    rate_limit="2/s",
+)
 def extraction(
     self,
     document_id: int,
     document_title: str,
     document_url: str,
     document_label: str = None,
+    document_title_fixed: bool = False,
     with_ocr: bool = False,
     file_raw_text: str = "",
     file_preprocessed_text: List[str] = [],
@@ -151,9 +161,9 @@ def extraction(
 
         # Extract information on domain-specific document.
         domain = None
-        if document_label == Classifier.LabelEnum.RESUME.value:
+        if document_label == LabelEnum.RESUME.value:
             domain = "recruitment"
-        elif document_label == Classifier.LabelEnum.PAPER.value:
+        elif document_label == LabelEnum.PAPER.value:
             domain = "scientific"
         if domain:
             extractor = InformationExtractor(domain=domain)
@@ -166,7 +176,8 @@ def extraction(
         mimetype = document_metadata.get("mimetype", None)
         extension = document_metadata.get("extension", None)
         size = document_metadata.get("size", None)
-        document_title = document_metadata.get("title", None) or document_title
+        if not document_title_fixed:
+            document_title = document_metadata.get("title", None) or document_title
 
         # Update document in database according to extracted metadata and do indexing.
         async_to_sync(document_service.update_document_celery)(
@@ -181,11 +192,11 @@ def extraction(
         indexing.delay(
             document_id=document_id,
             document_title=document_title,
-            file_raw_text=file_raw_text,
-            file_preprocessed_text=file_preprocessed_text,
             document_label=document_label,
             document_metadata=document_metadata,
             general_document_metadata=general_document_metadata,
+            file_raw_text=file_raw_text,
+            file_preprocessed_text=file_preprocessed_text,
         )
         return True
     except Exception as e:
@@ -201,7 +212,11 @@ def extraction(
         raise e
 
 
-@celery.task(name="indexing", bind=True)
+@celery.task(
+    name="indexing",
+    bind=True,
+    rate_limit="2/s",
+)
 def indexing(
     self,
     document_id: int,
@@ -268,10 +283,10 @@ def indexing(
 
         # Index document into Elasticsearch according to document type.
         doc["document_metadata"] = document_metadata
-        if document_label != Classifier.LabelEnum.OTHER.value:
+        if document_label != LabelEnum.OTHER.value:
             metadata_info = (
                 SCIENTIFIC_INFORMATION
-                if document_label == Classifier.LabelEnum.PAPER.value
+                if document_label == LabelEnum.PAPER.value
                 else RECRUITMENT_INFORMATION
             )
             for dict in metadata_info:
@@ -300,14 +315,14 @@ def indexing(
 
             res = EsClient.index_doc(
                 index=SCIENTIFIC_ELASTICSEARCH_INDEX_NAME
-                if document_label == Classifier.LabelEnum.PAPER.value
+                if document_label == LabelEnum.PAPER.value
                 else RECRUITMENT_ELASTICSEARCH_INDEX_NAME,
                 doc=doc,
             )
             elastic_doc_id = res["_id"]
             elastic_index_name = (
                 SCIENTIFIC_ELASTICSEARCH_INDEX_NAME
-                if document_label == Classifier.LabelEnum.PAPER.value
+                if document_label == LabelEnum.PAPER.value
                 else RECRUITMENT_ELASTICSEARCH_INDEX_NAME
             )
 

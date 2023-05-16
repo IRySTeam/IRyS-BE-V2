@@ -13,6 +13,10 @@ class MessageResponseSchema(BaseModel):
     message: str = Field(..., description="Message")
 
 
+class CountResponseSchema(BaseModel):
+    count: int = Field(..., description="The number of data")
+
+
 class CreateRepositoryResponseSchema(BaseModel):
     name: str = Field(..., description="Name")
     description: str = Field(..., description="Description")

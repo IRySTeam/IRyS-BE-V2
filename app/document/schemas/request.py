@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class EditDocumentRequestSchema(BaseModel):
@@ -8,6 +8,14 @@ class EditDocumentRequestSchema(BaseModel):
     description: Optional[str]
     content: Optional[str]
     is_public: Optional[bool]
+
+
+class EditRepositoryDocumentRequestSchema(BaseModel):
+    name: Optional[str] = Field(None, description="Document name")
+    category: Optional[Literal["General", "Scientific", "Recruitment"]] = Field(
+        None, description="Document category"
+    )
+    is_public: Optional[bool] = Field(None, description="Is public")
 
 
 class AddDocumentCollaboratorRequestSchema(BaseModel):

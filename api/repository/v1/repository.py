@@ -6,7 +6,6 @@ from app.document.schemas import (
     AddDocumentCollaboratorRequestSchema,
     DocumentCollaboratorSchema,
     EditDocumentCollaboratorRequestSchema,
-    EditDocumentRequestSchema,
     RemoveDocumentCollaboratorRequestSchema,
 )
 from app.document.services import DocumentService
@@ -284,26 +283,26 @@ async def search_user(
     )
 
 
-@repository_router.post(
-    "/{repository_id}/documents/{document_id}/edit",
-    response_model=MessageResponseSchema,
-    responses={},
-    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
-)
-async def edit_document(
-    request: Request,
-    repository_id: int,
-    document_id: int,
-    body: EditDocumentRequestSchema,
-):
-    await DocumentService().edit_document(
-        user_id=request.user.id,
-        repo_id=repository_id,
-        document_id=document_id,
-        params=body.dict(),
-    )
+# @repository_router.post(
+#     "/{repository_id}/documents/{document_id}/edit",
+#     response_model=MessageResponseSchema,
+#     responses={},
+#     dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+# )
+# async def edit_document(
+#     request: Request,
+#     repository_id: int,
+#     document_id: int,
+#     body: EditDocumentRequestSchema,
+# ):
+#     await DocumentService().edit_document(
+#         user_id=request.user.id,
+#         repo_id=repository_id,
+#         document_id=document_id,
+#         params=body.dict(),
+#     )
 
-    return MessageResponseSchema(message="Successful")
+#     return MessageResponseSchema(message="Successful")
 
 
 @repository_router.get(

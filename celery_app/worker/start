@@ -12,4 +12,4 @@ python3 ./celery_app/worker/init_tika.py
 
 python3 ./celery_app/worker/init_ner_models.py
 
-celery -A celery_app.main.celery worker --loglevel=info
+celery -A celery_app.main.celery worker --loglevel=info --concurrency=3

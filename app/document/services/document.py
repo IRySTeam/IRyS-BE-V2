@@ -1,7 +1,8 @@
-from typing import List
+from typing import List, Literal, Optional
 
 from fastapi import UploadFile
 
+from app.classification import map_string_to_enum_label
 from app.document.enums import DocumentRole, IndexingStatusEnum
 from app.document.models import Document, DocumentIndex
 from app.document.schemas import DocumentCollaboratorSchema, DocumentSchema
@@ -94,10 +95,6 @@ class DocumentService:
 
         # Check if the repository is public
         repository = await self.repository_repo.get_by_id(id=repository_id)
-        if not repository:
-            raise RepositoryNotFoundException(
-                "Repository with id {} not found".format(repository_id)
-            )
         if repository.is_public:
             allowed_to_access = True
 
@@ -143,6 +140,50 @@ class DocumentService:
         if not data:
             raise NotFoundException("Document with specified ids not found")
         return data
+
+    async def check_user_have_access_to_repo(
+        self,
+        user_id: int,
+        repository_id: int,
+    ):
+        repo = await self.repository_repo.get_repository_by_id(repository_id)
+
+        if not repo:
+            raise RepositoryNotFoundException
+
+        if not repo.is_public:
+            user_role = (
+                await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                    user_id, repository_id
+                )
+            )
+            if not user_role:
+                raise UserNotAllowedException
+
+            if not user_role.upper() in RepositoryRepo:
+                raise InvalidRepositoryRoleException
+
+    async def get_repository_documents_count(
+        self,
+        user_id: int,
+        repository_id: int,
+    ) -> int:
+        """
+        Get the number of documents in a repository.
+        [Parameters]
+            user_id: int -> User id.
+            repository_id: int -> Repository id.
+        [Returns]
+            int -> Number of documents.
+        """
+
+        await self.check_user_have_access_to_repo(
+            user_id=user_id,
+            repository_id=repository_id,
+        )
+        return await self.document_repo.get_repository_documents_count(
+            repository_id=repository_id
+        )
 
     @Transactional()
     async def create_document(
@@ -258,26 +299,30 @@ class DocumentService:
                 doc_id=document.elastic_doc_id,
             )
 
+        await self.document_repo.delete(document)
         await self.document_index_repo.delete(document.index)
-        print("delete document index")
-        await self.document_repo.delete_user_documents_by_document_id(document_id=id)
-        print("delete user documents")
-        await self.document_repo.delete_by_id(id=id)
-        # sql = """
-        # DELETE FROM documents WHERE id = :id
-        # """
-        # await session.execute(text(sql), {"id": id})
-        print("delete document")
 
-    async def check_user_owner_or_admin_repo(self, user_id: int, repository_id: int):
+    async def check_user_owner_or_admin_repo(
+        self,
+        user_id: int,
+        repository_id: int,
+        uploader: bool = False,
+    ):
         """
         Check if the repository is exist and the user is the owner or admin of the repository.
         [Parameters]
             user_id: int -> User id.
             repository_id: int -> Repository id.
+            uploader: bool = False -> Check if the user is the uploader of the repository.
         """
         if not await self.repository_repo.is_exist(repository_id):
             raise RepositoryNotFoundException
+        is_uploader = (
+            uploader
+            and await self.repository_repo.is_user_id_uploader_of_repository(
+                user_id, repository_id
+            )
+        )
         if not (
             await self.repository_repo.is_user_id_owner_of_repository(
                 user_id, repository_id
@@ -285,6 +330,7 @@ class DocumentService:
             or await self.repository_repo.is_user_id_admin_of_repository(
                 user_id, repository_id
             )
+            or is_uploader
         ):
             raise UserNotAllowedException
 
@@ -309,11 +355,17 @@ class DocumentService:
         await self.delete_document(document_id)
 
     @Transactional()
-    async def reindex(self, document: Document):
+    async def reindex(
+        self,
+        document: Document,
+        document_label: str = None,
+        document_title: str = None,
+    ):
         """
         Logic for reindexing a document.
         [Parameters]
             document: Document -> Document to be reindexed.
+            document_label: str = None -> Document label.
         """
         # Fuck partial dependency.
         from celery_app import celery, parsing
@@ -360,8 +412,10 @@ class DocumentService:
         # Re-index the document.
         parsing.delay(
             document_id=document.id,
-            document_title=document.title,
+            document_title=document_title or document.title,
             document_url=document.file_url,
+            document_label=document_label,
+            document_title_fixed=(document_title is not None),
         )
 
     async def reindex_by_id(self, doc_id: int, user_id: int) -> None:
@@ -398,7 +452,7 @@ class DocumentService:
         [Returns]
             List[Document] -> List of documents with indexing status.
         """
-        await self.check_user_owner_or_admin_repo(user_id, repository_id)
+        await self.check_user_owner_or_admin_repo(user_id, repository_id, True)
         return await self.document_repo.get_all_documents_in_repo(
             status=status,
             repository_id=repository_id,
@@ -426,7 +480,7 @@ class DocumentService:
         [Returns]
             List[Document] -> List of documents with indexing status.
         """
-        await self.check_user_access_upload_document(user_id, repository_id)
+        await self.check_user_owner_or_admin_repo(user_id, repository_id, True)
         return await self.document_repo.get_all_documents_in_repo(
             repository_id=repository_id,
             page_no=page_no,
@@ -579,23 +633,10 @@ class DocumentService:
         [Returns]
             List[Document] -> List of documents.
         """
-        repo = await self.repository_repo.get_repository_by_id(repository_id)
-
-        if not repo:
-            raise RepositoryNotFoundException
-
-        if not repo.is_public:
-            user_role = (
-                await self.repository_repo.get_user_role_by_user_id_and_repository_id(
-                    user_id, repository_id
-                )
-            )
-            if not user_role:
-                raise UserNotAllowedException
-
-            if not user_role.upper() in RepositoryRepo:
-                raise InvalidRepositoryRoleException
-
+        await self.check_user_have_access_to_repo(
+            user_id=user_id,
+            repository_id=repository_id,
+        )
         documents = await self.document_repo.find_documents_by_repository_id(
             repository_id
         )
@@ -635,6 +676,105 @@ class DocumentService:
             raise InvalidRepositoryRoleException
 
         params = {k: v for k, v in params.items() if v is not None}
+        await self.document_repo.update_by_id(document_id, params)
+
+    @Transactional()
+    async def edit_repository_document(
+        self,
+        user_id: int,
+        document_id: int,
+        name: str = None,
+        category: Optional[Literal["General", "Scientific", "Recruitment"]] = None,
+        is_public: bool = None,
+    ):
+        document: Document = await self.get_document_by_id(
+            id=document_id,
+            include_index=True,
+        )
+        repository_id = document.repository_id
+
+        await self.check_user_owner_or_admin_repo(
+            user_id=user_id,
+            repository_id=repository_id,
+        )
+
+        # repo_role = (
+        #     await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+        #         user_id=user_id, repository_id=document.repository_id
+        #     )
+        # )
+
+        # if not repo_role:
+        #     raise UserNotAllowedException
+        # if repo_role.upper() in RepositoryRole.__members__:
+        #     repo_role = RepositoryRole[repo_role.upper()]
+
+        #     if repo_role < RepositoryRole.ADMIN:
+        #         doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+        #             collaborator_id=user_id, document_id=document_id
+        #         )
+        #         if not doc_role:
+        #             raise UserNotAllowedException
+
+        #         if doc_role.upper() in DocumentRole.__members__:
+        #             doc_role = DocumentRole[doc_role.upper()]
+        #             if doc_role < DocumentRole.EDITOR:
+        #                 raise UserNotAllowedException
+        #         else:
+        #             raise InvalidDocumentRoleException
+        # else:
+        #     raise InvalidRepositoryRoleException
+
+        params = {}
+        if name and document.title != name:
+            params["title"] = name
+        if category:
+            if document.category != category:
+                document_label = map_string_to_enum_label[category]
+                await self.reindex(
+                    document=document,
+                    document_label=document_label,
+                    document_title=name or None,
+                )
+            elif name and document.title != name:
+                await self.reindex(
+                    document=document,
+                    document_title=name,
+                )
+        if is_public is not None:
+            if document.is_public != is_public:
+                # Make all document visible to all collaborators that does not have read access
+                # to the document.
+                if is_public:
+                    collabolators = (
+                        await self.repository_repo.get_repository_collaborators(
+                            repository_id=repository_id
+                        )
+                    )
+                    collabolators = [
+                        collaborator
+                        for collaborator in collabolators
+                        if collaborator.id != user_id
+                    ]
+                    for collaborator in collabolators:
+                        doc_role = DocumentRole.VIEWER.name.title()
+                        curr_doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+                            collaborator_id=collaborator.id, document_id=document_id
+                        )
+                        if not curr_doc_role:
+                            await self.document_repo.add_collaborator(
+                                document_id=document_id,
+                                collaborator_id=collaborator.id,
+                                role=doc_role,
+                            )
+                # Make document visible to only document owner and editor.
+                else:
+                    await self.document_repo.delete_user_documents_viewer_by_document_id(
+                        document_id=document_id
+                    )
+
+                params["is_public"] = is_public
+
         await self.document_repo.update_by_id(document_id, params)
 
     async def get_document_collaborators(

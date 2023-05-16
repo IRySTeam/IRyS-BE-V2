@@ -275,6 +275,27 @@ class RepositoryRepo(BaseRepo[Repository]):
 
         return is_owner
 
+    async def is_user_id_uploader_of_repository(self, user_id: int, repository_id: int):
+        sql = text(
+            """
+            SELECT 1
+            FROM user_repositories ur
+            WHERE ur.user_id = :user_id
+            AND ur.repository_id = :repository_id
+            AND ur.role = 'Uploader'
+        """
+        )
+        params = {"user_id": user_id, "repository_id": repository_id}
+
+        # Execute SQL query and fetch result
+        result = await session.execute(sql, params)
+        row = result.fetchone()
+
+        # Check if user is owner of the repository
+        is_owner = True if row else False
+
+        return is_owner
+
     async def get_repository_by_id(self, repository_id: int) -> Repository:
         query = """
             SELECT r.*, a2.owner_id, a2.owner_first_name, a2.owner_last_name
