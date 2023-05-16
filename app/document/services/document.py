@@ -263,10 +263,6 @@ class DocumentService:
         await self.document_repo.delete_user_documents_by_document_id(document_id=id)
         print("delete user documents")
         await self.document_repo.delete_by_id(id=id)
-        # sql = """
-        # DELETE FROM documents WHERE id = :id
-        # """
-        # await session.execute(text(sql), {"id": id})
         print("delete document")
 
     async def check_user_owner_or_admin_repo(self, user_id: int, repository_id: int):

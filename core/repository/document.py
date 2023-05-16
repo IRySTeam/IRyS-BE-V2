@@ -219,3 +219,10 @@ class DocumentRepo(BaseRepo[Document]):
         )
         """
         await session.execute(text(sql), {"repository_id": repository_id})
+
+    async def delete_by_id(self, id: int):
+        sql = """
+        DELETE FROM documents
+        WHERE id = :id
+        """
+        await session.execute(text(sql), {"id": id})
