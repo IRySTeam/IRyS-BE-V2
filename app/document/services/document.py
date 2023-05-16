@@ -258,7 +258,7 @@ class DocumentService:
                 doc_id=document.elastic_doc_id,
             )
 
-        await self.document_index_repo.delete(document.index)
+        await self.document_index_repo.delete_by_doc_id(id)
         print("delete document index")
         await self.document_repo.delete_user_documents_by_document_id(document_id=id)
         print("delete user documents")

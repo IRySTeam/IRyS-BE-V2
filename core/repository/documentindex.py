@@ -40,3 +40,12 @@ class DocumentIndexRepo(BaseRepo[DocumentIndex]):
             """
         )
         await session.execute(sql, {"repository_id": repository_id})
+
+    async def delete_by_doc_id(self, doc_id: int):
+        sql = text(
+            """
+            DELETE FROM document_indexes
+            WHERE doc_id = :doc_id
+            """
+        )
+        await session.execute(sql, {"doc_id": doc_id})
