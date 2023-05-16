@@ -4,9 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class EditDocumentRequestSchema(BaseModel):
-    name: Optional[str]
-    description: Optional[str]
-    content: Optional[str]
+    title: Optional[str]
     is_public: Optional[bool]
 
 

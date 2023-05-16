@@ -3,8 +3,12 @@ from typing import List
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 
 from app.document.schemas import (
+    AddDocumentCollaboratorRequestSchema,
+    DocumentCollaboratorSchema,
     DocumentDetailResponseSchema,
     DocumentResponseSchema,
+    EditDocumentCollaboratorRequestSchema,
+    RemoveDocumentCollaboratorRequestSchema,
 )
 from app.document.schemas.request import EditRepositoryDocumentRequestSchema
 from app.document.services import DocumentService
@@ -214,3 +218,87 @@ async def get_repository_documents_database(
         page_no=query.page_no,
         find_document=query.find_document,
     )
+
+
+@repository_document_router.get(
+    "/{repository_id}/documents/{document_id}/collaborators",
+    response_model=List[DocumentCollaboratorSchema],
+    responses={},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def get_document_collaborators(
+    request: Request,
+    repository_id: int,
+    document_id: int,
+):
+    return await DocumentService().get_document_collaborators(
+        user_id=request.user.id,
+        repository_id=repository_id,
+        document_id=document_id,
+    )
+
+
+@repository_document_router.post(
+    "/{repository_id}/documents/{document_id}/collaborators/add",
+    response_model=MessageResponseSchema,
+    responses={},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def add_document_collaborator(
+    request: Request,
+    repository_id: int,
+    document_id: int,
+    body: AddDocumentCollaboratorRequestSchema,
+):
+    await DocumentService().add_document_collaborator(
+        user_id=request.user.id,
+        repository_id=repository_id,
+        document_id=document_id,
+        **body.dict(),
+    )
+
+    return MessageResponseSchema(message="Successful")
+
+
+@repository_document_router.post(
+    "/{repository_id}/documents/{document_id}/collaborators/edit",
+    response_model=MessageResponseSchema,
+    responses={},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def edit_document_collaborator(
+    request: Request,
+    repository_id: int,
+    document_id: int,
+    body: EditDocumentCollaboratorRequestSchema,
+):
+    await DocumentService().edit_document_collaborator(
+        user_id=request.user.id,
+        repository_id=repository_id,
+        document_id=document_id,
+        **body.dict(),
+    )
+
+    return MessageResponseSchema(message="Successful")
+
+
+@repository_document_router.post(
+    "/{repository_id}/documents/{document_id}/collaborators/remove",
+    response_model=MessageResponseSchema,
+    responses={},
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def remove_document_collaborator(
+    request: Request,
+    repository_id: int,
+    document_id: int,
+    body: RemoveDocumentCollaboratorRequestSchema,
+):
+    await DocumentService().delete_document_collaborator(
+        user_id=request.user.id,
+        repository_id=repository_id,
+        document_id=document_id,
+        **body.dict(),
+    )
+
+    return MessageResponseSchema(message="Successful")
