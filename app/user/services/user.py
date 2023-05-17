@@ -4,6 +4,7 @@ from app.user.models import User
 from app.user.schemas import *
 from core.db import Transactional
 from core.exceptions import (
+    DocumentNotFoundException,
     DuplicateEmailException,
     EmailAlreadyVerifiedException,
     EmailNotVerifiedException,
@@ -19,7 +20,7 @@ from core.exceptions import (
     UserNotFoundException,
     WrongOTPException,
 )
-from core.repository import RepositoryRepo, UserRepo
+from core.repository import DocumentRepo, RepositoryRepo, UserRepo
 from core.utils.hash_helper import HashHelper
 from core.utils.mailer import Mailer
 from core.utils.string_helper import StringHelper
@@ -29,6 +30,7 @@ from core.utils.token_helper import TokenHelper
 class UserService:
     user_repo = UserRepo()
     repository_repo = RepositoryRepo()
+    document_repo = DocumentRepo()
 
     def __init__(self):
         ...
@@ -474,6 +476,50 @@ class UserService:
         ) = await self.user_repo.find_by_name_or_email_and_repository_id(
             query=query,
             repository_id=repository_id,
+            page_no=page_no,
+            page_size=page_size,
+        )
+        results = []
+        for user in users:
+            results.append(
+                UserResponseSchema(
+                    id=user.id,
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    email=user.email,
+                )
+            )
+
+        return SearchUserResponseSchema(
+            results=results,
+            total_pages=total_pages,
+            total_items=total_items,
+        )
+
+    async def search_user_for_document_collaborator(
+        self, user_id: int, query: str, document_id: int, page_no: int, page_size: int
+    ) -> SearchUserResponseSchema:
+        document = await self.document_repo.get_by_id(id=document_id)
+        is_owner = await self.repository_repo.is_user_id_owner_of_repository(
+            user_id, document.repository_id
+        )
+        is_admin = await self.repository_repo.is_user_id_admin_of_repository(
+            user_id, document.repository_id
+        )
+
+        if not document:
+            raise DocumentNotFoundException
+        if not document.is_public:
+            if not (is_owner or is_admin):
+                raise UserNotAllowedException
+        (
+            users,
+            total_pages,
+            total_items,
+        ) = await self.user_repo.find_by_name_or_email_and_repository_id(
+            query=query,
+            repository_id=document.repository_id,
+            document_id=document_id,
             page_no=page_no,
             page_size=page_size,
         )

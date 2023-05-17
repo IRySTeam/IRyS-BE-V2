@@ -53,3 +53,55 @@ class UserRepo(BaseRepo[User]):
         total_pages = (total_items + page_size - 1) // page_size
 
         return result.fetchall(), total_pages, total_items
+
+    async def find_by_name_or_email_and_document_id_and_repository_id(
+        self,
+        query: str,
+        repository_id: int,
+        document_id: int,
+        page_no: int,
+        page_size: int,
+    ) -> Tuple[List[User], int, int]:
+        sql = """
+            SELECT DISTINCT u.*
+            FROM users u
+            INNER JOIN user_repositories ur ON ur.user_id = u.id
+            LEFT JOIN user_documents ud ON ud.user_id = u.id
+            WHERE (CONCAT(u.first_name, ' ', u.last_name) ILIKE :query OR u.email ILIKE :query)
+            AND (ud.document_id IS NULL OR ud.document_id != :document_id)
+            AND (ur.role != 'owner' OR ur.role != 'admin')
+            LIMIT :limit OFFSET :offset
+            """
+        result = await session.execute(
+            text(sql),
+            {
+                "query": f"%{query}%",
+                "document_id": document_id,
+                "repository_id": repository_id,
+                "limit": page_size,
+                "offset": (page_no - 1) * page_size,
+            },
+        )
+
+        # Get total pages and total items
+        sql = """
+            SELECT COUNT(DISTINCT u.*)
+            FROM users u
+            INNER JOIN user_repositories ur ON ur.user_id = u.id
+            LEFT JOIN user_documents ud ON ud.user_id = u.id
+            WHERE (CONCAT(u.first_name, ' ', u.last_name) ILIKE :query OR u.email ILIKE :query)
+            AND (ud.document_id IS NULL OR ud.document_id != :document_id)
+            AND (ur.role != 'owner' OR ur.role != 'admin')
+            """
+        result2 = await session.execute(
+            text(sql),
+            {
+                "query": f"%{query}%",
+                "document_id": document_id,
+                "repository_id": repository_id,
+            },
+        )
+        total_items = result2.scalars().first()
+        total_pages = (total_items + page_size - 1) // page_size
+
+        return result.fetchall(), total_pages, total_items

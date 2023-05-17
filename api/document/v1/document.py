@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.document.schemas import (
     AddDocumentCollaboratorRequestSchema,
@@ -12,11 +12,14 @@ from app.document.schemas import (
 )
 from app.document.services import DocumentService
 from app.repository.schemas import DocumentIdPathParams, MessageResponseSchema
+from app.user.schemas import SearchUserResponseSchema
+from app.user.services import UserService
 from core.exceptions import (
     DocumentNotFoundException,
     ForbiddenException,
     NotFoundException,
     UnauthorizedException,
+    UserNotAllowedException,
 )
 from core.exceptions.user import EmailNotVerifiedException
 from core.fastapi.dependencies import (
@@ -33,6 +36,9 @@ document_router = APIRouter(
         ),
         "403": CustomExceptionHelper.get_exception_response(
             EmailNotVerifiedException, "Email not verified"
+        ),
+        "404": CustomExceptionHelper.get_exception_response(
+            DocumentNotFoundException, "Document not found"
         ),
     }
 )
@@ -199,4 +205,30 @@ async def reindex_document(request: Request, path: DocumentIdPathParams = Depend
     )
     return MessageResponseSchema(
         message="Document reindexing has been started",
+    )
+
+
+@document_router.get(
+    "/{repository_id}/collaborators/add/search",
+    response_model=SearchUserResponseSchema,
+    responses={
+        "403": CustomExceptionHelper.get_exception_response(
+            UserNotAllowedException, "Not allowed"
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def search_user(
+    request: Request,
+    repository_id: int,
+    query: str = Query("", description="Search query (name or email)"),
+    page_no: int = Query(1, description="Page number"),
+    page_size: int = Query(10, description="Page size"),
+):
+    return await UserService().search_user_for_repository_collaborator(
+        user_id=request.user.id,
+        query=query,
+        repository_id=repository_id,
+        page_no=page_no,
+        page_size=page_size,
     )
