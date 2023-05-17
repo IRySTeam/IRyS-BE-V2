@@ -778,7 +778,7 @@ class DocumentService:
         await self.document_repo.update_by_id(document_id, params)
 
     async def get_document_collaborators(
-        self, user_id: int, repository_id: int, document_id: int
+        self, user_id: int, document_id: int
     ) -> List[DocumentCollaboratorSchema]:
         document = await self.document_repo.get_by_id(document_id)
 
@@ -788,7 +788,7 @@ class DocumentService:
         if not document.is_public:
             repo_role = (
                 await self.repository_repo.get_user_role_by_user_id_and_repository_id(
-                    user_id=user_id, repository_id=repository_id
+                    user_id=user_id, repository_id=document.repository
                 )
             )
 
@@ -811,7 +811,7 @@ class DocumentService:
                 raise InvalidRepositoryRoleException
 
         collaborators = await self.document_repo.get_collaborators_by_document_id(
-            document_id=document_id, repository_id=repository_id
+            document_id=document_id, repository_id=document.repository_id
         )
 
         results = []
@@ -830,7 +830,6 @@ class DocumentService:
     async def add_document_collaborator(
         self,
         user_id: int,
-        repository_id: int,
         document_id: int,
         collaborator_id: int,
         role: str,
@@ -845,7 +844,7 @@ class DocumentService:
 
         repo_role = (
             await self.repository_repo.get_user_role_by_user_id_and_repository_id(
-                user_id=user_id, repository_id=repository_id
+                user_id=user_id, repository_id=document.repository_id
             )
         )
 
@@ -949,7 +948,6 @@ class DocumentService:
     async def edit_document_collaborator(
         self,
         user_id: int,
-        repository_id: int,
         document_id: int,
         collaborator_id: int,
         role: str,
@@ -964,7 +962,7 @@ class DocumentService:
 
         repo_role = (
             await self.repository_repo.get_user_role_by_user_id_and_repository_id(
-                user_id=user_id, repository_id=repository_id
+                user_id=user_id, repository_id=document.repository_id
             )
         )
 
@@ -1019,7 +1017,7 @@ class DocumentService:
         )
 
     async def delete_document_collaborator(
-        self, user_id: int, repository_id: int, document_id: int, collaborator_id: int
+        self, user_id: int, document_id: int, collaborator_id: int
     ) -> None:
         document = await self.document_repo.get_by_id(document_id)
 
@@ -1031,7 +1029,7 @@ class DocumentService:
 
         repo_role = (
             await self.repository_repo.get_user_role_by_user_id_and_repository_id(
-                user_id=user_id, repository_id=repository_id
+                user_id=user_id, repository_id=document.repository_id
             )
         )
 
