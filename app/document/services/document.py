@@ -788,7 +788,7 @@ class DocumentService:
         if not document.is_public:
             repo_role = (
                 await self.repository_repo.get_user_role_by_user_id_and_repository_id(
-                    user_id=user_id, repository_id=document.repository
+                    user_id=user_id, repository_id=document.repository_id
                 )
             )
 
