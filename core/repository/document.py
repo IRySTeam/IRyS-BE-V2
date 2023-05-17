@@ -5,7 +5,6 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import text
 
 from app.document.models import Document
-from app.user.models import User
 from core.db.session import session
 from core.repository import BaseRepo
 
@@ -107,7 +106,7 @@ class DocumentRepo(BaseRepo[Document]):
 
     async def get_collaborators_by_document_id(
         self, document_id: int, repository_id: int
-    ) -> List[User]:
+    ) -> list:
         sql = """
         SELECT * FROM
         (SELECT u.*, 'Owner' AS role
