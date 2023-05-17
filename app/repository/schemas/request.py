@@ -49,7 +49,7 @@ class RepositoryIdPathParams:
 
 @dataclass
 class DocumentIdPathParams:
-    doc_id: int = Path(..., description="Document id")
+    document_id: int = Path(..., description="Document id")
 
 
 @dataclass
