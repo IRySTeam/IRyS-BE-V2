@@ -516,7 +516,7 @@ class UserService:
             users,
             total_pages,
             total_items,
-        ) = await self.user_repo.find_by_name_or_email_and_repository_id(
+        ) = await self.user_repo.find_by_name_or_email_and_document_id_and_repository_id(
             query=query,
             repository_id=document.repository_id,
             document_id=document_id,
