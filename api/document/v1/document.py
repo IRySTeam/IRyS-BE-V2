@@ -15,6 +15,7 @@ from app.repository.schemas import DocumentIdPathParams, MessageResponseSchema
 from core.exceptions import (
     DocumentNotFoundException,
     ForbiddenException,
+    NotFoundException,
     UnauthorizedException,
 )
 from core.exceptions.user import EmailNotVerifiedException
@@ -178,3 +179,24 @@ async def remove_document_collaborator(
     )
 
     return MessageResponseSchema(message="Successful")
+
+
+@document_router.get(
+    "/{document_id}/reindex",
+    response_model=MessageResponseSchema,
+    description="Reindex a document in Elasticsearch",
+    responses={
+        "404": CustomExceptionHelper.get_exception_response(
+            NotFoundException,
+            "Document with specified ID does not found",
+        ),
+    },
+    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
+)
+async def reindex_document(request: Request, path: DocumentIdPathParams = Depends()):
+    await DocumentService().reindex_by_id(
+        doc_id=path.document_id, user_id=request.user.id
+    )
+    return MessageResponseSchema(
+        message="Document reindexing has been started",
+    )

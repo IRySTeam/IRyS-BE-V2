@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, Request
 
 from app.document.services import DocumentService
 from app.repository.schemas import (
-    DocumentIdPathParams,
     MessageResponseSchema,
     MonitorAllDocumentQueryParams,
     MonitorAllDocumentResponseSchema,
@@ -15,7 +14,6 @@ from core.exceptions import (
     UnauthorizedException,
     UserNotAllowedException,
 )
-from core.exceptions.base import NotFoundException
 from core.exceptions.repository import RepositoryNotFoundException
 from core.fastapi.dependencies import (
     IsAuthenticated,
@@ -59,25 +57,6 @@ async def monitor_repository_documents(
         page_size=query.page_size,
         page_no=query.page_no,
         find_document=query.find_document,
-    )
-
-
-@monitoring_router.get(
-    "/documents/{doc_id}/reindex",
-    response_model=MessageResponseSchema,
-    description="Reindex a document in Elasticsearch",
-    responses={
-        "404": CustomExceptionHelper.get_exception_response(
-            NotFoundException,
-            "Document with specified ID does not found",
-        ),
-    },
-    dependencies=[Depends(PermissionDependency([IsAuthenticated, IsEmailVerified]))],
-)
-async def reindex_document(request: Request, path: DocumentIdPathParams = Depends()):
-    await DocumentService().reindex_by_id(doc_id=path.doc_id, user_id=request.user.id)
-    return MessageResponseSchema(
-        message="Document reindexing has been started",
     )
 
 
