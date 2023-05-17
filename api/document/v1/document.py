@@ -209,7 +209,7 @@ async def reindex_document(request: Request, path: DocumentIdPathParams = Depend
 
 
 @document_router.get(
-    "/{repository_id}/collaborators/add/search",
+    "/{document_id}/collaborators/add/search",
     response_model=SearchUserResponseSchema,
     responses={
         "403": CustomExceptionHelper.get_exception_response(
@@ -220,15 +220,15 @@ async def reindex_document(request: Request, path: DocumentIdPathParams = Depend
 )
 async def search_user(
     request: Request,
-    repository_id: int,
+    document_id: int,
     query: str = Query("", description="Search query (name or email)"),
     page_no: int = Query(1, description="Page number"),
     page_size: int = Query(10, description="Page size"),
 ):
-    return await UserService().search_user_for_repository_collaborator(
+    return await UserService().search_user_for_document_collaborator(
         user_id=request.user.id,
         query=query,
-        repository_id=repository_id,
+        document_id=document_id,
         page_no=page_no,
         page_size=page_size,
     )
