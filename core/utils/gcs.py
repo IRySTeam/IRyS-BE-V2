@@ -32,7 +32,7 @@ class GCStorage:
         file_path = path + str(int(time.time())) + "-" + file.filename
         blob = self.bucket.blob(file_path)
         blob.upload_from_file(file.file, content_type=type)
-        return file_path
+        return blob.public_url
 
     def get_file(self, path) -> bytes:
         blob = self.bucket.blob(path)
