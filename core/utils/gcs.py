@@ -35,7 +35,7 @@ class GCStorage:
         return blob.public_url
 
     def get_file(self, path) -> bytes:
-        blob = self.bucket.blob(path)
-        url = blob.public_url
-        req = requests.get(url)
+        # blob = self.bucket.blob(path)
+        # url = blob.public_url
+        req = requests.get(path)
         return req.content
