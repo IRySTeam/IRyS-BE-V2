@@ -14,16 +14,25 @@ from app.search.schemas.elastic import MatchedDocument, SearchResult
 from app.search.schemas.advanced_search import AdvancedFilterConditions
 from app.search.services.advanced_search import AdvancedSearchService
 from app.search.services.query_expansion import QueryExpansionService
+from app.search.services.text_encoding import TextEncodingService
 from app.elastic.client import ElasticsearchClient
 from app.preprocess import PreprocessUtil
 
 class SearchService:
+
     def __init__(self, algorithm, domain, scoring):
         self.algorithm = algorithm
         self.domain = DomainEnum.GENERAL  # domain
         self.scoring = scoring
+
+        # Expander Definition
         self.recruitment_expander = QueryExpansionService(model='salsabiilashifa11/gpt-cv')
         self.scientific_expander = QueryExpansionService(model='salsabiilashifa11/gpt-paper')
+
+        # Encoder Definition
+        self.general_encoder = TextEncodingService(domain='general')
+        self.recruitment_encoder = TextEncodingService(domain='recruitment')
+        self.scientific_encoder = TextEncodingService(domain='scientific')
 
     def preprocess_query(
             self, 
@@ -44,7 +53,7 @@ class SearchService:
         if (should_expand) and (domain == DomainEnum.RECRUITMENT):
             query = self.recruitment_expander.expansion_method[expansion_method](query)
         if (should_expand) and (domain == DomainEnum.SCIENTIFIC):
-            query = self.recruitment_expander.expansion_method[expansion_method](query)
+            query = self.scientific_expander.expansion_method[expansion_method](query)
         return " ".join(PreprocessUtil().preprocess(query))
 
     def normalize_search_result(self, data, min_score=1):
@@ -78,6 +87,13 @@ class SearchService:
         [Output]
           - ElasticSearchResult
         """
+        match domain.value:
+            case 'recruitment':
+                model = self.recruitment_encoder
+            case 'scientific':
+                model = self.scientific_encoder
+            case _:
+                model = self.general_encoder
         data = ElasticsearchClient().search_semantic(
             query=query,
             index=f"{domain.value}-0001",
@@ -85,7 +101,8 @@ class SearchService:
             source=["document_id", "title", "preprocessed_text", "document_metadata"],
             emb_vector="text_vector",
             doc_ids=doc_ids,
-            fields=FIELD_WEIGHTS.get(domain)
+            fields=FIELD_WEIGHTS.get(domain),
+            model=model
         )
         return self.normalize_search_result(data)
 

@@ -5,6 +5,7 @@ from elastic_transport import ObjectApiResponse
 from elasticsearch import Elasticsearch
 from elasticsearch.client import IndicesClient
 from elasticsearch.exceptions import ApiError
+from sentence_transformers import SentenceTransformer
 
 from app.elastic.helpers import classify_error
 from app.elastic.schemas import (
@@ -285,6 +286,7 @@ class ElasticsearchClient:
         emb_vector: str,
         doc_ids: List[int],
         fields: List[str] = None,
+        model: SentenceTransformer = None,
     ):
         """
         Retrieve documents from an Elasticsearch index based on an input query
@@ -303,8 +305,9 @@ class ElasticsearchClient:
                     }
                 }
                 body = {"query": script_query}
-            elif fields is None:
-                query_vector = self.bc.encode([query])[0]
+            elif query == "":
+                query_vector = model.encode(query)
+                # query_vector = self.bc.encode([query])[0]
                 script_query = {
                     "bool": {
                         "must": [
@@ -313,7 +316,7 @@ class ElasticsearchClient:
                                 "script_score": {
                                     "query": {"match_all": {}},
                                     "script": {
-                                        "source": f'cosineSimilarity(params.query_vector, "{emb_vector}")',
+                                        "source": f'cosineSimilarity(params.query_vector, "{emb_vector}") + 1',
                                         "params": {"query_vector": query_vector},
                                     },
                                 }
