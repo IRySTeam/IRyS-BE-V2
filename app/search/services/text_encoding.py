@@ -13,7 +13,7 @@ class TextEncodingService:
 
     def __init__(self, domain: str = "general"):
         """
-        Constructor of QueryEncodingService class
+        Constructor of TextEncodingService class
         """
         if domain not in self.encoder_mapping:
             domain = "general"

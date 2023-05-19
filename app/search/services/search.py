@@ -14,7 +14,8 @@ from app.search.schemas.elastic import MatchedDocument, SearchResult
 from app.search.schemas.advanced_search import AdvancedFilterConditions
 from app.search.services.advanced_search import AdvancedSearchService
 from app.search.services.query_expansion import QueryExpansionService
-from app.search.services.text_encoding import TextEncodingService
+# from app.search.services.text_encoding import TextEncodingService
+from app.search.services.text_encoding_manager import TextEncodingManager
 from app.elastic.client import ElasticsearchClient
 from app.preprocess import PreprocessUtil
 
@@ -30,9 +31,11 @@ class SearchService:
         self.scientific_expander = QueryExpansionService(model='salsabiilashifa11/gpt-paper')
 
         # Encoder Definition
-        self.general_encoder = TextEncodingService(domain='general')
-        self.recruitment_encoder = TextEncodingService(domain='recruitment')
-        self.scientific_encoder = TextEncodingService(domain='scientific')
+        # self.general_encoder = TextEncodingService(domain='general')
+        # self.recruitment_encoder = TextEncodingService(domain='recruitment')
+        # self.scientific_encoder = TextEncodingService(domain='scientific')
+
+        self.text_encoding_manager = TextEncodingManager()
 
     def preprocess_query(
             self, 
@@ -87,13 +90,14 @@ class SearchService:
         [Output]
           - ElasticSearchResult
         """
-        match domain.value:
-            case 'recruitment':
-                model = self.recruitment_encoder
-            case 'scientific':
-                model = self.scientific_encoder
-            case _:
-                model = self.general_encoder
+        # match domain.value:
+        #     case 'recruitment':
+        #         model = self.recruitment_encoder
+        #     case 'scientific':
+        #         model = self.scientific_encoder
+        #     case _:
+        #         model = self.general_encoder
+        model = self.text_encoding_manager.get_encoder(domain)
         data = ElasticsearchClient().search_semantic(
             query=query,
             index=f"{domain.value}-0001",
