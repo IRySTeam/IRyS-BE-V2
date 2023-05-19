@@ -65,11 +65,13 @@ class UserRepo(BaseRepo[User]):
         sql = """
             SELECT DISTINCT u.*
             FROM users u
-            INNER JOIN user_repositories ur ON ur.user_id = u.id
             LEFT JOIN user_documents ud ON ud.user_id = u.id
+            LEFT JOIN documents d ON ud.document_id = d.id
+            INNER JOIN user_repositories ur ON ur.user_id = u.id
             WHERE (CONCAT(u.first_name, ' ', u.last_name) ILIKE :query OR u.email ILIKE :query)
+            AND (d.repository_id IS NULL OR d.repository_id = ur.repository_id)
             AND (ud.document_id IS NULL OR ud.document_id != :document_id)
-            AND (ur.role != 'owner' OR ur.role != 'admin')
+            AND NOT (ur.role = 'Owner' OR ur.role = 'Admin')
             LIMIT :limit OFFSET :offset
             """
         result = await session.execute(
