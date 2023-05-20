@@ -19,7 +19,8 @@ from app.extraction import InformationExtractor
 from app.extraction.domains.recruitment import RECRUITMENT_INFORMATION
 from app.extraction.domains.scientific import SCIENTIFIC_INFORMATION
 from app.preprocess import OCRUtil, PreprocessUtil
-from celery_app.main import celery, text_encoding_manager
+from app.search.services.text_encoding_manager import TextEncodingManager
+from celery_app.main import celery
 from core.config import config
 from core.utils import GCStorage
 
@@ -259,6 +260,7 @@ def indexing(
         bool -> True if indexing is successful.
     """
     try:
+        text_encoding_manager = TextEncodingManager()
         # Update indexing status.
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
