@@ -29,10 +29,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
 
-RUN pip install "poetry"
+RUN pip install "poetry"=="1.4.1"
 
 RUN poetry config virtualenvs.create false \
-    && poetry self update \
+    # && poetry self update \
     && poetry install --no-dev
 
 RUN python -m nltk.downloader punkt wordnet stopwords averaged_perceptron_tagger

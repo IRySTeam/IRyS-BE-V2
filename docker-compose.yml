@@ -28,7 +28,7 @@ services:
     image: redis:7-alpine
     ports:
       - 6380:6379
-    command: redis-server --save 20 1 --loglevel warning --replica-read-only no ​
+    command: redis-server --save 20 1 --loglevel warning --replica-read-only no
     depends_on:
       - api
 

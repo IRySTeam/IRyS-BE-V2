@@ -1,3 +1,4 @@
+.NET
 .NET Assemblies
 .NET Development
 .NET Framework
@@ -286,6 +287,7 @@ AVL Tree
 AVS Video Editor
 AVoided Emissions And GeneRation Tool
 AWK (Programming Language)
+AWS
 AWS Amplify
 AWS App Mesh
 AWS AppSync
@@ -1006,6 +1008,7 @@ Aggregation Analysis
 Aggregation Framework
 Aggregator
 Aggression Replacement Training
+Agile
 Agile Certification
 Agile Coaching
 Agile Leadership
@@ -2677,6 +2680,7 @@ Azeotrope
 Azerbaijani Language
 Azimuth
 Azkaban
+Azure
 Azure API Apps
 Azure API Management
 Azure Active Directory
@@ -3872,6 +3876,7 @@ Business Operating System
 Business Operations
 Business Partnering
 Business Performance Management
+Business Plan
 Business Planning
 Business Planning And Control Systems
 Business Presentations
@@ -4080,6 +4085,7 @@ CSA CAN3-Z299 Standards
 CSCS Card
 CSE HTML Validator
 CSLA .NET (Software Development Framework)
+CSS
 CSS Animations
 CSS Codes
 CSS Flex Box Layout
@@ -6751,6 +6757,7 @@ Commotion Wireless
 Communicable Diseases
 Communicating Sequential Processes
 Communicating With Patients
+Communication
 Communication Arts
 Communication CPU To Application CPU Interface (CAIF)
 Communication Design
@@ -7192,6 +7199,7 @@ Confirmit
 Conflict Management
 Conflict Resolution
 Conflict Transformation
+Confluence
 Confluent
 Confocal Laser Scanning Microscopy
 Conformal Coating
@@ -7555,6 +7563,7 @@ CoreSpotlight
 Coreboot
 Corel AfterShot
 Corel Designer
+Corel Draw
 Corel Linux
 Corel Painter
 Corel Paradox
@@ -11287,6 +11296,7 @@ Explainable AI (XAI)
 Explanation Of Benefits (EOB)
 Exploded View Drawing
 Exploitation
+Exploration
 Exploration Geophysics
 Exploratory Data Analysis
 Exploratory Laparotomy
@@ -13416,6 +13426,7 @@ Google Slides
 Google Snapseed
 Google Storage
 Google Street View
+Google Suite
 Google Tag Manager
 Google Talk
 Google Tools
@@ -13775,6 +13786,7 @@ HR Data Warehouse
 HR Regulations
 HR Scorecard
 HT1080 Cell Line
+HTML
 HTML 4.0 Certification
 HTML Abstraction Markup Language
 HTML Application
@@ -18632,6 +18644,7 @@ Matte Painting
 Mattermost
 Matterport
 Mature Market
+Maven
 MavensMate IDE
 Max Launch Abort Systems
 MaxDB
@@ -19178,6 +19191,7 @@ Microcell
 Microchipping
 Microcode
 Microcomputer
+Microcontroller
 Microcontrollers
 Microdata
 Microdialysis
@@ -20883,6 +20897,7 @@ Next-Generation Sequencing
 Next.js
 NextGen Certified Professional
 NextGen Enterprise Practice Management
+NextJS
 Nexus 5
 NexusDB
 Nfpa 72
@@ -20946,6 +20961,7 @@ Node B Application Part (NBAP)
 Node Package Manager
 Node-RED
 Node.js
+NodeJS
 Nodemcu
 Nodemon
 Nodes (Networking)
@@ -21187,6 +21203,7 @@ Nutritional Genomics
 Nutritional Screening
 Nuxeo
 Nuxt.Js
+NuxtJS
 Nvarchar
 Nvidia CUDA
 Nvidia Jetson
@@ -23153,6 +23170,7 @@ Photopolymer
 Photorealism
 Photorejuvenation
 Photoresist
+Photoshop
 Photoshop Plugin
 Photosynth
 Photosynthesis
@@ -23655,7 +23673,10 @@ Poster Design
 Postfix
 PostgreSQL
 Postherpetic Neuralgia
+Postman
+Postman API
 Postman API Platform
+Postman API Testing
 Postmarketing Surveillance
 Postmortem Examination
 Postnatal Care
@@ -23724,6 +23745,7 @@ PowerFactory
 PowerHouse (Programming Language)
 PowerISO
 PowerMILL
+PowerPoint
 PowerPoint Animation
 PowerSchool (Software)
 PowerTeacher (Software)
@@ -24873,6 +24895,8 @@ RCSB Protein Data Bank
 RDF Query Language (RDF Data Access)
 REDHAWK SDR
 RELAP5-3D
+REST
+REST API
 REST API Development
 REST Assured
 RESTEasy (JBoss)
@@ -25129,6 +25153,7 @@ Reactive Attachment Disorder
 ReactiveSearch
 ReactiveX
 Reactivity
+ReactJS
 Reactor Operator License
 Reactstrap
 Read Code
@@ -25231,6 +25256,7 @@ Recovery Time Objective
 Recreational Therapy
 Recreational Vehicles
 Recruit Training
+Recruiting
 Recruiting Concepts
 Recruitment Advertising
 Recruitment Consultancy
@@ -26269,6 +26295,7 @@ SCARA Robot
 SCIM- System For Cross-Domain Identity Management
 SCO OpenServers
 SCOBOL
+SCSS
 SCSS Mixins
 SCons
 SD Cards
@@ -29977,6 +30004,7 @@ Three-Phase
 Three-Phase Commit Protocol
 Three-Phase Electric Power
 Three.js
+ThreeJS
 Throat Cultures
 Throat Irrigation
 Thrombin
@@ -30113,6 +30141,7 @@ TokuDB
 Tokumx
 Tolerance Analysis
 Toll Revenue Bond
+Tomcat
 Tomcat5.5
 Tomcat7
 Tomography
@@ -30284,6 +30313,7 @@ Traffic Violations (Traffic Law)
 Trailer Repair And Maintenance
 Train Operation
 Train The Trainer
+Training
 Training Analysis
 Training And Development
 Training And Development Needs Assessment
@@ -30854,6 +30884,7 @@ United States Pharmacopeia (USP) Compliance
 United Student Aid Funds
 Unitils
 Unittest2
+Unity
 Unity Container
 Unity Engine
 UnityScript
@@ -31579,6 +31610,7 @@ Visual Rhetoric
 Visual Search Engine
 Visual Simulations
 Visual Storytelling
+Visual Studio
 Visual Studio Extensibility
 Visual Studio Online
 Visual Studio Tools for Office (VSTO)
@@ -31692,6 +31724,7 @@ Vue Components
 Vue Router
 Vue.js
 VuePress
+VueJS
 Vuejs2
 Vuetify
 Vuex
@@ -32601,6 +32634,7 @@ XLOAD (X Window System)
 XLSTAT
 XLink
 XMD
+XML
 XML Certification Programs
 XML Concepts
 XML Configuration Access Protocols
