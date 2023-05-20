@@ -160,7 +160,7 @@ class DocumentService:
             if not user_role:
                 raise UserNotAllowedException
 
-            if not user_role.upper() in RepositoryRepo:
+            if not user_role.upper() in RepositoryRole.__members__:
                 raise InvalidRepositoryRoleException
 
     async def get_repository_documents_count(
