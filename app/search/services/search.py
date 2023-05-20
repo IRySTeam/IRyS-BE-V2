@@ -2,6 +2,7 @@ import json
 import magic
 import mimetypes
 import re
+import statistics
 from typing import List
 from binascii import a2b_base64, b2a_base64
 from fastapi import UploadFile
@@ -56,6 +57,14 @@ class SearchService:
         return " ".join(PreprocessUtil().preprocess(query))
 
     def normalize_search_result(self, data, min_score=5):
+        scores = [hit["_score"] for hit in data["hits"]["hits"]]
+        if (len(data["hits"]["hits"]) >= 2):
+            stdev = statistics.stdev(scores)
+            mean = statistics.mean(scores)
+            maximum = max(scores)
+            min_score = max(min_score, mean)
+        
+        
         search_result = SearchResult(result=[])
         for hit in data["hits"]["hits"]:
             matched_document = MatchedDocument(
@@ -86,13 +95,6 @@ class SearchService:
         [Output]
           - ElasticSearchResult
         """
-        # match domain.value:
-        #     case 'recruitment':
-        #         model = self.recruitment_encoder
-        #     case 'scientific':
-        #         model = self.scientific_encoder
-        #     case _:
-        #         model = self.general_encoder
         model = self.text_encoding_manager.get_encoder(domain)
         data = ElasticsearchClient().search_semantic(
             query=query,
@@ -104,6 +106,8 @@ class SearchService:
             fields=FIELD_WEIGHTS.get(domain),
             model=model
         )
+        if query == "":
+            return self.normalize_search_result(data, min_score=0)    
         return self.normalize_search_result(data)
 
     def evaluate_advanced_filter(self, search_result, domain, advanced_filter):

@@ -49,7 +49,7 @@ class ElasticsearchClient:
 
         self.indices_client = IndicesClient(self.client)
         self.bc = BertClient(
-            ip=config.BERT_SERVER_IP or "localhost", output_fmt="list", timeout=60000
+            ip=config.BERT_SERVER_IP or "bertserving", output_fmt="list", timeout=60000
         )
 
     def info(self) -> ElasticInfo:
