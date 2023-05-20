@@ -189,7 +189,7 @@ class SearchService:
                     search_result, filter
                 )
             case FilterOperatorEnum.SEM:
-                return AdvancedSearchService().evaluate_semantic_filter(
+                return AdvancedSearchService(model=self.text_encoding_manager.get_encoder(domain)).evaluate_semantic_filter(
                     search_result, domain, filter
                 )
             case _:

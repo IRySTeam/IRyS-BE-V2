@@ -2,14 +2,19 @@ import re
 from datetime import datetime
 from typing import List
 
+from app.search.constants.search import FIELD_WEIGHTS
 from app.elastic.client import ElasticsearchClient
 from app.search.enums.search import DomainEnum
 from app.search.schemas.advanced_search import AdvancedFilterConditions
 from app.search.schemas.elastic import MatchedDocument, SearchResult
 from app.preprocess.preprocess import PreprocessUtil
+from app.search.services.text_encoding import TextEncodingService
 
 
 class AdvancedSearchService:
+
+    def __init__(self, model: TextEncodingService = None):
+        self.model = model
 
     def evaluate_in_filter(
         self, search_result: List[MatchedDocument], filter: AdvancedFilterConditions
@@ -348,6 +353,7 @@ class AdvancedSearchService:
         [Returns]
           MatchedDocument
         """
+        print("Flag 1")
         data = ElasticsearchClient().search_semantic(
             query=filter.value,
             index=f"{domain.value}-0001",
@@ -355,6 +361,8 @@ class AdvancedSearchService:
             source=["document_id", "title", "preprocessed_text", "document_metadata"],
             emb_vector=f'document_metadata.{filter.key}.text_vector',
             doc_ids=[x.doc_id for x in search_result.result],
+            fields=[f'document_metadata.{filter.key}.text^3'],
+            model=self.model
         )
         return self.normalize_search_result(data, filter.score_threshold).result
     
@@ -376,7 +384,7 @@ class AdvancedSearchService:
         elif type(source) == list:
             clean_source = [' '.join(pu.preprocess(x)) for x in source]
         elif type(source) == dict:
-            clean_source = [' '.join(pu.preprocess(source.get('text')[0]))]
+            clean_source = [' '.join(pu.preprocess(source.get('text')))]
         
         return clean_value, clean_source
 
