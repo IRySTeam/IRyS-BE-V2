@@ -28,14 +28,20 @@ class GeneralExtractor:
         """
         Constructor of GeneralExtractor class
         """
-
+        print("Dalam GeneralExtractor")
         self.pipeline = pipeline(
             "ner",
             model=os.path.join(dir_path, "ner_model"),
             aggregation_strategy="first",
         )
+
+        print("Dalam GeneralExtractor 1")
         self.entity_list = GENERAL_ENTITIES
+
+        print("Dalam GeneralExtractor 2")
         self.file_converter = Converter()
+
+        print("Dalam GeneralExtractor 3")
 
     def preprocess(self, text: str) -> str:
         """
