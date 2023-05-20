@@ -31,10 +31,6 @@ class SearchService:
         self.scientific_expander = QueryExpansionService(model='salsabiilashifa11/gpt-paper')
 
         # Encoder Definition
-        # self.general_encoder = TextEncodingService(domain='general')
-        # self.recruitment_encoder = TextEncodingService(domain='recruitment')
-        # self.scientific_encoder = TextEncodingService(domain='scientific')
-
         self.text_encoding_manager = TextEncodingManager()
 
     def preprocess_query(
@@ -59,7 +55,7 @@ class SearchService:
             query = self.scientific_expander.expansion_method[expansion_method](query)
         return " ".join(PreprocessUtil().preprocess(query))
 
-    def normalize_search_result(self, data, min_score=1):
+    def normalize_search_result(self, data, min_score=5):
         search_result = SearchResult(result=[])
         for hit in data["hits"]["hits"]:
             matched_document = MatchedDocument(

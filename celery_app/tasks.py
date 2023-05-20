@@ -19,7 +19,8 @@ from app.extraction import InformationExtractor
 from app.extraction.domains.recruitment import RECRUITMENT_INFORMATION
 from app.extraction.domains.scientific import SCIENTIFIC_INFORMATION
 from app.preprocess import OCRUtil, PreprocessUtil
-from celery_app.main import celery
+from app.search.services.text_encoding_manager import TextEncodingManager
+from celery_app.main import celery, text_encoding_manager
 from core.config import config
 from core.utils import GCStorage
 
@@ -265,13 +266,23 @@ def indexing(
             output_fmt="list",
         )
         # Index the general domain document into Elasticsearch.
-        embedding = bc.encode([" ".join(file_preprocessed_text)])
+        # embedding = bc.encode([" ".join(file_preprocessed_text)])
+
+        match document_label:
+            case LabelEnum.RESUME.value:
+                domain = "recruitment"  
+            case LabelEnum.PAPER.value:
+                domain = "scientific"
+            case _:
+                domain = "general"
+        embedding = text_encoding_manager.get_encoder(domain=domain).encode(" ".join(file_preprocessed_text))
+
         doc = {
             "document_id": document_id,
             "title": document_title,
             "raw_text": file_raw_text,
             "preprocessed_text": " ".join(file_preprocessed_text),
-            "text_vector": embedding[0],
+            "text_vector": embedding,
             "document_label": document_label,
             "document_metadata": general_document_metadata,
         }
@@ -302,10 +313,10 @@ def indexing(
 
                 # Generate vector for metadata.
                 if preprocessed_metadata:
-                    metadata_embedding = bc.encode([" ".join(preprocessed_metadata)])
+                    metadata_embedding = text_encoding_manager.get_encoder(domain=domain).encode(" ".join(file_preprocessed_text))
                     doc["document_metadata"][name] = {
                         "text": metadata_value,
-                        "text_vector": metadata_embedding[0],
+                        "text_vector": metadata_embedding,
                     }
                 elif not preprocessed_metadata and type == "semantic text":
                     doc["document_metadata"][name] = {
