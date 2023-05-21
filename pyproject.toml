@@ -50,6 +50,7 @@ torch = {"version" = "^2.0.0+cpu", source = "pytorch-cpu"}
 dateparser = "^1.1.8"
 imutils = "^0.5.4"
 sentence_transformers = "^2.2.2"
+spacy = "^3.5.3"
 
 [tool.poetry.dev-dependencies]
 behave = "^1.2.6"

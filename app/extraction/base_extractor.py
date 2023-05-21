@@ -3,8 +3,9 @@ import datetime
 import mimetypes
 from typing import Any, Dict, List
 
-import dateparser.search
+import dateparser
 import magic
+import spacy
 from tika import parser
 
 from app.extraction.converter import Converter
@@ -13,6 +14,7 @@ from app.extraction.ner_result import NERResult
 
 class BaseExtractor(abc.ABC):
     file_converter = Converter()
+    nlp = spacy.load("en_core_web_md")
 
     @property
     @abc.abstractmethod
@@ -98,12 +100,23 @@ class BaseExtractor(abc.ABC):
             List[datetime.date] -> List of dates
         """
 
-        dates = dateparser.search.search_dates(
-            text, languages=["en"], settings={"PREFER_DAY_OF_MONTH": "first"}
-        )
-        if dates is None:
-            return []
-        return list(set([date[1].date() for date in dates]))
+        doc = self.nlp(text)
+        result = []
+        for ent in doc.ents:
+            if ent.label_ == "DATE":
+                result.append(ent.text)
+        dates = []
+        for res in result:
+            try:
+                dates.append(
+                    dateparser.parse(
+                        res, languages=["en"], settings={"PREFER_DAY_OF_MONTH": "first"}
+                    ).date()
+                )
+            except:
+                pass
+
+        return list(set(dates))
 
     @abc.abstractmethod
     def extract_entities(self, text: str) -> NERResult:
