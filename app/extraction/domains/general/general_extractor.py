@@ -3,10 +3,7 @@ import os
 from transformers import pipeline
 
 from app.extraction.base_extractor import BaseExtractor
-from app.extraction.domains.general.configuration import (
-    GENERAL_ENTITIES,
-    NER_MODEL,
-)
+from app.extraction.domains.general.configuration import GENERAL_ENTITIES
 from app.extraction.ner_result import NERResult
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -30,7 +27,7 @@ class GeneralExtractor(BaseExtractor):
         print("Dalam GeneralExtractor")
         self.pipeline = pipeline(
             "ner",
-            model=NER_MODEL,
+            model=os.path.join(dir_path, "ner_model"),
             aggregation_strategy="first",
         )
 

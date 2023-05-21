@@ -12,10 +12,7 @@ from tika import parser
 from transformers import pipeline
 
 from app.extraction.base_extractor import BaseExtractor
-from app.extraction.domains.scientific.configuration import (
-    NER_MODEL,
-    SCIENTIFIC_ENTITIES,
-)
+from app.extraction.domains.scientific.configuration import SCIENTIFIC_ENTITIES
 from app.extraction.ner_result import NERResult
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -65,7 +62,7 @@ class ScientificExtractor(BaseExtractor):
 
         self.pipeline = pipeline(
             "ner",
-            model=NER_MODEL,
+            model=os.path.join(dir_path, "ner_model"),
             aggregation_strategy="first",
         )
 

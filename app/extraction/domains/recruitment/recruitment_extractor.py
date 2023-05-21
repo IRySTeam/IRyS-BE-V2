@@ -9,7 +9,6 @@ from transformers import pipeline
 
 from app.extraction.base_extractor import BaseExtractor
 from app.extraction.domains.recruitment.configuration import (
-    NER_MODEL,
     RECRUITMENT_ENTITIES,
 )
 from app.extraction.domains.recruitment.constants import (
@@ -39,7 +38,7 @@ class RecruitmentExtractor(BaseExtractor):
         """
         self.pipeline = pipeline(
             "ner",
-            model=NER_MODEL,
+            model=os.path.join(dir_path, "ner_model"),
             aggregation_strategy="simple",
         )
 
