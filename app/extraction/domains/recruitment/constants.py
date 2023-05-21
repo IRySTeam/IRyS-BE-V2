@@ -55,8 +55,6 @@ RESUME_SECTIONS_KEYWORDS = {
         "related courses",
         "related course",
         "studies",
-        "workshops",
-        "workshop",
     ],
     "certifications": [
         "certifications",
@@ -97,6 +95,9 @@ RESUME_SECTIONS_KEYWORDS = {
         "assessments",
         "accomplishments",
         "additional information",
+        "achievements",
+        "workshops",
+        "workshop",
     ],
 }
 

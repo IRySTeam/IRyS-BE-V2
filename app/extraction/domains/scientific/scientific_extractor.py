@@ -230,8 +230,14 @@ class ScientificExtractor(BaseExtractor):
                         }
                     )
 
-                    # Get max font size that are horizontal
-                    if common_font_size > max_font_size and line["dir"] == (1.0, 0.0):
+                    # Get max font size that are horizontal in the header
+                    if (
+                        common_font_size > max_font_size
+                        and line["dir"] == (1.0, 0.0)
+                        and abstract_line == 99999
+                        and introduction_line == 99999
+                        and keywords_line == 99999
+                    ):
                         max_font_size = common_font_size
 
                     # Find first line that contains abstract
@@ -262,7 +268,7 @@ class ScientificExtractor(BaseExtractor):
             # If located in the header (above breakpoint) or located in the top 1/4 of the page
             if idx < breakpoint_line or line["bbox"][3] < document_height / 4:
                 # If the line is the largest font size, add to title
-                if line["font_size"] == max_font_size:
+                if abs(line["font_size"] - max_font_size) < 0.1:
                     scientific_information["title"].append(line["text"])
                     line["label"] = "title"
                 else:
@@ -697,13 +703,13 @@ class ScientificExtractor(BaseExtractor):
             for part in author_split(author)
             if part
         ]
-        metadata["authors"] = authors
+        metadata["authors"] = list(set(authors))
 
         # Process affiliations
         # TODO: Should there be preprocessing for affiliation
         #       e.g. when one affiliation is split in two or more lines
         affiliations = [text.strip() for text in metadata["affiliations"]]
-        metadata["affiliations"] = affiliations
+        metadata["affiliations"] = list(set(affiliations))
 
         # Process abstract
         if metadata["abstract"] != []:
@@ -720,7 +726,7 @@ class ScientificExtractor(BaseExtractor):
                     keywords_text = keywords_text[len(word) :]
                     break
             keywords_text = re.sub(r"^\W+", "", keywords_text)
-            metadata["keywords"] = re.split(r"\s*[,;|]\s*", keywords_text)
+            metadata["keywords"] = list(set(re.split(r"\s*[,;|]\s*", keywords_text)))
 
         # Process references
         if metadata["references"] != []:
@@ -740,6 +746,6 @@ class ScientificExtractor(BaseExtractor):
                 for part in number_split(reference)
                 if part and not number_pattern.match(part)
             ]
-            metadata["references"] = references
+            metadata["references"] = list(set(references))
 
         return metadata

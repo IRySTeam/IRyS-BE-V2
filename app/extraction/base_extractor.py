@@ -103,7 +103,7 @@ class BaseExtractor(abc.ABC):
         )
         if dates is None:
             return []
-        return [date[1].date() for date in dates]
+        return list(set([date[1].date() for date in dates]))
 
     @abc.abstractmethod
     def extract_entities(self, text: str) -> NERResult:
@@ -120,11 +120,15 @@ class BaseExtractor(abc.ABC):
         """
 
         flattened_entities = {
-            entity["name"]: [
-                entity_res["word"]
-                for entity_res in entities.results
-                if entity_res["entity_group"] == entity["name"]
-            ]
+            entity["name"]: list(
+                set(
+                    [
+                        entity_res["word"].strip().strip("\n").strip()
+                        for entity_res in entities.results
+                        if entity_res["entity_group"] == entity["name"]
+                    ]
+                )
+            )
             for entity in self.entity_list
         }
 
