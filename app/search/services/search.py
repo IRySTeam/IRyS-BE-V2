@@ -19,6 +19,11 @@ from app.search.services.query_expansion import QueryExpansionService
 from app.search.services.text_encoding_manager import TextEncodingManager
 from app.elastic.client import ElasticsearchClient
 from app.preprocess import PreprocessUtil
+from app.document.schemas.document import DocumentResponseSchema
+from app.elastic.configuration import (
+    RECRUITMENT_ELASTICSEARCH_INDEX_NAME,
+    SCIENTIFIC_ELASTICSEARCH_INDEX_NAME
+)
 
 class SearchService:
 
@@ -247,3 +252,11 @@ class SearchService:
         except Exception as e:
             print(e)
             raise e
+        
+    def get_document_category(self, document: DocumentResponseSchema):
+        if (document.elastic_index_name == RECRUITMENT_ELASTICSEARCH_INDEX_NAME):
+            return "recruitment"
+        elif (document.elastic_index_name == SCIENTIFIC_ELASTICSEARCH_INDEX_NAME):
+            return "scientific"
+        return "general"
+        

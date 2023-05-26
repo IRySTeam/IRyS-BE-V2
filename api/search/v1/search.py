@@ -62,11 +62,13 @@ async def search_public(
             doc_detail = await DocumentService().get_document_by_ids(
                 [retrieved_doc_ids[i]]
             )
+            domain = ss.get_document_category(doc_detail[0])
             result_list.append(
                 DocumentDetails(
                     details=doc_detail[0].__dict__,
                     preview=f"...{result[i].get('text')}...",
                     highlights=PreprocessUtil().preprocess(body.query),
+                    domain=domain,
                 )
             )
 
@@ -106,11 +108,13 @@ async def upload_document(
             doc_detail = await DocumentService().get_document_by_ids(
                 [retrieved_doc_ids[i]]
             )
+            domain = ss.get_document_category(doc_detail[0])
             result_list.append(
                 DocumentDetails(
                     details=doc_detail[0].__dict__,
                     preview=f"...{result[i].get('text')}...",
                     highlights=[],
+                    domain=domain,
                 )
             )
 
@@ -151,11 +155,13 @@ async def search_repo(
             doc_detail = await DocumentService().get_document_by_ids(
                 [retrieved_doc_ids[i]]
             )
+            domain = ss.get_document_category(doc_detail[0])
             result_list.append(
                 DocumentDetails(
                     details=doc_detail[0].__dict__,
                     preview=f"...{result[i].get('text')}...",
                     highlights=PreprocessUtil().preprocess(body.query),
+                    domain=domain,
                 )
             )
 
@@ -194,11 +200,13 @@ async def upload_document(
             doc_detail = await DocumentService().get_document_by_ids(
                 [retrieved_doc_ids[i]]
             )
+            domain = ss.get_document_category(doc_detail[0])
             result_list.append(
                 DocumentDetails(
                     details=doc_detail[0].__dict__,
                     preview=f"...{result[i].get('text')}...",
                     highlights=[],
+                    domain=domain,
                 )
             )
 

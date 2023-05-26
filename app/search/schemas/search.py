@@ -24,6 +24,7 @@ class DocumentDetails(BaseModel):
     highlights: List[str] = Field(
         ..., description="List of texts that will be highlighted in preview"
     )
+    domain: str = Field(..., description="Document domain based on classification")
 
 class SemanticSearchResponseSchema(BaseModel):
     num_docs_retrieved: int = Field(..., description="Number of matched documents")
