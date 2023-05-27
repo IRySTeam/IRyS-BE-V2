@@ -1,3 +1,4 @@
+import datetime
 import mimetypes
 from typing import Any, Dict, List, Union
 
@@ -50,6 +51,11 @@ def parsing(
         bool -> True if parsing is successful.
     """
     try:
+        print(
+            "Parsing task of document {} is started at {}".format(
+                document_id, datetime.datetime.now().strftime("%H:%M:%S")
+            )
+        )
         # Check if provided document label is valid.
         if document_label and document_label not in set(
             enum.value for enum in LabelEnum
@@ -94,6 +100,8 @@ def parsing(
             file_raw_text=file_text,
             file_preprocessed_text=preprocessed_file_text,
         )
+
+        # print("Parsing task of document {} is done at {}".format(document_id, datetime.datetime.now().strftime("%H:%M:%S")))
         return True
     except Exception as e:
         # Update indexing status to failed.
@@ -198,6 +206,7 @@ def extraction(
             file_raw_text=file_raw_text,
             file_preprocessed_text=file_preprocessed_text,
         )
+        # print("Extraction task of document {} is done at {}".format(document_id, datetime.datetime.now().strftime("%H:%M:%S")))
         return True
     except Exception as e:
         # Turn indexing status to failed if extraction failed.
@@ -342,6 +351,13 @@ def indexing(
                 "status": IndexingStatusEnum.SUCCESS,
                 "current_task_id": None,
             },
+        )
+
+        # Write current timestamp.
+        print(
+            "Indexing task of document {} is done at {}".format(
+                document_id, datetime.datetime.now().strftime("%H:%M:%S")
+            )
         )
         return True
     except Exception as e:
