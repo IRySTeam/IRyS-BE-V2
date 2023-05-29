@@ -516,7 +516,6 @@ class DocumentService:
         else:
             raise InvalidRepositoryRoleException
 
-    @Transactional()
     async def process_upload_document(
         self,
         repository_id: int,
