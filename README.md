@@ -73,16 +73,14 @@ To get a local copy up and running follow these simple steps.
 
 ## Requirements
 * [Pyenv](https://github.com/pyenv/pyenv) (**Recommended**) for python version management
-* Python ^3.8.x
+* Python ^3.10.x
   * To install using pyenv
     ```
-    pyenv install 3.8.x
+    pyenv install 3.10.x
     ```
 * [Poetry](https://python-poetry.org/) for Python package and environment management.
 * Postgres
 * Redis
-* BERT model
-  * For instructions on how to download BERT model, please refer to [BERT model](#bert-model) section.
 * Elasticsearch cloud service
   * For instructions on how to setup Elasticsearch cloud service, please refer to [Elasticsearch](#elasticsearch) section.
 
@@ -177,14 +175,6 @@ To setup elasticsearch locally, you can follow the steps below:
     ```
     pre-commit install
     ```
-6. Install some additional dependencies such
-   1. libmagic:
-    ```bash
-    sudo apt-get install libmagic1 (Debian/Ubuntu)
-    brew install libmagic (Mac)
-    pip install python-magic-bin (Windows)
-    ```
-   2. TODO: Actually there are more dependencies, but they are already installed while running docker-compose. You don't need to install them manually because they are used by celery worker and bert-serving (which is running in docker). But if you want to run those services locally (which is not recommended), you need to install them manually.
 
 ### Configure App
 1. Find all files below.
@@ -195,7 +185,6 @@ To setup elasticsearch locally, you can follow the steps below:
 3. Open newly created files and adjust the content according to your environment. To see the explanation of each environment variable, you can check the [environment variable section](#environment-variables).
 
 ### Database Migration (Optional)
-This section is only if you want to run the database locally or you want to add/update the database schema.If you want to use the database from the cloud, you can skip this section.
 #### Migrate Up
 If you want to migrate the database, you can run the following command.
 ```bash
