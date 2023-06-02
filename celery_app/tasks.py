@@ -6,6 +6,7 @@ import magic
 from asgiref.sync import async_to_sync
 from bert_serving.client import BertClient
 from tika import parser
+from tzlocal import get_localzone
 
 from app.classification import Classifier, LabelEnum
 from app.document.enums.document import IndexingStatusEnum
@@ -20,6 +21,7 @@ from app.extraction import InformationExtractor
 from app.extraction.domains.recruitment import RECRUITMENT_INFORMATION
 from app.extraction.domains.scientific import SCIENTIFIC_INFORMATION
 from app.preprocess import OCRUtil, PreprocessUtil
+from app.search.services.text_encoding_manager import TextEncodingManager
 from celery_app.main import celery
 from core.config import config
 from core.utils import GCStorage
@@ -52,8 +54,11 @@ def parsing(
     """
     try:
         print(
-            "Parsing task of document {} is started at {}".format(
-                document_id, datetime.datetime.now().strftime("%H:%M:%S")
+            "[PARSING] task of document [{}] is started at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
             )
         )
         # Check if provided document label is valid.
@@ -82,14 +87,23 @@ def parsing(
         file_text: str = parser.from_buffer(file_bytes)["content"]
 
         with_ocr = False
-        text_percentage = OCRUtil.get_text_percentage(file_bytes)
-        if text_percentage < OCRUtil.TEXT_PERCENTAGE_THRESHOLD:
-            with_ocr = True
-        if file_extension == ".pdf" and with_ocr:
-            file_text = OCRUtil.ocr(file_bytes)
+        if file_extension == ".pdf":
+            text_percentage = OCRUtil.get_text_percentage(file_bytes)
+            if text_percentage < OCRUtil.TEXT_PERCENTAGE_THRESHOLD:
+                with_ocr = True
+            if with_ocr:
+                file_text = OCRUtil.ocr(file_bytes)
 
         # Preprocess text and do extraction.
         preprocessed_file_text = PreprocessUtil.preprocess(file_text)
+        print(
+            "[PARSING] task of document [{}] is finished at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
         extraction.delay(
             document_id=document_id,
             document_title=document_title,
@@ -100,8 +114,6 @@ def parsing(
             file_raw_text=file_text,
             file_preprocessed_text=preprocessed_file_text,
         )
-
-        # print("Parsing task of document {} is done at {}".format(document_id, datetime.datetime.now().strftime("%H:%M:%S")))
         return True
     except Exception as e:
         # Update indexing status to failed.
@@ -148,6 +160,14 @@ def extraction(
         bool -> True if extraction is successful
     """
     try:
+        print(
+            "[EXTRACTION] task of document [{}] is started at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
         # Update indexing status to extracting.
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
@@ -197,6 +217,14 @@ def extraction(
                 "size": size,
             },
         )
+        print(
+            "[EXTRACTION] task of document [{}] is finished at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
         indexing.delay(
             document_id=document_id,
             document_title=document_title,
@@ -206,7 +234,7 @@ def extraction(
             file_raw_text=file_raw_text,
             file_preprocessed_text=file_preprocessed_text,
         )
-        # print("Extraction task of document {} is done at {}".format(document_id, datetime.datetime.now().strftime("%H:%M:%S")))
+
         return True
     except Exception as e:
         # Turn indexing status to failed if extraction failed.
@@ -251,6 +279,15 @@ def indexing(
         bool -> True if indexing is successful.
     """
     try:
+        print(
+            "[INDEXING] task of document [{}] is started at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
+        text_encoding_manager = TextEncodingManager()
         # Update indexing status.
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
@@ -274,13 +311,25 @@ def indexing(
             output_fmt="list",
         )
         # Index the general domain document into Elasticsearch.
-        embedding = bc.encode([" ".join(file_preprocessed_text)])
+        # embedding = bc.encode([" ".join(file_preprocessed_text)])
+
+        match document_label:
+            case LabelEnum.RESUME.value:
+                domain = "recruitment"
+            case LabelEnum.PAPER.value:
+                domain = "scientific"
+            case _:
+                domain = "general"
+        embedding = text_encoding_manager.get_encoder(domain=domain).encode(
+            " ".join(file_preprocessed_text)
+        )
+
         doc = {
             "document_id": document_id,
             "title": document_title,
             "raw_text": file_raw_text,
             "preprocessed_text": " ".join(file_preprocessed_text),
-            "text_vector": embedding[0],
+            "text_vector": embedding,
             "document_label": document_label,
             "document_metadata": general_document_metadata,
         }
@@ -311,10 +360,12 @@ def indexing(
 
                 # Generate vector for metadata.
                 if preprocessed_metadata:
-                    metadata_embedding = bc.encode([" ".join(preprocessed_metadata)])
+                    metadata_embedding = text_encoding_manager.get_encoder(
+                        domain=domain
+                    ).encode(" ".join(file_preprocessed_text))
                     doc["document_metadata"][name] = {
                         "text": metadata_value,
-                        "text_vector": metadata_embedding[0],
+                        "text_vector": metadata_embedding,
                     }
                 elif not preprocessed_metadata and type == "semantic text":
                     doc["document_metadata"][name] = {
@@ -355,8 +406,11 @@ def indexing(
 
         # Write current timestamp.
         print(
-            "Indexing task of document {} is done at {}".format(
-                document_id, datetime.datetime.now().strftime("%H:%M:%S")
+            "[INDEXING] task of document [{}] is finished at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
             )
         )
         return True

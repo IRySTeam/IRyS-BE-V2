@@ -7,7 +7,7 @@ import fitz
 from tika import parser
 from transformers import pipeline
 
-from app.extraction.domains.general import GeneralExtractor
+from app.extraction.base_extractor import BaseExtractor
 from app.extraction.domains.recruitment.configuration import (
     RECRUITMENT_ENTITIES,
 )
@@ -25,10 +25,12 @@ from app.extraction.ner_result import NERResult
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
-class RecruitmentExtractor(GeneralExtractor):
+class RecruitmentExtractor(BaseExtractor):
     """
     Recruitment extractor class
     """
+
+    entity_list = RECRUITMENT_ENTITIES
 
     def __init__(self):
         """
@@ -39,7 +41,6 @@ class RecruitmentExtractor(GeneralExtractor):
             model=os.path.join(dir_path, "ner_model"),
             aggregation_strategy="simple",
         )
-        self.entity_list = RECRUITMENT_ENTITIES
 
     def preprocess(self, text: str) -> str:
         """
@@ -469,7 +470,7 @@ class RecruitmentExtractor(GeneralExtractor):
 
                 # Repeat until date_to_job_title is less than 3
                 while (
-                    current_job_title_idx < len(job_title_idxs)
+                    current_job_title_idx < len(job_title_idxs) - 1
                     and abs(date_to_job_title) > 2
                 ):
                     current_job_title_idx += 1
@@ -480,7 +481,13 @@ class RecruitmentExtractor(GeneralExtractor):
                     date_to_job_title = first_job_title_idx - closest_date
                 job_title_idxs = [idx + date_to_job_title for idx in dates_idxs]
 
-                first_type = experiences_segment[1]["type"]
+                if abs(job_title_idxs[0] - dates_idxs[0]) == 2:
+                    if job_title_idxs[0] < dates_idxs[0]:
+                        first_type = "job_title"
+                    else:
+                        first_type = "dates"
+                else:
+                    first_type = experiences_segment[1]["type"]
 
                 # Assume if type is unknown, then it is company
                 if first_type == "unknown":
@@ -620,7 +627,7 @@ class RecruitmentExtractor(GeneralExtractor):
 
                 # Repeat until date_to_institution is less than 3
                 while (
-                    current_institution_idx < len(institution_idxs)
+                    current_institution_idx < len(institution_idxs) - 1
                     and abs(date_to_institution) > 2
                 ):
                     current_institution_idx += 1
@@ -631,7 +638,13 @@ class RecruitmentExtractor(GeneralExtractor):
                     date_to_institution = first_institution_idx - closest_date
                 institution_idxs = [idx + date_to_institution for idx in dates_idxs]
 
-                first_type = educations_segment[1]["type"]
+                if abs(institution_idxs[0] - dates_idxs[0]) == 2:
+                    if institution_idxs[0] < dates_idxs[0]:
+                        first_type = "institution"
+                    else:
+                        first_type = "dates"
+                else:
+                    first_type = educations_segment[1]["type"]
 
                 if first_type == "unknown":
                     first_type = "degree"

@@ -22,9 +22,9 @@ async def get_domains():
 
 
 @extraction_router.get(
-    "/information/{domain}",
+    "/{domain}/info",
     response_model=List[ExtractedInformationResponse],
-    description="Get extracted information list of a domain",
+    description="Get info of extracted data for a domain",
     responses={
         400: {
             "model": BaseHttpErrorSchema,

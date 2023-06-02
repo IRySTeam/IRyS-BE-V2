@@ -1,4 +1,5 @@
 from celery import Celery
+from app.search.services.text_encoding_manager import TextEncodingManager
 
 from core.config import config
 

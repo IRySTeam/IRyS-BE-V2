@@ -170,3 +170,7 @@ bertserving/uncased_*
 commands.txt
 
 app/extraction/domains/*/ner_model/*
+tests/data/rekrutmen/*
+tests/data/karya_ilmiah/*
+tests/data/general/*
+tests/data/mix/*

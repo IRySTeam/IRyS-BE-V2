@@ -44,6 +44,9 @@ RUN touch /var/log/tika.log \
 # Download nltk data
 RUN python -m nltk.downloader punkt wordnet stopwords averaged_perceptron_tagger
 
+# Download spacy model
+RUN python -m spacy download en_core_web_md
+
 # Setup JAVA_HOME -- useful for docker commandline
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 RUN export JAVA_HOME

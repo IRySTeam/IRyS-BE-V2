@@ -2,6 +2,7 @@ import json
 import magic
 import mimetypes
 import re
+import statistics
 from typing import List
 from binascii import a2b_base64, b2a_base64
 from fastapi import UploadFile
@@ -14,9 +15,15 @@ from app.search.schemas.elastic import MatchedDocument, SearchResult
 from app.search.schemas.advanced_search import AdvancedFilterConditions
 from app.search.services.advanced_search import AdvancedSearchService
 from app.search.services.query_expansion import QueryExpansionService
-from app.search.services.text_encoding import TextEncodingService
+# from app.search.services.text_encoding import TextEncodingService
+from app.search.services.text_encoding_manager import TextEncodingManager
 from app.elastic.client import ElasticsearchClient
 from app.preprocess import PreprocessUtil
+from app.document.schemas.document import DocumentResponseSchema
+from app.elastic.configuration import (
+    RECRUITMENT_ELASTICSEARCH_INDEX_NAME,
+    SCIENTIFIC_ELASTICSEARCH_INDEX_NAME
+)
 
 class SearchService:
 
@@ -30,9 +37,7 @@ class SearchService:
         self.scientific_expander = QueryExpansionService(model='salsabiilashifa11/gpt-paper')
 
         # Encoder Definition
-        self.general_encoder = TextEncodingService(domain='general')
-        self.recruitment_encoder = TextEncodingService(domain='recruitment')
-        self.scientific_encoder = TextEncodingService(domain='scientific')
+        self.text_encoding_manager = TextEncodingManager()
 
     def preprocess_query(
             self, 
@@ -56,7 +61,15 @@ class SearchService:
             query = self.scientific_expander.expansion_method[expansion_method](query)
         return " ".join(PreprocessUtil().preprocess(query))
 
-    def normalize_search_result(self, data, min_score=1):
+    def normalize_search_result(self, data, min_score=5):
+        scores = [hit["_score"] for hit in data["hits"]["hits"]]
+        if (len(data["hits"]["hits"]) >= 2):
+            stdev = statistics.stdev(scores)
+            mean = statistics.mean(scores)
+            maximum = max(scores)
+            min_score = max(min_score, mean)
+        
+        
         search_result = SearchResult(result=[])
         for hit in data["hits"]["hits"]:
             matched_document = MatchedDocument(
@@ -87,13 +100,7 @@ class SearchService:
         [Output]
           - ElasticSearchResult
         """
-        match domain.value:
-            case 'recruitment':
-                model = self.recruitment_encoder
-            case 'scientific':
-                model = self.scientific_encoder
-            case _:
-                model = self.general_encoder
+        model = self.text_encoding_manager.get_encoder(domain)
         data = ElasticsearchClient().search_semantic(
             query=query,
             index=f"{domain.value}-0001",
@@ -104,6 +111,8 @@ class SearchService:
             fields=FIELD_WEIGHTS.get(domain),
             model=model
         )
+        if query == "":
+            return self.normalize_search_result(data, min_score=0)    
         return self.normalize_search_result(data)
 
     def evaluate_advanced_filter(self, search_result, domain, advanced_filter):
@@ -185,7 +194,7 @@ class SearchService:
                     search_result, filter
                 )
             case FilterOperatorEnum.SEM:
-                return AdvancedSearchService().evaluate_semantic_filter(
+                return AdvancedSearchService(model=self.text_encoding_manager.get_encoder(domain)).evaluate_semantic_filter(
                     search_result, domain, filter
                 )
             case _:
@@ -243,3 +252,11 @@ class SearchService:
         except Exception as e:
             print(e)
             raise e
+        
+    def get_document_category(self, document: DocumentResponseSchema):
+        if (document.elastic_index_name == RECRUITMENT_ELASTICSEARCH_INDEX_NAME):
+            return "recruitment"
+        elif (document.elastic_index_name == SCIENTIFIC_ELASTICSEARCH_INDEX_NAME):
+            return "scientific"
+        return "general"
+        

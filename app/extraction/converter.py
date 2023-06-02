@@ -7,6 +7,7 @@ from core.utils.string_helper import StringHelper
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
+# Modified from https://michalzalecki.com/converting-docx-to-pdf-using-python/
 class Converter:
     """
     Convert doc or docx file to pdf file

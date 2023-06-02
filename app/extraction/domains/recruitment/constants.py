@@ -55,8 +55,6 @@ RESUME_SECTIONS_KEYWORDS = {
         "related courses",
         "related course",
         "studies",
-        "workshops",
-        "workshop",
     ],
     "certifications": [
         "certifications",
@@ -76,6 +74,7 @@ RESUME_SECTIONS_KEYWORDS = {
         "areas of knowledge",
         "qualifications",
         "qualification",
+        "core qualifications",
         "strengths",
         "strength",
         "expertise",
@@ -94,6 +93,11 @@ RESUME_SECTIONS_KEYWORDS = {
         "publications",
         "links",
         "assessments",
+        "accomplishments",
+        "additional information",
+        "achievements",
+        "workshops",
+        "workshop",
     ],
 }
 
@@ -121,6 +125,8 @@ INSTITUTION_KEYWORDS = [
     "center",
     "faculty",
     "college",
+    "polytechnic",
+    "politeknik",
 ]
 
 INSTITUTION_REGEX = re.compile(
@@ -147,7 +153,7 @@ with open(os.path.join(dir_path, "job_titles.txt"), "r") as f:
     JOB_TITLES = f.read().splitlines()
 
 JOB_TITLES_REGEX = re.compile(
-    r"(\b(?:junior|senior)\b)?"
+    r"(\b(?:junior|senior)\s)?"
     + r"\b("
     + r"|".join(re.escape(s) for s in JOB_TITLES)
     + r")\b",

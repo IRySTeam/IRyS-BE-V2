@@ -1,6 +1,7 @@
 from app.extraction.domains.general.configuration import (
     GENERAL_ENTITIES,
     GENERAL_INFORMATION,
+    GENERAL_INFORMATION_NOT_FLATTENED,
 )
 from app.extraction.domains.general.configuration import (
     NER_MODEL as GENERAL_NER_MODEL,
@@ -20,11 +21,6 @@ from app.extraction.domains.scientific.configuration import (
     SCIENTIFIC_ENTITIES,
     SCIENTIFIC_INFORMATION,
     SCIENTIFIC_INFORMATION_NOT_FLATTENED,
-)
-from app.extraction.domains.general.configuration import (
-    GENERAL_ENTITIES,
-    GENERAL_INFORMATION,
-    GENERAL_INFORMATION_NOT_FLATTENED,
 )
 
 DOMAINS = [
@@ -61,6 +57,7 @@ TYPE_OPERATORS = {
         "regex",
         "contains",
         "not_contains",
+        "semantic_search",
     ],
     "number": [
         "equals",

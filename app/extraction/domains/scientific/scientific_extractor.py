@@ -11,14 +11,14 @@ import pandas as pd
 from tika import parser
 from transformers import pipeline
 
-from app.extraction.domains.general import GeneralExtractor
+from app.extraction.base_extractor import BaseExtractor
 from app.extraction.domains.scientific.configuration import SCIENTIFIC_ENTITIES
 from app.extraction.ner_result import NERResult
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
-class ScientificExtractor(GeneralExtractor):
+class ScientificExtractor(BaseExtractor):
     """
     ScientificExtractor class is a class for extracting information from scientific text.
     """
@@ -53,6 +53,7 @@ class ScientificExtractor(GeneralExtractor):
         "college",
     ]
     reference_keywords = ["references", "bibliography"]
+    entity_list = SCIENTIFIC_ENTITIES
 
     def __init__(self):
         """
@@ -64,7 +65,6 @@ class ScientificExtractor(GeneralExtractor):
             model=os.path.join(dir_path, "ner_model"),
             aggregation_strategy="first",
         )
-        self.entity_list = SCIENTIFIC_ENTITIES
 
     def preprocess(self, text: str) -> Union[str, List[str]]:
         """
@@ -230,8 +230,14 @@ class ScientificExtractor(GeneralExtractor):
                         }
                     )
 
-                    # Get max font size that are horizontal
-                    if common_font_size > max_font_size and line["dir"] == (1.0, 0.0):
+                    # Get max font size that are horizontal in the header
+                    if (
+                        common_font_size > max_font_size
+                        and line["dir"] == (1.0, 0.0)
+                        and abstract_line == 99999
+                        and introduction_line == 99999
+                        and keywords_line == 99999
+                    ):
                         max_font_size = common_font_size
 
                     # Find first line that contains abstract
@@ -262,7 +268,7 @@ class ScientificExtractor(GeneralExtractor):
             # If located in the header (above breakpoint) or located in the top 1/4 of the page
             if idx < breakpoint_line or line["bbox"][3] < document_height / 4:
                 # If the line is the largest font size, add to title
-                if line["font_size"] == max_font_size:
+                if abs(line["font_size"] - max_font_size) < 0.1:
                     scientific_information["title"].append(line["text"])
                     line["label"] = "title"
                 else:
@@ -282,15 +288,16 @@ class ScientificExtractor(GeneralExtractor):
 
             # If line is in the keywords section
             if keywords_line != 99999 and idx >= keywords_line:
-                # If line is before the introduction line, add to keywords
-                if introduction_line != 99999 and idx < introduction_line:
-                    scientific_information["keywords"].append(line["text"])
-                    line["label"] = "keywords"
-                # If there is no introduction line, assume keywords takes 2 lines
-                # TODO: is there a better heuristic for this? or just assume introduction line is always there?
-                elif introduction_line == 99999 and idx < keywords_line + 2:
-                    scientific_information["keywords"].append(line["text"])
-                    line["label"] = "keywords"
+                if line["text"].lower().strip() not in ["1.", "i."]:
+                    # If line is before the introduction line, add to keywords
+                    if introduction_line != 99999 and idx < introduction_line:
+                        scientific_information["keywords"].append(line["text"])
+                        line["label"] = "keywords"
+                    # If there is no introduction line, assume keywords takes 2 lines
+                    # TODO: is there a better heuristic for this? or just assume introduction line is always there?
+                    elif introduction_line == 99999 and idx < keywords_line + 2:
+                        scientific_information["keywords"].append(line["text"])
+                        line["label"] = "keywords"
 
         # Extract authors
         scientific_information["authors"] = self.__classify_authors(
@@ -393,15 +400,16 @@ class ScientificExtractor(GeneralExtractor):
 
             # If line is in the keywords section
             if keywords_line != 99999 and idx >= keywords_line:
-                # If line is before the introduction line, add to keywords
-                if introduction_line != 99999 and idx < introduction_line:
-                    scientific_information["keywords"].append(line["text"])
-                    line["labels"] = "keywords"
-                # If there is no introduction line, assume keywords takes 2 lines
-                # TODO: is there a better heuristic for this? or just assume introduction line is always there?
-                elif introduction_line == 99999 and idx < keywords_line + 2:
-                    scientific_information["keywords"].append(line["text"])
-                    line["labels"] = "keywords"
+                if line["text"].lower().strip() not in ["1.", "i."]:
+                    # If line is before the introduction line, add to keywords
+                    if introduction_line != 99999 and idx < introduction_line:
+                        scientific_information["keywords"].append(line["text"])
+                        line["labels"] = "keywords"
+                    # If there is no introduction line, assume keywords takes 2 lines
+                    # TODO: is there a better heuristic for this? or just assume introduction line is always there?
+                    elif introduction_line == 99999 and idx < keywords_line + 2:
+                        scientific_information["keywords"].append(line["text"])
+                        line["labels"] = "keywords"
 
         # Reference header regex
         ref_header_regex = re.compile(r"references|bibliography", re.IGNORECASE)
@@ -413,7 +421,7 @@ class ScientificExtractor(GeneralExtractor):
                 idx
                 for idx, line in enumerate(lines)
                 if ref_header_regex.search(line["text"])
-            ][0]
+            ][-1]
         except IndexError:
             reference_header_line = 99999
 
@@ -580,7 +588,7 @@ class ScientificExtractor(GeneralExtractor):
                         continue
 
                     if (
-                        block["font_size"] == reference_font_size
+                        abs(block["font_size"] - reference_font_size) < 0.5
                         or block["text"].isspace()
                         or block["text"].isnumeric()
                     ):
@@ -695,13 +703,13 @@ class ScientificExtractor(GeneralExtractor):
             for part in author_split(author)
             if part
         ]
-        metadata["authors"] = authors
+        metadata["authors"] = list(set(authors))
 
         # Process affiliations
         # TODO: Should there be preprocessing for affiliation
         #       e.g. when one affiliation is split in two or more lines
         affiliations = [text.strip() for text in metadata["affiliations"]]
-        metadata["affiliations"] = affiliations
+        metadata["affiliations"] = list(set(affiliations))
 
         # Process abstract
         if metadata["abstract"] != []:
@@ -718,7 +726,7 @@ class ScientificExtractor(GeneralExtractor):
                     keywords_text = keywords_text[len(word) :]
                     break
             keywords_text = re.sub(r"^\W+", "", keywords_text)
-            metadata["keywords"] = re.split(r"\s*[,;|]\s*", keywords_text)
+            metadata["keywords"] = list(set(re.split(r"\s*[,;|]\s*", keywords_text)))
 
         # Process references
         if metadata["references"] != []:
@@ -733,11 +741,11 @@ class ScientificExtractor(GeneralExtractor):
             if metadata["references"][0].startswith("["):
                 references = ["".join(references)]
             references = [
-                part.strip()
+                part.strip().lstrip(".").strip()
                 for reference in references
                 for part in number_split(reference)
                 if part and not number_pattern.match(part)
             ]
-            metadata["references"] = references
+            metadata["references"] = list(set(references))
 
         return metadata

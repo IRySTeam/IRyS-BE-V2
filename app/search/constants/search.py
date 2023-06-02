@@ -12,7 +12,7 @@ FIELD_WEIGHTS = {
         'document_metadata.COMPANY^1', 
         'document_metadata.DEGREE^1',
         'document_metadata.INSTITUTION^1',
-        'document_metadata.LOC^1',
+        'document_metadata.LOC^2',
         'document_metadata.ORG^1',
         'document_metadata.PER^2',
         'document_metadata.ROLE^6',
@@ -44,5 +44,13 @@ FIELD_WEIGHTS = {
         'document_metadata.abstract^1', 
         'document_metadata.keywords^5', 
         'document_metadata.references^1', 
-    ]
+    ],
+    DomainEnum.GENERAL: [
+        'preprocessed_text^3', 
+        'document_metadata.LOC^1',
+        'document_metadata.MISC^1',
+        'document_metadata.ORG^2',
+        'document_metadata.PER^2',
+        'document_metadata.title^2', 
+    ]   
 }

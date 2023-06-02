@@ -48,9 +48,9 @@ class ElasticsearchClient:
             )
 
         self.indices_client = IndicesClient(self.client)
-        self.bc = BertClient(
-            ip=config.BERT_SERVER_IP or "bertserving", output_fmt="list", timeout=60000
-        )
+        # self.bc = BertClient(
+        #     ip=config.BERT_SERVER_IP or "bertserving", output_fmt="list", timeout=60000
+        # )
 
     def info(self) -> ElasticInfo:
         """
@@ -305,18 +305,19 @@ class ElasticsearchClient:
                     }
                 }
                 body = {"query": script_query}
-            elif query == "":
+            
+            else:
                 query_vector = model.encode(query)
-                # query_vector = self.bc.encode([query])[0]
                 script_query = {
                     "bool": {
                         "must": [
                             {"terms": {"document_id": doc_ids}},
+                            {"multi_match": {"query": query, "fields": fields}},
                             {
                                 "script_score": {
                                     "query": {"match_all": {}},
                                     "script": {
-                                        "source": f'cosineSimilarity(params.query_vector, "{emb_vector}") + 1',
+                                        "source": f'doc["{emb_vector}"].size() == 0 ? 0 : cosineSimilarity(params.query_vector, "{emb_vector}") + 1',
                                         "params": {"query_vector": query_vector},
                                     },
                                 }
@@ -324,9 +325,6 @@ class ElasticsearchClient:
                         ]
                     }
                 }
-                body = {"query": script_query}
-            else:
-                script_query = {"multi_match": {"query": query, "fields": fields}}
                 body = {
                     "query": script_query,
                     "sort": [{"_score": {"order": "desc"}}],
