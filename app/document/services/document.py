@@ -549,6 +549,7 @@ class DocumentService:
         self,
         repository_id: int,
         file: UploadFile,
+        uploaded_by: int,
     ) -> Document:
         """
         Upload document and create task to index it.
@@ -570,6 +571,7 @@ class DocumentService:
                 title=title,
                 repository_id=repository_id,
                 file_url=uploaded_file_url,
+                uploaded_by=uploaded_by,
             )
             document = await self.get_document_by_id(id=doc_id, include_index=True)
 
@@ -609,7 +611,7 @@ class DocumentService:
             repository_id=repository_id,
         )
 
-        document = await self.process_upload_document(repository_id, file)
+        document = await self.process_upload_document(repository_id, file, user_id)
         await self.add_document_collaborators_after_upload(
             user_id=user_id,
             document_id=document.id,
@@ -640,7 +642,9 @@ class DocumentService:
 
         documents_response = []
         for file in files:
-            processed_document = await self.process_upload_document(repository_id, file)
+            processed_document = await self.process_upload_document(
+                repository_id, file, user_id
+            )
             documents_response.append(processed_document)
 
             await self.add_document_collaborators_after_upload(
