@@ -24,14 +24,11 @@ class GeneralExtractor(BaseExtractor):
         """
         Constructor of GeneralExtractor class
         """
-        print("Dalam GeneralExtractor")
         self.pipeline = pipeline(
             "ner",
             model=os.path.join(dir_path, "ner_model"),
             aggregation_strategy="first",
         )
-
-        print("Dalam GeneralExtractor 2")
 
     def preprocess(self, text: str) -> str:
         """

@@ -167,11 +167,13 @@ class RepositoryService:
     async def get_repository_collaborators(
         self, user_id: int, repository_id: int
     ) -> List[RepositoryCollaboratorSchema]:
+        repo = await self.repository_repo.get_repository_by_id(repository_id)
+        if not repo.is_public:
+            if not await self.repository_repo.is_user_id_collaborator_of_repository(
+                user_id=user_id, repository_id=repository_id
+            ):
+                raise UserNotAllowedException
 
-        if not await self.repository_repo.is_user_id_collaborator_of_repository(
-            user_id=user_id, repository_id=repository_id
-        ):
-            raise UserNotAllowedException
         members = await self.repository_repo.get_repository_collaborators(
             repository_id=repository_id
         )
@@ -203,17 +205,17 @@ class RepositoryService:
         if not repository:
             raise RepositoryNotFoundException
 
+        current_user_role = "Viewer"
         if not repository.is_public:
             if not await self.repository_repo.is_user_id_collaborator_of_repository(
                 user_id, repository_id
             ):
                 raise RepositoryNotFoundException
-
-        current_user_role = (
-            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
-                user_id, repository_id
+            current_user_role = (
+                await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                    user_id, repository_id
+                )
             )
-        )
 
         return RepositoryDetailsResponseSchema(
             id=repository.id,

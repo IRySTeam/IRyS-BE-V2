@@ -29,15 +29,11 @@ class InformationExtractor:
             metadata_extractor: MetadataExtractor -> MetadataExtractor class for extracting metadata from text.
         """
         if domain not in self.extractor_mapping:
-            print("Dalam if ")
             domain = "general"
 
-        print("Dalam 2")
         self.extractor: Union[
             GeneralExtractor, ScientificExtractor, RecruitmentExtractor
         ] = self.extractor_mapping[domain]()
-
-        print("Dalam 3")
 
     def extract(
         self,

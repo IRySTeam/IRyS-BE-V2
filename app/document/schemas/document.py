@@ -63,6 +63,9 @@ class DocumentDatabaseResponseSchema(BaseModel):
     category: Literal[
         "Determining....", "General", "Scientific", "Recruitment"
     ] = Field("Determining....", description="Document category")
+    role: Literal["Owner", "Editor", "Viewer", "None"] = Field(
+        "NONE", description="Role of current user related to document"
+    )
 
     class Config:
         orm_mode = True
@@ -78,6 +81,9 @@ class MonitorDocumentResponseSchema(BaseModel):
     updated_at: datetime = Field(None, description="Document last update time")
     file_url: str = Field(None, description="Document link on GCS")
     is_public: bool = Field(None, description="Document visibility")
+    role: Literal["Owner", "Editor", "Viewer", "None"] = Field(
+        "NONE", description="Role of current user related to document"
+    )
 
     class Config:
         orm_mode = True

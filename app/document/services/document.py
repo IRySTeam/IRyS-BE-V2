@@ -409,6 +409,16 @@ class DocumentService:
                 },
             )
 
+        params = {
+            "reason": None,
+            "status": IndexingStatusEnum.READY,
+            "current_task_id": None,
+        }
+        await self.document_index_repo.update_by_doc_id(
+            doc_id=document.id,
+            params=params,
+        )
+
         # Re-index the document.
         parsing.delay(
             document_id=document.id,
@@ -453,13 +463,22 @@ class DocumentService:
             List[Document] -> List of documents with indexing status.
         """
         await self.check_user_owner_or_admin_repo(user_id, repository_id, True)
-        return await self.document_repo.get_all_documents_in_repo(
+        documents = await self.document_repo.get_all_documents_in_repo(
             status=status,
             repository_id=repository_id,
             page_no=page_no,
             page_size=page_size,
             find_document=find_document,
         )
+
+        for document in documents["results"]:
+            role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+                document.id, user_id
+            )
+            if not role:
+                role = "NONE"
+            setattr(document, "role", role)
+        return documents
 
     async def get_document_database(
         self,
@@ -481,13 +500,23 @@ class DocumentService:
             List[Document] -> List of documents with indexing status.
         """
         await self.check_user_owner_or_admin_repo(user_id, repository_id, True)
-        return await self.document_repo.get_all_documents_in_repo(
+        documents = await self.document_repo.get_all_documents_in_repo(
             repository_id=repository_id,
             page_no=page_no,
             page_size=page_size,
             find_document=find_document,
             include_index=False,
         )
+
+        for document in documents["results"]:
+            role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+                document.id, user_id
+            )
+            if not role:
+                role = "NONE"
+            setattr(document, "role", role)
+
+        return documents
 
     async def check_user_access_upload_document(
         self,
@@ -516,11 +545,11 @@ class DocumentService:
         else:
             raise InvalidRepositoryRoleException
 
-    @Transactional()
     async def process_upload_document(
         self,
         repository_id: int,
         file: UploadFile,
+        uploaded_by: int,
     ) -> Document:
         """
         Upload document and create task to index it.
@@ -542,6 +571,7 @@ class DocumentService:
                 title=title,
                 repository_id=repository_id,
                 file_url=uploaded_file_url,
+                uploaded_by=uploaded_by,
             )
             document = await self.get_document_by_id(id=doc_id, include_index=True)
 
@@ -581,7 +611,7 @@ class DocumentService:
             repository_id=repository_id,
         )
 
-        document = await self.process_upload_document(repository_id, file)
+        document = await self.process_upload_document(repository_id, file, user_id)
         await self.add_document_collaborators_after_upload(
             user_id=user_id,
             document_id=document.id,
@@ -612,7 +642,9 @@ class DocumentService:
 
         documents_response = []
         for file in files:
-            processed_document = await self.process_upload_document(repository_id, file)
+            processed_document = await self.process_upload_document(
+                repository_id, file, user_id
+            )
             documents_response.append(processed_document)
 
             await self.add_document_collaborators_after_upload(
@@ -693,37 +725,34 @@ class DocumentService:
         )
         repository_id = document.repository_id
 
-        await self.check_user_owner_or_admin_repo(
-            user_id=user_id,
-            repository_id=repository_id,
-        )
-
-        # repo_role = (
-        #     await self.repository_repo.get_user_role_by_user_id_and_repository_id(
-        #         user_id=user_id, repository_id=document.repository_id
-        #     )
+        # await self.check_user_owner_or_admin_repo(
+        #     user_id=user_id,
+        #     repository_id=repository_id,
+        #     uploader=True,
         # )
 
-        # if not repo_role:
-        #     raise UserNotAllowedException
-        # if repo_role.upper() in RepositoryRole.__members__:
-        #     repo_role = RepositoryRole[repo_role.upper()]
+        repo_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id=user_id, repository_id=document.repository_id
+            )
+        )
 
-        #     if repo_role < RepositoryRole.ADMIN:
-        #         doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
-        #             collaborator_id=user_id, document_id=document_id
-        #         )
-        #         if not doc_role:
-        #             raise UserNotAllowedException
+        if not repo_role:
+            raise UserNotAllowedException
+        if repo_role.upper() in RepositoryRole.__members__:
+            repo_role = RepositoryRole[repo_role.upper()]
 
-        #         if doc_role.upper() in DocumentRole.__members__:
-        #             doc_role = DocumentRole[doc_role.upper()]
-        #             if doc_role < DocumentRole.EDITOR:
-        #                 raise UserNotAllowedException
-        #         else:
-        #             raise InvalidDocumentRoleException
-        # else:
-        #     raise InvalidRepositoryRoleException
+            if repo_role < RepositoryRole.ADMIN:
+                doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+                    collaborator_id=user_id, document_id=document_id
+                )
+                if not doc_role:
+                    raise UserNotAllowedException
+
+                if doc_role.upper() in DocumentRole.__members__:
+                    doc_role = DocumentRole[doc_role.upper()]
+                    if doc_role < DocumentRole.EDITOR:
+                        raise UserNotAllowedException
 
         params = {}
         if name and document.title != name:
@@ -751,22 +780,18 @@ class DocumentService:
                             repository_id=repository_id
                         )
                     )
-                    collabolators = [
-                        collaborator
-                        for collaborator in collabolators
-                        if collaborator.id != user_id
-                    ]
+                    doc_role = DocumentRole.VIEWER.name.title()
                     for collaborator in collabolators:
-                        doc_role = DocumentRole.VIEWER.name.title()
-                        curr_doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
-                            collaborator_id=collaborator.id, document_id=document_id
-                        )
-                        if not curr_doc_role:
-                            await self.document_repo.add_collaborator(
-                                document_id=document_id,
-                                collaborator_id=collaborator.id,
-                                role=doc_role,
+                        if collaborator.id != user_id:
+                            curr_doc_role = await self.document_repo.get_role_by_document_id_and_collaborator_id(
+                                collaborator_id=collaborator.id, document_id=document_id
                             )
+                            if not curr_doc_role:
+                                await self.document_repo.add_collaborator(
+                                    document_id=document_id,
+                                    collaborator_id=collaborator.id,
+                                    role=doc_role,
+                                )
                 # Make document visible to only document owner and editor.
                 else:
                     await self.document_repo.delete_user_documents_viewer_by_document_id(

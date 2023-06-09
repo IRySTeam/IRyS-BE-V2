@@ -1,3 +1,4 @@
+import datetime
 import mimetypes
 from typing import Any, Dict, List, Union
 
@@ -5,6 +6,7 @@ import magic
 from asgiref.sync import async_to_sync
 from bert_serving.client import BertClient
 from tika import parser
+from tzlocal import get_localzone
 
 from app.classification import Classifier, LabelEnum
 from app.document.enums.document import IndexingStatusEnum
@@ -51,6 +53,14 @@ def parsing(
         bool -> True if parsing is successful.
     """
     try:
+        print(
+            "[PARSING] task of document [{}] is started at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
         # Check if provided document label is valid.
         if document_label and document_label not in set(
             enum.value for enum in LabelEnum
@@ -77,14 +87,23 @@ def parsing(
         file_text: str = parser.from_buffer(file_bytes)["content"]
 
         with_ocr = False
-        text_percentage = OCRUtil.get_text_percentage(file_bytes)
-        if text_percentage < OCRUtil.TEXT_PERCENTAGE_THRESHOLD:
-            with_ocr = True
-        if file_extension == ".pdf" and with_ocr:
-            file_text = OCRUtil.ocr(file_bytes)
+        if file_extension == ".pdf":
+            text_percentage = OCRUtil.get_text_percentage(file_bytes)
+            if text_percentage < OCRUtil.TEXT_PERCENTAGE_THRESHOLD:
+                with_ocr = True
+            if with_ocr:
+                file_text = OCRUtil.ocr(file_bytes)
 
         # Preprocess text and do extraction.
         preprocessed_file_text = PreprocessUtil.preprocess(file_text)
+        print(
+            "[PARSING] task of document [{}] is finished at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
         extraction.delay(
             document_id=document_id,
             document_title=document_title,
@@ -141,7 +160,14 @@ def extraction(
         bool -> True if extraction is successful
     """
     try:
-        print("A")
+        print(
+            "[EXTRACTION] task of document [{}] is started at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
         # Update indexing status to extracting.
         async_to_sync(document_index_service.update_indexing_status_celery)(
             doc_id=document_id,
@@ -151,49 +177,35 @@ def extraction(
                 "current_task_id": self.request.id,
             },
         )
-        print("B")
         file_bytes = GCStorage().get_file(document_url)
-        print("C")
 
         # Classify document type and extract general information from document.
         extractor = InformationExtractor(domain="general")
-        print("D")
         general_document_metadata = extractor.extract(file_bytes, file_raw_text)
-        print("E")
         document_metadata = {}
         document_label = document_label or Classifier.classify(
             texts=file_preprocessed_text
         )
-        print("F")
 
         # Extract information on domain-specific document.
         domain = None
         if document_label == LabelEnum.RESUME.value:
             domain = "recruitment"
-            print("G1")
         elif document_label == LabelEnum.PAPER.value:
             domain = "scientific"
-            print("G2")
         if domain:
             extractor = InformationExtractor(domain=domain)
-            print("H")
             if with_ocr:
                 document_metadata = extractor.extract(file_bytes, file_raw_text)
-                print("I1")
             else:
                 document_metadata = extractor.extract(file_bytes)
-                print("I2")
 
         # Update document metadata on database.
         mimetype = document_metadata.get("mimetype", None)
-        print("J")
         extension = document_metadata.get("extension", None)
-        print("K")
         size = document_metadata.get("size", None)
-        print("L")
         if not document_title_fixed:
             document_title = document_metadata.get("title", None) or document_title
-        print("M")
 
         # Update document in database according to extracted metadata and do indexing.
         async_to_sync(document_service.update_document_celery)(
@@ -205,7 +217,14 @@ def extraction(
                 "size": size,
             },
         )
-        print("N")
+        print(
+            "[EXTRACTION] task of document [{}] is finished at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
         indexing.delay(
             document_id=document_id,
             document_title=document_title,
@@ -215,7 +234,7 @@ def extraction(
             file_raw_text=file_raw_text,
             file_preprocessed_text=file_preprocessed_text,
         )
-        print("O")
+
         return True
     except Exception as e:
         # Turn indexing status to failed if extraction failed.
@@ -260,6 +279,14 @@ def indexing(
         bool -> True if indexing is successful.
     """
     try:
+        print(
+            "[INDEXING] task of document [{}] is started at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
         text_encoding_manager = TextEncodingManager()
         # Update indexing status.
         async_to_sync(document_index_service.update_indexing_status_celery)(
@@ -375,6 +402,16 @@ def indexing(
                 "status": IndexingStatusEnum.SUCCESS,
                 "current_task_id": None,
             },
+        )
+
+        # Write current timestamp.
+        print(
+            "[INDEXING] task of document [{}] is finished at [{}]".format(
+                document_id,
+                datetime.datetime.now()
+                .astimezone(get_localzone())
+                .strftime("%Y-%m-%d %H:%M:%S"),
+            )
         )
         return True
     except Exception as e:
