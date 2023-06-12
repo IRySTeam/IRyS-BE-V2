@@ -190,6 +190,7 @@ class DocumentService:
         self,
         title: str,
         repository_id: int,
+        uploaded_by: int,
         file_url: str = "dummy",
         general_elastic_doc_id: str = None,
         elastic_doc_id: str = None,
@@ -227,6 +228,7 @@ class DocumentService:
                 "mimetype": mimetype,
                 "extension": extension,
                 "size": size,
+                "uploaded_by": uploaded_by,
             }
         )
 
