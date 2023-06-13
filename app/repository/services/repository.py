@@ -210,11 +210,11 @@ class RepositoryService:
                 user_id, repository_id
             ):
                 raise RepositoryNotFoundException
-            current_user_role = (
-                await self.repository_repo.get_user_role_by_user_id_and_repository_id(
-                    user_id, repository_id
-                )
+        current_user_role = (
+            await self.repository_repo.get_user_role_by_user_id_and_repository_id(
+                user_id, repository_id
             )
+        )
 
         return RepositoryDetailsResponseSchema(
             id=repository.id,
