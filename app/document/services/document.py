@@ -478,7 +478,7 @@ class DocumentService:
                 document.id, user_id
             )
             if not role:
-                role = "NONE"
+                role = "None"
             setattr(document, "role", role)
         return documents
 
@@ -515,7 +515,7 @@ class DocumentService:
                 document.id, user_id
             )
             if not role:
-                role = "NONE"
+                role = "None"
             setattr(document, "role", role)
 
         return documents
