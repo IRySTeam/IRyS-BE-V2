@@ -157,9 +157,8 @@ class RepositoryService:
         documents = [
             document
             for document in documents
-            if not document.index.status != IndexingStatusEnum.SUCCESS.value
+            if document.index.status != IndexingStatusEnum.SUCCESS.value
         ]
-        print(f"Reindexing {len(documents)} documents")
 
         for document in documents:
             await document_service.reindex(document)
