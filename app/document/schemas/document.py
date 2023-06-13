@@ -25,6 +25,14 @@ class DocumentIndexing(BaseModel):
         orm_mode = True
 
 
+class DocumentUploaderSchema(BaseModel):
+    first_name: str = Field(..., description="Uploader's first name")
+    last_name: str = Field(..., description="Uploader's last name")
+
+    class Config:
+        orm_mode = True
+
+
 class DocumentResponseSchema(BaseModel):
     id: int = Field(..., description="Document id")
     title: str = Field(..., description="Document title")
@@ -35,7 +43,7 @@ class DocumentResponseSchema(BaseModel):
     updated_at: datetime = Field(None, description="Document's updated at metadata")
     is_public: bool = Field(None, description="Document visibility")
     mimetype: str = Field(None, description="Document format")
-    uploaded_by: str = Field(None, description="Document uploader")
+    uploader: DocumentUploaderSchema = Field(None, description="Document uploader")
 
     class Config:
         orm_mode = True
