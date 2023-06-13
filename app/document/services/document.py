@@ -440,7 +440,7 @@ class DocumentService:
         document = await self.get_document_by_id(doc_id, True)
         repository_id: int = document.repository_id
 
-        await self.check_user_owner_or_admin_repo(user_id, repository_id)
+        await self.check_user_owner_or_admin_repo(user_id, repository_id, True)
         await self.reindex(document)
 
     async def monitor_all_document(
