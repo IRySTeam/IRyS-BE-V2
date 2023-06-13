@@ -4,6 +4,7 @@ from api.auth.auth import auth_router
 from api.document.v1.document import document_router
 from api.elastic.v1.elastic import elastic_router
 from api.extraction.v1.extraction import extraction_router
+from api.faq.v1.faq import faq_router
 from api.repository.v1.document import repository_document_router
 from api.repository.v1.monitoring import monitoring_router
 from api.repository.v1.repository import repository_router
@@ -30,5 +31,6 @@ router.include_router(
 )
 router.include_router(extraction_router, prefix="/extraction", tags=["Extraction"])
 router.include_router(search_router, prefix="/api/v1/search", tags=["Search"])
+router.include_router(faq_router, prefix="/api/v1/faq", tags=["FAQ"])
 
 __all__ = ["router"]
