@@ -7,5 +7,5 @@ class FaqService:
 
     @Transactional()
     async def create_question(self, question: str):
-        saved_question = await self.faq_repo.create(question=question)
+        saved_question = await self.faq_repo.save(question=question)
         return saved_question.inserted_primary_key[0]
