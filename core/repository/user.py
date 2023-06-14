@@ -63,15 +63,19 @@ class UserRepo(BaseRepo[User]):
         page_size: int,
     ) -> Tuple[List[User], int, int]:
         sql = """
-            SELECT DISTINCT u.*
-            FROM users u
-            LEFT JOIN user_documents ud ON ud.user_id = u.id
-            LEFT JOIN documents d ON ud.document_id = d.id
-            INNER JOIN user_repositories ur ON ur.user_id = u.id
-            WHERE (CONCAT(u.first_name, ' ', u.last_name) ILIKE :query OR u.email ILIKE :query)
-            AND (d.repository_id IS NULL OR d.repository_id = ur.repository_id)
-            AND (ud.document_id IS NULL OR ud.document_id != :document_id)
-            AND NOT (ur.role = 'Owner' OR ur.role = 'Admin')
+            SELECT *
+            FROM (
+                    SELECT u.*
+                    FROM users u
+                            INNER JOIN user_repositories ur on u.id = ur.user_id
+                            LEFT JOIN documents d on ur.repository_id = d.repository_id
+                    WHERE d.id = :document_id
+                    EXCEPT
+                    SELECT u2.*
+                    FROM users u2
+                            INNER JOIN user_documents ud on u2.id = ud.user_id
+                    WHERE ud.document_id = :document_id
+                ) AS data
             LIMIT :limit OFFSET :offset
             """
         result = await session.execute(
@@ -87,13 +91,19 @@ class UserRepo(BaseRepo[User]):
 
         # Get total pages and total items
         sql = """
-            SELECT COUNT(DISTINCT u.*)
-            FROM users u
-            INNER JOIN user_repositories ur ON ur.user_id = u.id
-            LEFT JOIN user_documents ud ON ud.user_id = u.id
-            WHERE (CONCAT(u.first_name, ' ', u.last_name) ILIKE :query OR u.email ILIKE :query)
-            AND (ud.document_id IS NULL OR ud.document_id != :document_id)
-            AND (ur.role != 'owner' OR ur.role != 'admin')
+            SELECT COUNT(*)
+            FROM (
+                    SELECT u.*
+                    FROM users u
+                            INNER JOIN user_repositories ur on u.id = ur.user_id
+                            LEFT JOIN documents d on ur.repository_id = d.repository_id
+                    WHERE d.id = :document_id
+                    EXCEPT
+                    SELECT u2.*
+                    FROM users u2
+                            INNER JOIN user_documents ud on u2.id = ud.user_id
+                    WHERE ud.document_id = :document_id
+                ) AS data
             """
         result2 = await session.execute(
             text(sql),
