@@ -65,17 +65,17 @@ class UserRepo(BaseRepo[User]):
         sql = """
             SELECT *
             FROM (
-                    SELECT u.*
-                    FROM users u
-                            INNER JOIN user_repositories ur on u.id = ur.user_id
-                            LEFT JOIN documents d on ur.repository_id = d.repository_id
-                    WHERE d.id = :document_id
-                    EXCEPT
-                    SELECT u2.*
-                    FROM users u2
-                            INNER JOIN user_documents ud on u2.id = ud.user_id
-                    WHERE ud.document_id = :document_id
-                ) AS data
+                SELECT u.*
+                FROM users u
+                    INNER JOIN user_repositories ur on u.id = ur.user_id
+                    LEFT JOIN documents d on ur.repository_id = d.repository_id
+                WHERE d.id = :document_id
+                EXCEPT
+                SELECT u2.*
+                FROM users u2
+                    INNER JOIN user_documents ud on u2.id = ud.user_id
+                WHERE ud.document_id = :document_id
+            ) AS data
             LIMIT :limit OFFSET :offset
             """
         result = await session.execute(
@@ -93,18 +93,18 @@ class UserRepo(BaseRepo[User]):
         sql = """
             SELECT COUNT(*)
             FROM (
-                    SELECT u.*
-                    FROM users u
-                            INNER JOIN user_repositories ur on u.id = ur.user_id
-                            LEFT JOIN documents d on ur.repository_id = d.repository_id
-                    WHERE d.id = :document_id
-                    EXCEPT
-                    SELECT u2.*
-                    FROM users u2
-                            INNER JOIN user_documents ud on u2.id = ud.user_id
-                    WHERE ud.document_id = :document_id
-                ) AS data
-            """
+                SELECT u.*
+                FROM users u
+                    INNER JOIN user_repositories ur on u.id = ur.user_id
+                    LEFT JOIN documents d on ur.repository_id = d.repository_id
+                WHERE d.id = :document_id
+                EXCEPT
+                SELECT u2.*
+                FROM users u2
+                    INNER JOIN user_documents ud on u2.id = ud.user_id
+                WHERE ud.document_id = :document_id
+            ) AS data
+        """
         result2 = await session.execute(
             text(sql),
             {
