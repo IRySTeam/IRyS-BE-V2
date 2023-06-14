@@ -127,7 +127,6 @@ class DocumentRepo(BaseRepo[Document]):
         FROM users u
         INNER JOIN user_repositories ur ON ur.user_id = u.id
         WHERE ur.repository_id = :repository_id AND ur.role IN ('Uploader', 'Viewer')
-        UNION
         ) AS data
         ORDER BY array_position(array['Owner', 'Editor', 'Viewer'], data.role)
         """
