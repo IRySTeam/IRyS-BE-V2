@@ -1029,7 +1029,24 @@ class DocumentService:
         if not await self.document_repo.is_collaborator_exist(
             document_id, collaborator_id
         ):
-            raise DocumentCollaboratorNotFoundException
+            if not await self.repository_repo.is_user_id_collaborator_of_repository(
+                collaborator_id, document.repository_id
+            ):
+                raise DocumentCollaboratorNotFoundException
+
+            if not role.upper() in DocumentRole.__members__:
+                raise InvalidDocumentRoleException
+
+            role = DocumentRole[role.upper()]
+
+            if role is DocumentRole.OWNER:
+                raise UserNotAllowedException
+
+            await self.document_repo.add_collaborator(
+                document_id, collaborator_id, role.name.title()
+            )
+
+            return
 
         if not role.upper() in DocumentRole.__members__:
             raise InvalidDocumentRoleException
