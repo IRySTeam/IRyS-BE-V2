@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 
-from app.document.schemas import DocumentResponseSchema
+from app.document.schemas import MessageResponseSchema
 from app.document.services import DocumentService
 from app.repository.schemas import (
     AllDocumentDatabaseResponseSchema,
@@ -44,7 +44,7 @@ repository_document_router = APIRouter(
 @repository_document_router.post(
     "/{repository_id}/documents/upload",
     description="Upload a document and index it in Elasticsearch",
-    response_model=DocumentResponseSchema,
+    response_model=MessageResponseSchema,
     responses={
         "400": CustomExceptionHelper.get_exception_response(
             BadRequestException,
@@ -61,14 +61,15 @@ async def upload_document(
     path: RepositoryIdPathParams = Depends(),
     file: UploadFile = File(...),
 ):
-    return await DocumentService().upload_document(
+    await DocumentService().upload_document(
         user_id=request.user.id, repository_id=path.repository_id, file=file
     )
+    return MessageResponseSchema(message="Document uploaded successfully")
 
 
 @repository_document_router.post(
     "/{repository_id}/documents/uploads",
-    response_model=List[DocumentResponseSchema],
+    response_model=MessageResponseSchema,
     responses={
         "400": CustomExceptionHelper.get_exception_response(
             BadRequestException,
@@ -85,9 +86,10 @@ async def upload_multiple_document(
     files: List[UploadFile],
     path: RepositoryIdPathParams = Depends(),
 ):
-    return await DocumentService().upload_multiple_document(
+    await DocumentService().upload_multiple_document(
         user_id=request.user.id, repository_id=path.repository_id, files=files
     )
+    return MessageResponseSchema(message="Document uploaded successfully")
 
 
 @repository_document_router.get(
