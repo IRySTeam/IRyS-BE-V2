@@ -38,7 +38,11 @@ class DocumentRepo(BaseRepo[Document]):
     async def get_by_ids(
         self, ids: List[int], include_index: bool = False
     ) -> List[Document]:
-        query = select(self.model).where(self.model.id.in_(ids))
+        query = (
+            select(self.model)
+            .where(self.model.id.in_(ids))
+            .options(selectinload(self.model.uploader))
+        )
         if include_index:
             query = query.options(selectinload(self.model.index))
         result = await session.execute(query)
