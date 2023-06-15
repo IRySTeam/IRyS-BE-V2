@@ -213,8 +213,8 @@ class DocumentRepo(BaseRepo[Document]):
     async def get_repo_accessible_documents(self, repository_id: int) -> List[int]:
         query = """
         SELECT d.id FROM documents d
-        INNER JOIN repositories r ON d.repository_id = r.id
-        INNER JOIN user_repositories ur ON r.id = ur.repository_id
+            INNER JOIN repositories r ON d.repository_id = r.id
+            INNER JOIN user_repositories ur ON r.id = ur.repository_id
         WHERE r.id = :repository_id;
         """
         result = await session.execute(text(query), {"repository_id": repository_id})
