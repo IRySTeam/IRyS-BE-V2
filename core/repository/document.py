@@ -123,10 +123,18 @@ class DocumentRepo(BaseRepo[Document]):
         JOIN user_documents ud ON ud.user_id = u.id
         WHERE ud.document_id = :document_id
         UNION
-        SELECT u.*, 'Viewer' AS role
-        FROM users u
-        INNER JOIN user_repositories ur ON ur.user_id = u.id
-        WHERE ur.repository_id = :repository_id AND ur.role IN ('Uploader', 'Viewer')
+        SELECT data2.*, 'Viewer' AS role FROM
+        (
+            SELECT u.*
+            FROM users u
+            INNER JOIN user_repositories ur ON ur.user_id = u.id
+            WHERE ur.repository_id = :repository_id AND ur.role IN ('Uploader', 'Viewer')
+            EXCEPT
+            SELECT u.*
+            FROM users u
+            JOIN user_documents ud ON ud.user_id = u.id
+            WHERE ud.document_id = :document_id
+        ) AS data2
         ) AS data
         ORDER BY array_position(array['Owner', 'Editor', 'Viewer'], data.role)
         """
