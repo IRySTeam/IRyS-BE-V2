@@ -245,6 +245,21 @@ class DocumentRepo(BaseRepo[Document]):
         """
         await session.execute(text(sql), {"repository_id": repository_id})
 
+    async def delete_user_documents_by_repository_id_and_user_id(
+        self, repository_id: int, user_id: int
+    ):
+        sql = """
+        DELETE FROM user_documents
+        WHERE document_id IN (
+            SELECT d.id
+            FROM documents d
+            WHERE d.repository_id = :repository_id
+        ) AND user_id = :user_id
+        """
+        await session.execute(
+            text(sql), {"repository_id": repository_id, "user_id": user_id}
+        )
+
     async def delete_user_documents_viewer_by_document_id(self, document_id: int):
         sql = """
         DELETE FROM user_documents

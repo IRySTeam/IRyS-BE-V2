@@ -318,6 +318,10 @@ class RepositoryService:
         ):
             raise InvalidRepositoryCollaboratorException
 
+        await self.document_repo.delete_user_documents_by_repository_id_and_user_id(
+            repository_id=repository_id, user_id=collaborator_id
+        )
+
         await self.repository_repo.delete_user_repository(
             repository_id=repository_id, user_id=collaborator_id
         )
