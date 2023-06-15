@@ -1,11 +1,16 @@
-FROM python:3.10
+FROM ubuntu:20.04
 
 COPY . /home
 
 WORKDIR /home
-RUN apt-get install software-properties-common \
-  && add-apt-repository ppa:openjdk-r/ppa \
-  && apt-get update && apt-get install -y --no-install-recommends \
+
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository -y ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt install -y python3.8
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
   # dependencies for building Python packages
   build-essential \
   # psycopg2 dependencies
