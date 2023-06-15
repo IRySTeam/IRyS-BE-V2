@@ -3,7 +3,9 @@ FROM python:3.10
 COPY . /home
 
 WORKDIR /home
-RUN add-apt-repository ppa:openjdk-r/ppa && apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get install software-properties-common \
+  && add-apt-repository ppa:openjdk-r/ppa \
+  && apt-get update && apt-get install -y --no-install-recommends \
   # dependencies for building Python packages
   build-essential \
   # psycopg2 dependencies
