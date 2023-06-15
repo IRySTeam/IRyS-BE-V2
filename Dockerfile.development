@@ -3,7 +3,7 @@ FROM python:3.10
 COPY . /home
 
 WORKDIR /home
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN add-apt-repository ppa:openjdk-r/ppa && apt-get update && apt-get install -y --no-install-recommends \
   # dependencies for building Python packages
   build-essential \
   # psycopg2 dependencies
