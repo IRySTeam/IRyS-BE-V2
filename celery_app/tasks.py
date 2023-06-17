@@ -226,7 +226,7 @@ def extraction(
             )
         )
         
-        for models in ["msmarco", "paraphrase"]:
+        for models in ["paraphrase", "msmarco"]:
             indexing.delay(
                 document_id=document_id,
                 document_title=document_title,
@@ -328,8 +328,8 @@ def indexing(
             " ".join(file_preprocessed_text)
         )
 
-        if is_paraphrase_model:
-            embedding = bc.encode([" ".join(file_preprocessed_text)])
+        # if is_paraphrase_model:
+        #     embedding = bc.encode([" ".join(file_preprocessed_text)])
 
         doc = {
             "document_id": document_id,
