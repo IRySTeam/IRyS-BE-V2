@@ -61,7 +61,7 @@ class SearchService:
             query = self.scientific_expander.expansion_method[expansion_method](query)
         return " ".join(PreprocessUtil().preprocess(query))
 
-    def normalize_search_result(self, data, min_score=1):
+    def normalize_search_result(self, data, min_score=3):
         scores = [hit["_score"] for hit in data["hits"]["hits"]]
         if (len(data["hits"]["hits"]) >= 2):
             stdev = statistics.stdev(scores)
