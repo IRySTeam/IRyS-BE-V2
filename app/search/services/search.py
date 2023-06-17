@@ -103,7 +103,7 @@ class SearchService:
         model = self.text_encoding_manager.get_encoder(domain)
         data = ElasticsearchClient().search_semantic(
             query=query,
-            index=f"{domain.value}-0001",
+            index=f"{domain.value}-msmarco",
             size=1000,
             source=["document_id", "title", "preprocessed_text", "document_metadata"],
             emb_vector="text_vector",
