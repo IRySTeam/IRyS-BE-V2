@@ -47,7 +47,7 @@ BASE_ELASTICSEARCH_INDEX_MAPPINGS = {
 # =============================================================================
 # General domain configuration for Elasticsearch.
 # =============================================================================
-GENERAL_ELASTICSEARCH_INDEX_NAME = "general-msmarco"
+GENERAL_ELASTICSEARCH_INDEX_NAME = "general-0001"
 
 # TODO: Redefine this settings.
 GENERAL_ELASTICSEARCH_INDEX_SETTINGS = {"number_of_shards": 2, "number_of_replicas": 1}
@@ -68,7 +68,7 @@ GENERAL_ELASTICSEARCH_INDEX_MAPPINGS["properties"]["document_metadata"][
 # =============================================================================
 # Recruitment domain configuration for Elasticsearch.
 # =============================================================================
-RECRUITMENT_ELASTICSEARCH_INDEX_NAME = "recruitment-msmarco"
+RECRUITMENT_ELASTICSEARCH_INDEX_NAME = "recruitment-0001"
 
 # TODO: Redefine this settings.
 RECRUITMENT_ELASTICSEARCH_INDEX_SETTINGS = {
@@ -169,7 +169,7 @@ RECRUITMENT_ELASTICSEARCH_INDEX_MAPPINGS["properties"]["document_metadata"][
 # =============================================================================
 # Scientific domain configuration for Elasticsearch.
 # =============================================================================
-SCIENTIFIC_ELASTICSEARCH_INDEX_NAME = "scientific-msmarco"
+SCIENTIFIC_ELASTICSEARCH_INDEX_NAME = "scientific-0001"
 
 # TODO: Redefine this settings.
 SCIENTIFIC_ELASTICSEARCH_INDEX_SETTINGS = {

@@ -157,7 +157,7 @@ class RepositoryService:
         documents = [
             document
             for document in documents
-            if document.index.status != IndexingStatusEnum.SUCCESS
+            if document.index.status != IndexingStatusEnum.SUCCESS.value
         ]
 
         for document in documents:

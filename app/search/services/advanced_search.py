@@ -356,7 +356,7 @@ class AdvancedSearchService:
         print("Flag 1")
         data = ElasticsearchClient().search_semantic(
             query=filter.value,
-            index=f"{domain.value}-msmarco",
+            index=f"{domain.value}-0001",
             size=filter.top_n,
             source=["document_id", "title", "preprocessed_text", "document_metadata"],
             emb_vector=f'document_metadata.{filter.key}.text_vector',

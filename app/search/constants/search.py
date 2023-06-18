@@ -1,7 +1,7 @@
 from app.search.enums.search import DomainEnum
 
 DOMAIN_INDEXES = {
-    DomainEnum.GENERAL: "general-msmarco",
+    DomainEnum.GENERAL: "general-0001",
     DomainEnum.RECRUITMENT: "recruitment_index",
     DomainEnum.SCIENTIFIC: "scientific_index",
 }
@@ -14,10 +14,10 @@ FIELD_WEIGHTS = {
         'document_metadata.INSTITUTION^1',
         'document_metadata.LOC^2',
         'document_metadata.ORG^1',
-        'document_metadata.PER^4',
+        'document_metadata.PER^2',
         'document_metadata.ROLE^6',
         'document_metadata.SKILL^3',
-        'document_metadata.name^4',
+        'document_metadata.name^2',
         'document_metadata.skills^2',
         'document_metadata.experiences_job_titles^1',
         'document_metadata.experiences_companies^1',

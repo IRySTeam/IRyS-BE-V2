@@ -225,18 +225,15 @@ def extraction(
                 .strftime("%Y-%m-%d %H:%M:%S"),
             )
         )
-        
-        for models in ["paraphrase", "msmarco"]:
-            indexing.delay(
-                document_id=document_id,
-                document_title=document_title,
-                document_label=document_label,
-                document_metadata=document_metadata,
-                general_document_metadata=general_document_metadata,
-                file_raw_text=file_raw_text,
-                file_preprocessed_text=file_preprocessed_text,
-                is_paraphrase_model=models=="paraphrase",
-            )
+        indexing.delay(
+            document_id=document_id,
+            document_title=document_title,
+            document_label=document_label,
+            document_metadata=document_metadata,
+            general_document_metadata=general_document_metadata,
+            file_raw_text=file_raw_text,
+            file_preprocessed_text=file_preprocessed_text,
+        )
 
         return True
     except Exception as e:
@@ -266,7 +263,6 @@ def indexing(
     general_document_metadata: Dict[str, Any] = {},
     file_raw_text: str = "",
     file_preprocessed_text: List[str] = [],
-    is_paraphrase_model: bool = False,
 ) -> bool:
     """
     Celelry task for indexing document. The indexing task will be split into 2 subtasks:
@@ -328,9 +324,6 @@ def indexing(
             " ".join(file_preprocessed_text)
         )
 
-        # if is_paraphrase_model:
-        #     embedding = bc.encode([" ".join(file_preprocessed_text)])
-
         doc = {
             "document_id": document_id,
             "title": document_title,
@@ -340,13 +333,8 @@ def indexing(
             "document_label": document_label,
             "document_metadata": general_document_metadata,
         }
-        if is_paraphrase_model:
-            general_index_name = GENERAL_ELASTICSEARCH_INDEX_NAME.replace("msmarco", "paraphrase")
-        else:
-            general_index_name = GENERAL_ELASTICSEARCH_INDEX_NAME
-
         res = EsClient.index_doc(
-            index=general_index_name,
+            index=GENERAL_ELASTICSEARCH_INDEX_NAME,
             doc=doc,
         )
         general_elastic_doc_id = res["_id"]
@@ -385,21 +373,19 @@ def indexing(
                         "text_vector": [0.0 for _ in range(768)],
                     }
 
+            res = EsClient.index_doc(
+                index=SCIENTIFIC_ELASTICSEARCH_INDEX_NAME
+                if document_label == LabelEnum.PAPER.value
+                else RECRUITMENT_ELASTICSEARCH_INDEX_NAME,
+                doc=doc,
+            )
+            elastic_doc_id = res["_id"]
             elastic_index_name = (
                 SCIENTIFIC_ELASTICSEARCH_INDEX_NAME
                 if document_label == LabelEnum.PAPER.value
                 else RECRUITMENT_ELASTICSEARCH_INDEX_NAME
             )
-            if is_paraphrase_model:
-                elastic_index_name = elastic_index_name.replace("msmarco", "paraphrase")
 
-            res = EsClient.index_doc(
-                index=elastic_index_name,
-                doc=doc,
-            )
-            elastic_doc_id = res["_id"]
-            
-            
         # Update document elasticsearch related metadata and indexing status on database.
         async_to_sync(document_service.update_document_celery)(
             id=document_id,
@@ -439,14 +425,10 @@ def indexing(
             },
         )
 
-        if is_paraphrase_model:
-            general_index_name = GENERAL_ELASTICSEARCH_INDEX_NAME.replace("msmarco", "paraphrase")
-        else:
-            general_index_name = GENERAL_ELASTICSEARCH_INDEX_NAME
         # Delete document from Elasticsearch if indexing failed.
         if general_elastic_doc_id:
             EsClient.delete_doc(
-                index_name=general_index_name,
+                index_name=GENERAL_ELASTICSEARCH_INDEX_NAME,
                 doc_id=general_elastic_doc_id,
             )
         if elastic_doc_id and elastic_index_name:

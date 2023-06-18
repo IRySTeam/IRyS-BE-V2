@@ -61,7 +61,7 @@ class SearchService:
             query = self.scientific_expander.expansion_method[expansion_method](query)
         return " ".join(PreprocessUtil().preprocess(query))
 
-    def normalize_search_result(self, data, min_score=3):
+    def normalize_search_result(self, data, min_score=5):
         scores = [hit["_score"] for hit in data["hits"]["hits"]]
         if (len(data["hits"]["hits"]) >= 2):
             stdev = statistics.stdev(scores)
@@ -103,7 +103,7 @@ class SearchService:
         model = self.text_encoding_manager.get_encoder(domain)
         data = ElasticsearchClient().search_semantic(
             query=query,
-            index=f"{domain.value}-msmarco",
+            index=f"{domain.value}-0001",
             size=1000,
             source=["document_id", "title", "preprocessed_text", "document_metadata"],
             emb_vector="text_vector",
