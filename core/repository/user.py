@@ -69,7 +69,7 @@ class UserRepo(BaseRepo[User]):
                 FROM users u
                     INNER JOIN user_repositories ur on u.id = ur.user_id
                     LEFT JOIN documents d on ur.repository_id = d.repository_id
-                WHERE d.id = :document_id 
+                WHERE d.id = :document_id
                     AND (CONCAT(u.first_name, ' ', u.last_name) ILIKE :query OR u.email ILIKE :query)
                     AND NOT (ur.role = 'Owner' OR ur.role = 'Admin')
                 EXCEPT
@@ -99,7 +99,7 @@ class UserRepo(BaseRepo[User]):
                 FROM users u
                     INNER JOIN user_repositories ur on u.id = ur.user_id
                     LEFT JOIN documents d on ur.repository_id = d.repository_id
-                WHERE d.id = :document_id 
+                WHERE d.id = :document_id
                     AND (CONCAT(u.first_name, ' ', u.last_name) ILIKE :query OR u.email ILIKE :query)
                     AND NOT (ur.role = 'Owner' OR ur.role = 'Admin')
                 EXCEPT
