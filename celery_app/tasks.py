@@ -201,9 +201,14 @@ def extraction(
                 document_metadata = extractor.extract(file_bytes)
 
         # Update document metadata on database.
-        mimetype = document_metadata.get("mimetype", None)
-        extension = document_metadata.get("extension", None)
-        size = document_metadata.get("size", None)
+        mimetype = general_document_metadata.get("mimetype", None)
+        extension = general_document_metadata.get("extension", None)
+        size = general_document_metadata.get("size", None)
+        if document_metadata:
+            mimetype = document_metadata.get("mimetype", None)
+            extension = document_metadata.get("extension", None)
+            size = document_metadata.get("size", None)
+
         if not document_title_fixed:
             document_title = document_metadata.get("title", None) or document_title
 
