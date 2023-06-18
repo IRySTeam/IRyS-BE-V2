@@ -295,10 +295,18 @@ class DocumentService:
                 index_name=GENERAL_ELASTICSEARCH_INDEX_NAME,
                 doc_id=document.general_elastic_doc_id,
             )
+            general_elasticsearch_index_paraphrase = GENERAL_ELASTICSEARCH_INDEX_NAME.replace("msmarco", "paraphrase")
+            EsClient.safe_delete_doc(
+                general_elasticsearch_index_paraphrase, document.general_elastic_doc_id
+            )
         if document.elastic_doc_id and document.elastic_index_name:
             EsClient.safe_delete_doc(
                 index_name=document.elastic_index_name,
                 doc_id=document.elastic_doc_id,
+            )
+            elastic_index_name_paraphrase = document.elastic_index_name.replace("masmarco", "paraphrase")
+            EsClient.safe_delete_doc(
+                elastic_index_name_paraphrase, document.elastic_doc_id
             )
 
         await self.document_repo.delete(document)
@@ -393,11 +401,19 @@ class DocumentService:
                 EsClient.safe_delete_doc(
                     GENERAL_ELASTICSEARCH_INDEX_NAME, document.general_elastic_doc_id
                 )
+                general_elasticsearch_index_paraphrase = GENERAL_ELASTICSEARCH_INDEX_NAME.replace("msmarco", "paraphrase")
+                EsClient.safe_delete_doc(
+                    general_elasticsearch_index_paraphrase, document.general_elastic_doc_id
+                )
                 document.general_elastic_doc_id = None
             if document.elastic_doc_id and document.elastic_index_name:
                 # Ignore if document doesn't exists in elasticsearch.
                 EsClient.safe_delete_doc(
                     document.elastic_index_name, document.elastic_doc_id
+                )
+                elastic_index_name_paraphrase = document.elastic_index_name.replace("masmarco", "paraphrase")
+                EsClient.safe_delete_doc(
+                    elastic_index_name_paraphrase, document.elastic_doc_id
                 )
                 document.elastic_doc_id = None
                 document.elastic_index_name = None
