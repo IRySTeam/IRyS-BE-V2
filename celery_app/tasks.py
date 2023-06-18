@@ -84,7 +84,7 @@ def parsing(
         )
         if file_extension not in [".pdf", ".doc", ".docx", ".txt"]:
             raise Exception("Unsupported file type")
-        file_text: str = parser.from_buffer(file_bytes)["content"]
+        file_text: str = ""
 
         with_ocr = False
         if file_extension == ".pdf":
@@ -93,6 +93,9 @@ def parsing(
                 with_ocr = True
             if with_ocr:
                 file_text = OCRUtil.ocr(file_bytes)
+        
+        if not(file_text):
+            file_text = parser.from_buffer(file_bytes)["content"]
 
         # Preprocess text and do extraction.
         preprocessed_file_text = PreprocessUtil.preprocess(file_text)
