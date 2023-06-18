@@ -304,7 +304,7 @@ class DocumentService:
                 index_name=document.elastic_index_name,
                 doc_id=document.elastic_doc_id,
             )
-            elastic_index_name_paraphrase = document.elastic_index_name.replace("masmarco", "paraphrase")
+            elastic_index_name_paraphrase = document.elastic_index_name.replace("msmarco", "paraphrase")
             EsClient.safe_delete_doc(
                 elastic_index_name_paraphrase, document.elastic_doc_id
             )
@@ -411,7 +411,7 @@ class DocumentService:
                 EsClient.safe_delete_doc(
                     document.elastic_index_name, document.elastic_doc_id
                 )
-                elastic_index_name_paraphrase = document.elastic_index_name.replace("masmarco", "paraphrase")
+                elastic_index_name_paraphrase = document.elastic_index_name.replace("msmarco", "paraphrase")
                 EsClient.safe_delete_doc(
                     elastic_index_name_paraphrase, document.elastic_doc_id
                 )
