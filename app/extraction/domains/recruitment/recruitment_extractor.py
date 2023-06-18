@@ -90,7 +90,7 @@ class RecruitmentExtractor(BaseExtractor):
         resume_text = "[SEGMENT]".join(segmented_text)
 
         # Extract general information
-        result = super().extract_general_information(file, resume_text)
+        # result = super().extract_general_information(file, resume_text)
 
         # Extract entities
         entities = self.extract_entities(resume_text)
